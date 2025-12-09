@@ -2,6 +2,7 @@ package com.Rahul.AshaSathi.Controller;
 
 
 import com.Rahul.AshaSathi.DTO.AuthResponse;
+import com.Rahul.AshaSathi.DTO.LoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.SignupRequestDTO;
 import com.Rahul.AshaSathi.Services.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -25,4 +26,9 @@ public class AuthController {
             return ResponseEntity.ok(authService.signup(request));
 
     }
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequestDTO request){
+        return ResponseEntity.ok(authService.login(request));
+    }
+
 }
