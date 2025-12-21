@@ -5,6 +5,7 @@ import com.Rahul.AshaSathi.DTO.AuthResponse;
 import com.Rahul.AshaSathi.DTO.LoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.SignupRequestDTO;
 import com.Rahul.AshaSathi.Entity.User;
+import com.Rahul.AshaSathi.JWT.JwtUtil;
 import com.Rahul.AshaSathi.Repository.UserRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -13,10 +14,12 @@ import org.springframework.stereotype.Service;
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     public AuthResponse signup(SignupRequestDTO request){
@@ -30,8 +33,8 @@ public class AuthService {
             user.setUsername(request.getUsername());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
             userRepository.save(user);
-            //String token =
-            return new AuthResponse(user.getEmail() , user.getUsername() ,"local" ,user.getId() );
+            String token = jwtUtil.generateToken(user.getEmail());
+            return new AuthResponse(user.getId(),  user.getUsername(), user.getEmail() , token , "local");
     }
 
     public AuthResponse login(LoginRequestDTO request){
@@ -41,10 +44,10 @@ public class AuthService {
         if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
                 throw new RuntimeException("Invalid Credentials");
         }
-        return new AuthResponse(user.getEmail() , user.getUsername() ,"Local" , user.getId() );
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new AuthResponse(user.getId(),  user.getUsername(), user.getEmail() , token , "local" );
 
     }
-
 
 
 }

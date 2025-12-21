@@ -11,4 +11,9 @@ public class Health_Check {
     public String HealthCheck(){
         return "Working";
     }
+
+    @GetMapping("/api/test")
+    public String test() {
+        return "JWT WORKING!";
+    }
 }
