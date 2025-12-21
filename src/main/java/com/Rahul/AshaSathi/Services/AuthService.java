@@ -49,5 +49,27 @@ public class AuthService {
 
     }
 
+    public AuthResponse googleLogin(String email , String username) {
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if(user == null){
+            user = new User();
+            user.setEmail(email);
+            user.setUsername(username);
+            user.setPassword("");
+            user.setProvider("Google");
+            userRepository.save(user);
+        }
+        String token = jwtUtil.generateToken(email);
+        return new AuthResponse(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            token,
+             user.getProvider()
+        );
+
+    }
+
 
 }
