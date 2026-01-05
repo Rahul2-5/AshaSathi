@@ -1,6 +1,6 @@
 package com.Rahul.AshaSathi.Entity;
 
-import jakarta.persistence.*;   // <-- use jakarta, not javax
+import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
