@@ -20,7 +20,7 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequestDTO request){
-            return ResponseEntity.ok(authService.signup(request));
+        return ResponseEntity.ok(authService.signup(request));
 
     }
     @PostMapping("/login")
@@ -29,10 +29,17 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<AuthResponse> googleLogin(@RequestParam String email , @RequestParam String username){
-            AuthResponse response = authService.googleLogin(email,username);
-            return ResponseEntity.ok(response);
+    public ResponseEntity<AuthResponse> googleLogin(
+            @RequestParam("email") String email,
+            @RequestParam("username") String username
+    ) {
+        System.out.println("Google OAuth hit!");
+        System.out.println("Email: " + email);
+        System.out.println("Username: " + username);
 
+        AuthResponse response = authService.googleLogin(email, username);
+        return ResponseEntity.ok(response);
     }
+
 
 }
