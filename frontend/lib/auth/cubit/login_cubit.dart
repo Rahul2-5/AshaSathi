@@ -7,6 +7,7 @@ class LoginCubit extends Cubit<LoginState> {
 
   LoginCubit(this.authService) : super(LoginState());
 
+  // 🔐 Normal login
   Future<void> login({
     required String email,
     required String password,
@@ -14,7 +15,6 @@ class LoginCubit extends Cubit<LoginState> {
     emit(state.copyWith(isLoading: true, error: null));
 
     try {
-      // ✅ token is now String
       final token = await authService.login({
         "email": email.trim(),
         "password": password.trim(),
@@ -23,7 +23,7 @@ class LoginCubit extends Cubit<LoginState> {
       emit(
         state.copyWith(
           isLoading: false,
-          token: token, // ✅ FIXED
+          token: token,
         ),
       );
     } catch (e) {
@@ -34,5 +34,21 @@ class LoginCubit extends Cubit<LoginState> {
         ),
       );
     }
+  }
+
+  // 🔑 Google / GitHub login
+  void setToken(String token) {
+    emit(
+      state.copyWith(
+        token: token,
+        isLoading: false,
+        error: null,
+      ),
+    );
+  }
+
+  // 🚪 Logout (optional but recommended)
+  void logout() {
+    emit(LoginState());
   }
 }

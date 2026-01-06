@@ -1,36 +1,45 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:equatable/equatable.dart';
 import '../services/task_service.dart';
 import 'task_model.dart';
 
-class TaskState {
+class TaskState extends Equatable {
   final bool loading;
   final List<TaskModel> tasks;
   final String? error;
 
-  TaskState({
+  const TaskState({
     this.loading = false,
     this.tasks = const [],
     this.error,
   });
+
+  @override
+  List<Object?> get props => [loading, tasks, error];
 }
 
 class TaskCubit extends Cubit<TaskState> {
   final TaskService taskService;
 
-  TaskCubit(this.taskService) : super(TaskState());
+  TaskCubit(this.taskService) : super(const TaskState());
 
   Future<void> loadTasks(String token) async {
-    emit(TaskState(loading: true));
+    emit(TaskState(loading: true, tasks: state.tasks));
     try {
       final tasks = await taskService.fetchTodayTasks(token);
       emit(TaskState(tasks: tasks));
     } catch (e) {
-      emit(TaskState(error: e.toString()));
+      emit(TaskState(error: e.toString(), tasks: state.tasks));
     }
   }
 
   Future<void> addTask(TaskModel task, String token) async {
     await taskService.addTask(task, token);
+    await loadTasks(token);
+  }
+
+  Future<void> deleteTask(int taskId, String token) async {
+    await taskService.deleteTask(taskId, token);
     await loadTasks(token);
   }
 }

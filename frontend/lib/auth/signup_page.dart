@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/auth/cubit/login_cubit.dart';
 
 import '../home/home_page.dart';
 import '../services/auth_service.dart';
@@ -135,14 +136,14 @@ class _SignUpViewState extends State<SignUpView> {
                             InkWell(
                               onTap: () async {
                                 try {
-                                  final token =
-                                      await AuthService().loginWithGoogle();
+                                  final token = await AuthService().loginWithGoogle();
 
+                                context.read<LoginCubit>().setToken(token);
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) =>
-                                          HomePage(token: token),
+                                          HomePage(),
                                     ),
                                   );
                                 } catch (e) {

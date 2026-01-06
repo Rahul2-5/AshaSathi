@@ -48,7 +48,7 @@ class _LoginViewState extends State<LoginView> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (_) => HomePage(token: state.token!),
+              builder: (_) => const HomePage(),
             ),
           );
         }
@@ -110,12 +110,12 @@ class _LoginViewState extends State<LoginView> {
                                 try {
                                   final token =
                                       await AuthService().loginWithGoogle();
+                                      context.read<LoginCubit>().setToken(token);
 
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) =>
-                                          HomePage(token: token),
+                                      builder: (_) => const HomePage(),
                                     ),
                                   );
                                 } catch (e) {

@@ -35,4 +35,24 @@ class TaskService {
       throw Exception("Failed to add task");
     }
   }
+
+Future<void> deleteTask(int id, String token) async {
+  final response = await http.delete(
+    Uri.parse("$baseUrl/$id"),
+    headers: {
+      "Authorization": "Bearer $token",
+      "Content-Type": "application/json",
+    },
+  );
+
+  print("DELETE status: ${response.statusCode}");
+  print("DELETE body: ${response.body}");
+
+  if (response.statusCode != 204) {
+    throw Exception("Failed to delete task");
+  }
+}
+
+
+
 }
