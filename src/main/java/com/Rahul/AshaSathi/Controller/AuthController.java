@@ -1,10 +1,10 @@
 package com.Rahul.AshaSathi.Controller;
 
-
 import com.Rahul.AshaSathi.DTO.AuthResponse;
 import com.Rahul.AshaSathi.DTO.LoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.SignupRequestDTO;
 import com.Rahul.AshaSathi.Services.AuthService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,13 +19,20 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequestDTO request){
+    public ResponseEntity<AuthResponse> signup(@RequestBody SignupRequestDTO request) {
         return ResponseEntity.ok(authService.signup(request));
-
     }
+
+    // ✅ FIXED LOGIN
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequestDTO request){
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<?> login(@RequestBody LoginRequestDTO request) {
+        try {
+            return ResponseEntity.ok(authService.login(request));
+        } catch (RuntimeException e) {
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED) // 401
+                    .body(e.getMessage());            // INVALID_PASSWORD / EMAIL_NOT_FOUND
+        }
     }
 
     @PostMapping("/google")
@@ -33,13 +40,7 @@ public class AuthController {
             @RequestParam("email") String email,
             @RequestParam("username") String username
     ) {
-        System.out.println("Google OAuth hit!");
-        System.out.println("Email: " + email);
-        System.out.println("Username: " + username);
-
         AuthResponse response = authService.googleLogin(email, username);
         return ResponseEntity.ok(response);
     }
-
-
 }

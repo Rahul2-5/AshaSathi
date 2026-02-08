@@ -6,6 +6,7 @@ import com.Rahul.AshaSathi.Repository.UserRepository;
 import com.Rahul.AshaSathi.Services.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,7 +27,9 @@ public class TaskController {
     @PostMapping
     public ResponseEntity<Task> createTask(
             @RequestBody Task task,
-            @AuthenticationPrincipal String email) {
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String email = userDetails.getUsername();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -38,7 +41,9 @@ public class TaskController {
     // ✅ GET TODAY TASKS
     @GetMapping("/today")
     public ResponseEntity<List<Task>> getTodayTasks(
-            @AuthenticationPrincipal String email) {
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String email = userDetails.getUsername();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -52,7 +57,9 @@ public class TaskController {
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> deleteTask(
             @PathVariable Long taskId,
-            @AuthenticationPrincipal String email) {
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        String email = userDetails.getUsername();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
