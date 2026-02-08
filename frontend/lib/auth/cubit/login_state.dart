@@ -16,7 +16,7 @@ class LoginState {
   }) {
     return LoginState(
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      error: error ?? this.error, // ✅ FIX HERE
       token: token ?? this.token,
     );
   }

@@ -7,6 +7,8 @@ import 'cubit/login_cubit.dart';
 import 'cubit/login_state.dart';
 import 'signup_page.dart';
 import '../utils/appValidator.dart';
+import '../navigation/main_navigation.dart';
+
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -37,20 +39,25 @@ class _LoginViewState extends State<LoginView> {
     return BlocConsumer<LoginCubit, LoginState>(
       listener: (context, state) {
         // ❌ Error
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error!)),
-          );
-        }
+       if (state.error != null) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(state.error!), // ✅ show backend message
+      backgroundColor: Colors.red,
+    ),
+  );
+}
+
 
         // ✅ Success → Navigate to Home
         if (state.token != null) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const HomePage(),
-            ),
-          );
+        Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(
+    builder: (_) => const MainNavigation(),
+  ),
+);
+
         }
       },
       builder: (context, state) {

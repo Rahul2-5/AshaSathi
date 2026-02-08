@@ -37,17 +37,25 @@ public class AuthService {
             return new AuthResponse(user.getId(),  user.getUsername(), user.getEmail() , token , "local");
     }
 
-    public AuthResponse login(LoginRequestDTO request){
+    public AuthResponse login(LoginRequestDTO request) {
+
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Email Not Found"));
+                .orElseThrow(() -> new RuntimeException("EMAIL_NOT_FOUND"));
 
-        if(!passwordEncoder.matches(request.getPassword(), user.getPassword())){
-                throw new RuntimeException("Invalid Credentials");
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("INVALID_PASSWORD");
         }
-        String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponse(user.getId(),  user.getUsername(), user.getEmail() , token , "local" );
 
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new AuthResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                token,
+                "local"
+        );
     }
+
 
     public AuthResponse googleLogin(String email , String username) {
         User user = userRepository.findByEmail(email).orElse(null);

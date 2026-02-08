@@ -20,10 +20,18 @@ class _AddTaskPageState extends State<AddTaskPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: const BackButton(),
-        title: const Text("Add New Task"),
+        backgroundColor:Color.fromRGBO(249, 250, 251, 100),
+    appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.white,
         centerTitle: true,
+        title: const Text(
+          "Add New Task",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -107,7 +115,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 },
                 child: const Text(
                   "Save Task",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold , color: Colors.white),
                 ),
               ),
             ),

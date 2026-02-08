@@ -47,7 +47,8 @@ class _SignUpViewState extends State<SignUpView> {
         // ❌ Error
         if (state.error != null) {
           ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text(state.error!)));
+              .showSnackBar(SnackBar(content: Text(state.error!),
+              backgroundColor:Colors.red));
         }
 
         // ✅ Normal signup success → go to Login

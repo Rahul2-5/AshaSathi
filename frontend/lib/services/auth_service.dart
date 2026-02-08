@@ -8,24 +8,38 @@ class AuthService {
 
   // ------------------ EMAIL LOGIN ------------------
   // ✅ MUST RETURN TOKEN (String)
-  Future<String> login(Map<String, dynamic> data) async {
-    final url = Uri.parse('$baseUrl/login');
+Future<String> login(Map<String, dynamic> data) async {
+  final url = Uri.parse('$baseUrl/login');
 
-    final response = await http.post(
-      url,
-      headers: {"Content-Type": "application/json"},
-      body: jsonEncode(data),
-    );
+  final response = await http.post(
+    url,
+    headers: {"Content-Type": "application/json"},
+    body: jsonEncode(data),
+  );
 
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['token']; // ✅ RETURN TOKEN
-    } else if (response.statusCode == 401) {
-      throw Exception("Invalid email or password");
-    } else {
-      throw Exception("Server error. Please try again");
+  // ✅ SUCCESS
+  if (response.statusCode == 200) {
+    final body = jsonDecode(response.body);
+    return body['token'];
+  }
+
+  // ✅ ERROR HANDLING
+  final error = response.body.trim();
+
+  if (response.statusCode == 401) {
+    if (error == "INVALID_PASSWORD") {
+      throw Exception("Invalid password");
+    }
+
+    if (error == "EMAIL_NOT_FOUND") {
+      throw Exception("Email not found. Create a new account");
     }
   }
+
+  throw Exception("Login failed. Try again");
+}
+
+
 
   // ------------------ SIGNUP ------------------
   Future<void> createUser(Map<String, dynamic> data) async {
