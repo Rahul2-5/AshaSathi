@@ -1,13 +1,21 @@
 package com.Rahul.AshaSathi.Controller;
 
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.Rahul.AshaSathi.DTO.PatientRequest;
 import com.Rahul.AshaSathi.Entity.Patient;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
 import com.Rahul.AshaSathi.Services.PatientService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/patients")
@@ -45,8 +53,13 @@ public class PatientController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePatient(@PathVariable Long id) {
-        patientService.deletePatient(id);
-        return ResponseEntity.noContent().build();
+        try {
+            patientService.deletePatient(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            System.err.println("Delete patient error: " + e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 
 
