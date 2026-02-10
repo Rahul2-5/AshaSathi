@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -19,29 +18,42 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtUtil jwtUtil;
-    private final UserDetailsService userDetailsService;
 
-    public SecurityConfig(JwtUtil jwtUtil, UserDetailsService userDetailsService) {
+    public SecurityConfig(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
     }
 
+    // ✅ JWT FILTER (STATELESS)
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
-        return new JWTAuthenticationFilter(jwtUtil, userDetailsService);
+        return new JWTAuthenticationFilter(jwtUtil);
     }
 
+    // ✅ SECURITY CHAIN
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+
         http
+                // ❌ CSRF not needed for JWT APIs
                 .csrf(AbstractHttpConfigurer::disable)
+
+                // ❌ NO SESSION (STATELESS)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
+
+                // ✅ AUTH RULES
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**", "/api/health/**", "/uploads/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/health/**",
+                                "/uploads/**",
+                                "/data/**"
+                        ).permitAll()
                         .anyRequest().authenticated()
                 )
+
+                // ✅ JWT FILTER
                 .addFilterBefore(
                         jwtAuthenticationFilter(),
                         UsernamePasswordAuthenticationFilter.class
@@ -50,11 +62,10 @@ public class SecurityConfig {
         return http.build();
     }
 
+    // ✅ AUTH MANAGER (USED ONLY FOR LOGIN)
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration) throws Exception {
         return configuration.getAuthenticationManager();
     }
-
-
 }

@@ -1,12 +1,13 @@
 package com.Rahul.AshaSathi.Controller;
 
+import com.Rahul.AshaSathi.DTO.TaskResponse;
 import com.Rahul.AshaSathi.Entity.Task;
 import com.Rahul.AshaSathi.Entity.User;
 import com.Rahul.AshaSathi.Repository.UserRepository;
 import com.Rahul.AshaSathi.Services.TaskService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,13 +24,11 @@ public class TaskController {
         this.userRepository = userRepository;
     }
 
-    // ✅ CREATE TASK
+    // ================= CREATE TASK =================
     @PostMapping
-    public ResponseEntity<Task> createTask(
-            @RequestBody Task task,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        String email = userDetails.getUsername();
+    public ResponseEntity<Task> createTask(@RequestBody Task task) {
+
+        String email = getCurrentUserEmail();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -38,12 +37,11 @@ public class TaskController {
         return ResponseEntity.ok(taskService.createTask(task));
     }
 
-    // ✅ GET TODAY TASKS
+    // ================= GET TODAY TASKS =================
     @GetMapping("/today")
-    public ResponseEntity<List<Task>> getTodayTasks(
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        String email = userDetails.getUsername();
+    public ResponseEntity<List<TaskResponse>> getTodayTasks() {
+
+        String email = getCurrentUserEmail();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -53,18 +51,28 @@ public class TaskController {
         );
     }
 
-    // 🔥 DELETE TASK
+    // ================= DELETE TASK =================
     @DeleteMapping("/{taskId}")
-    public ResponseEntity<Void> deleteTask(
-            @PathVariable Long taskId,
-            @AuthenticationPrincipal UserDetails userDetails
-    ) {
-        String email = userDetails.getUsername();
+    public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
+
+        String email = getCurrentUserEmail();
 
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         taskService.deleteTask(taskId, user.getId());
         return ResponseEntity.noContent().build();
+    }
+
+    // ================= HELPER =================
+    private String getCurrentUserEmail() {
+        Authentication auth =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (auth == null || auth.getPrincipal() == null) {
+            throw new RuntimeException("Unauthenticated request");
+        }
+
+        return (String) auth.getPrincipal(); // ✅ SAFE
     }
 }
