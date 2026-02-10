@@ -42,4 +42,40 @@ class TaskOfflineDao {
       whereArgs: [localId],
     );
   }
+
+  /// Mark task for deletion (offline deletion)
+  Future<void> markDeletedByUuid(String uuid) async {
+    final db = await _db.database;
+    await db.update(
+      AppDatabaseOffline.taskTable,
+      {
+        'syncStatus': SyncStatusOffline.deleted,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
+
+  /// Hard delete task from offline storage (used when deleted online)
+  Future<void> hardDeleteByUuid(String uuid) async {
+    final db = await _db.database;
+    await db.delete(
+      AppDatabaseOffline.taskTable,
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
+
+  /// Get deleted tasks for sync
+  Future<List<TaskOfflineEntity>> getDeleted() async {
+    final db = await _db.database;
+    final result = await db.query(
+      AppDatabaseOffline.taskTable,
+      where: 'syncStatus = ?',
+      whereArgs: [SyncStatusOffline.deleted],
+    );
+
+    return result.map(TaskOfflineEntity.fromMap).toList();
+  }
 }

@@ -198,7 +198,7 @@ class PatientDetailPage extends StatelessWidget {
 
   debugPrint("Delete patient: id=${patient.id}, uuid=${patient.uuid}, online=${await connectivity.isOnline()}");
 
-  // 📴 OFFLINE OR NOT YET SYNCED
+  //  OFFLINE OR NOT YET SYNCED
   if (!await connectivity.isOnline() || patient.id == null) {
     await dao.markDeletedByUuid(patient.uuid);
 

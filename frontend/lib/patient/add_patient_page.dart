@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/offline/patient_sync_service.dart';
 import '../auth/cubit/login_cubit.dart';
 import 'package:frontend/patient/patient_success_page.dart';
 
@@ -54,8 +53,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _syncBanner(),
-            const SizedBox(height: 28),
             _profilePhoto(),
             const SizedBox(height: 28),
             _patientForm(),
@@ -68,79 +65,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
   }
 
   // ================= UI =================
-
-  Widget _syncBanner() {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE6FAFA),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Row(
-      children: [
-        const Icon(Icons.cloud_off,
-            size: 18, color: Color(0xFF00A6A6)),
-        const SizedBox(width: 8),
-        const Text(
-          "Pending Sync",
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const Spacer(),
-        OutlinedButton(
-          onPressed: _isLoading
-              ? null
-              : () async {
-                  setState(() => _isLoading = true);
-
-                  try {
-                    // ✅ FIX: pass token
-                    final token =
-                        context.read<LoginCubit>().state.token!;
-
-                    final didSync =
-                        await PatientSyncService().sync(token);
-
-                    if (!mounted) return;
-
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          didSync
-                              ? "Sync completed successfully"
-                              : "No internet or nothing to sync",
-                        ),
-                        backgroundColor:
-                            didSync ? Colors.green : Colors.orange,
-                      ),
-                    );
-                  } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(e.toString()),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  } finally {
-                    if (mounted) {
-                      setState(() => _isLoading = false);
-                    }
-                  }
-                },
-          child: _isLoading
-              ? const SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text("Sync Now"),
-        ),
-      ],
-    ),
-  );
-}
-
-
 
   Widget _profilePhoto() {
     return Column(

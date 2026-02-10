@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/auth/cubit/login_cubit.dart';
+import 'package:uuid/uuid.dart';
 import 'task_model.dart';
 import 'task_cubit.dart';
 
@@ -102,16 +103,46 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   ),
                 ),
                 onPressed: () async {
+                  if (titleController.text.trim().isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Please enter a task title"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                    return;
+                  }
+
                   final token = context.read<LoginCubit>().state.token!;
+                  final uuid = const Uuid().v4();
 
                   final task = TaskModel(
+                    uuid: uuid,
                     title: titleController.text.trim(),
                     description: descController.text.trim(),
                     status: status,
                   );
 
-                  await context.read<TaskCubit>().addTask(task, token);
-                  Navigator.pop(context, true);
+                  try {
+                    await context.read<TaskCubit>().addTask(task, token);
+                    
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Task added successfully!"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                    Navigator.pop(context, true);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text("Error: $e"),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   "Save Task",

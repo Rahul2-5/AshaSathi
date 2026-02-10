@@ -2,12 +2,14 @@ enum TaskStatus { urgent, pending, inProgress, completed }
 
 class TaskModel {
   final int? id;
+  final String uuid;
   final String title;
   final String description;
   final TaskStatus status;
 
   TaskModel({
     this.id,
+    required this.uuid,
     required this.title,
     required this.description,
     required this.status,
@@ -17,6 +19,7 @@ class TaskModel {
   factory TaskModel.fromJson(Map<String, dynamic> json) {
     return TaskModel(
       id: json['id'],
+      uuid: json['uuid'] ?? json['id'].toString(), // Fallback to id if uuid missing
       title: json['title'],
       description: json['description'],
       status: _fromBackendStatus(json['status']),

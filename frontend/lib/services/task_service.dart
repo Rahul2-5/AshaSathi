@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:uuid/uuid.dart';
 
 import '../task/task_model.dart';
 import '../offline/connectivity_service.dart';
@@ -13,104 +15,194 @@ class TaskService {
   final TaskOfflineDao _offlineDao = TaskOfflineDao();
 
   // ================= FETCH TASKS =================
- Future<List<TaskModel>> fetchTodayTasks(String token) async {
-  final isOnline = await _connectivity.isOnline();
+  Future<List<TaskModel>> fetchTodayTasks(String token) async {
+    final isOnline = await _connectivity.isOnline();
 
-  // 🔴 Load OFFLINE tasks first
-  final offlineTasks = await _offlineDao.getPending();
+    // 🔴 Load OFFLINE tasks first (only pending/synced, not deleted)
+    final offlineTasks = await _offlineDao.getPending();
+    debugPrint("Loaded ${offlineTasks.length} offline pending tasks");
 
-  final offlineModels = offlineTasks.map((t) {
-    return TaskModel(
-      id: t.serverId ?? -1, // temp ID
-      title: t.title,
-      description: t.description ?? "",
-      status: TaskStatus.values.firstWhere(
-        (e) => e.name == t.status,
-      ),
-    );
-  }).toList();
+    final offlineModels = offlineTasks.map((t) {
+      return TaskModel(
+        id: t.serverId,
+        uuid: t.uuid,
+        title: t.title,
+        description: t.description ?? "",
+        status: _stringToStatus(t.status),
+      );
+    }).toList();
 
-  // 🔴 If offline → return only offline
-  if (!isOnline) {
-    return offlineModels;
+    // 🔴 If offline → return only offline
+    if (!isOnline) {
+      debugPrint("Offline mode: returning ${offlineModels.length} locally synced tasks");
+      return offlineModels;
+    }
+
+    // 🟢 ONLINE → fetch backend tasks
+    try {
+      final response = await http.get(
+        Uri.parse("$baseUrl/today"),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      if (response.statusCode != 200) {
+        debugPrint("Backend fetch failed (${response.statusCode}), returning offline tasks");
+        return offlineModels;
+      }
+
+      final List list = jsonDecode(response.body);
+      final onlineTasks = list.map((e) => TaskModel.fromJson(e)).toList();
+      debugPrint("Loaded ${onlineTasks.length} tasks from backend");
+
+      // ✅ Return BACKEND tasks only (server is source of truth)
+      return onlineTasks;
+    } catch (e) {
+      debugPrint("Error fetching from backend: $e");
+      return offlineModels;
+    }
   }
-
-  // 🟢 ONLINE → fetch backend tasks
-  final response = await http.get(
-    Uri.parse("$baseUrl/today"),
-    headers: {
-      "Authorization": "Bearer $token",
-    },
-  );
-
-  if (response.statusCode != 200) {
-    return offlineModels; // fallback
-  }
-
-  final List list = jsonDecode(response.body);
-  final onlineTasks =
-      list.map((e) => TaskModel.fromJson(e)).toList();
-
-  // ✅ MERGE offline + online
-  return [...offlineModels, ...onlineTasks];
-}
-
 
   // ================= ADD TASK =================
   Future<void> addTask(TaskModel task, String token) async {
     final isOnline = await _connectivity.isOnline();
+    final uuid = const Uuid().v4();
 
-    // 🔴 OFFLINE
+    debugPrint("Adding task: online=$isOnline");
+
+    // 🔴 OFFLINE → save to local storage
     if (!isOnline) {
-      await _offlineDao.insert(
-        TaskOfflineEntity(
-          title: task.title,
-          description: task.description,
-          status: task.status.name.toUpperCase(), // ✅ FIX
-          createdDate: DateTime.now().toIso8601String(),
-        ),
-      );
+      debugPrint("Saving task offline with UUID: $uuid");
+      try {
+        await _offlineDao.insert(
+          TaskOfflineEntity(
+            uuid: uuid,
+            title: task.title,
+            description: task.description,
+            status: _statusToString(task.status),
+            createdDate: DateTime.now().toIso8601String(),
+          ),
+        );
+        debugPrint("Task saved offline successfully");
+      } catch (e) {
+        debugPrint("Error saving offline: $e");
+        rethrow;
+      }
       return;
     }
 
-    // 🟢 ONLINE
-    final response = await http.post(
-      Uri.parse(baseUrl),
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer $token",
-      },
-      body: jsonEncode(task.toJson()),
-    );
+    // 🟢 ONLINE → send to backend
+    try {
+      debugPrint("Sending task to backend...");
+      final response = await http.post(
+        Uri.parse(baseUrl),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(task.toJson()),
+      );
 
-    if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception("Failed to add task");
+      debugPrint("Task creation response: ${response.statusCode}");
+      debugPrint("Response body: ${response.body}");
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint("Task created successfully on backend");
+      } else {
+        debugPrint("Backend returned ${response.statusCode}, falling back to offline");
+        // Fallback: save offline if backend fails
+        await _offlineDao.insert(
+          TaskOfflineEntity(
+            uuid: uuid,
+            title: task.title,
+            description: task.description,
+            status: _statusToString(task.status),
+            createdDate: DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error creating task online: $e, falling back to offline");
+      // Fallback: save offline if network error
+      await _offlineDao.insert(
+        TaskOfflineEntity(
+          uuid: uuid,
+          title: task.title,
+          description: task.description,
+          status: _statusToString(task.status),
+          createdDate: DateTime.now().toIso8601String(),
+        ),
+      );
     }
   }
 
   // ================= DELETE TASK =================
-  Future<void> deleteTask(int id, String token) async {
+  Future<bool> deleteTask(int taskId, String uuid, String token) async {
     final isOnline = await _connectivity.isOnline();
 
-    if (!isOnline) {
-      throw Exception("Cannot delete task while offline");
+    debugPrint("Deleting task: id=$taskId, uuid=$uuid, online=$isOnline");
+
+    // 📴 OFFLINE OR NO ID → mark for deletion locally
+    if (!isOnline || taskId == -1) {
+      debugPrint("Marking task for offline deletion");
+      try {
+        await _offlineDao.markDeletedByUuid(uuid);
+        debugPrint("Task marked for deletion locally");
+        return true;
+      } catch (e) {
+        debugPrint("Error marking task for deletion: $e");
+        rethrow;
+      }
     }
 
-    final response = await http.delete(
-      Uri.parse("$baseUrl/$id"),
-      headers: {
-        "Authorization": "Bearer $token",
-        "Content-Type": "application/json",
-      },
-    );
+    // 🟢 ONLINE → try to delete from backend first
+    try {
+      debugPrint("Sending DELETE request to backend...");
+      final response = await http.delete(
+        Uri.parse("$baseUrl/$taskId"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
 
-    if (response.statusCode != 204) {
-      throw Exception("Failed to delete task");
+      debugPrint("Delete response status: ${response.statusCode}");
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        // Hard delete from offline storage
+        debugPrint("Task deleted from backend, removing from offline storage");
+        await _offlineDao.hardDeleteByUuid(uuid);
+        return true;
+      } else {
+        debugPrint("Delete failed with status: ${response.statusCode}, marking for offline deletion");
+        // Fallback: mark for deletion locally
+        await _offlineDao.markDeletedByUuid(uuid);
+        return false;
+      }
+    } catch (e) {
+      debugPrint("Error deleting from backend: $e, falling back to offline");
+      // Fallback: mark for deletion locally if network error
+      await _offlineDao.markDeletedByUuid(uuid);
+      return false;
     }
   }
 
-  // ================= STATUS MAPPER =================
-  TaskStatus _offlineStatusToEnum(String value) {
+  // ================= STATUS MAPPERS =================
+  String _statusToString(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.urgent:
+        return "URGENT";
+      case TaskStatus.pending:
+        return "PENDING";
+      case TaskStatus.inProgress:
+        return "IN_PROGRESS";
+      case TaskStatus.completed:
+        return "COMPLETED";
+    }
+  }
+
+  TaskStatus _stringToStatus(String value) {
     switch (value) {
       case "URGENT":
         return TaskStatus.urgent;

@@ -125,9 +125,37 @@ class TaskCard extends StatelessWidget {
                 final token =
                     context.read<LoginCubit>().state.token!;
 
-                await context
-                    .read<TaskCubit>()
-                    .deleteTask(task.id!, token);
+                try {
+                  final deleted = await context
+                      .read<TaskCubit>()
+                      .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
+
+                  if (!context.mounted) return;
+                  
+                  if (deleted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Task deleted successfully"),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("Task marked for deletion (will sync later)"),
+                        backgroundColor: Colors.orange,
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Error deleting task: $e"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
           ),
