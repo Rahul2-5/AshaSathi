@@ -14,7 +14,7 @@ public class Task {
     private String description;
     private String status;
 
-    // ✅ Store date as STRING (SQLite-safe)
+    // Store date as STRING (SQLite-safe)
     @Column(nullable = false)
     private String createdDate;
 

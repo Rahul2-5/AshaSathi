@@ -2,12 +2,17 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/offline/patient_sync_service.dart';
 import '../auth/cubit/login_cubit.dart';
 import 'package:frontend/patient/patient_success_page.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+
+import '../offline/patient_offline_service.dart';
+import '../offline/connectivity_service.dart';
+
 
 class AddPatientPage extends StatefulWidget {
   const AddPatientPage({super.key});
@@ -65,34 +70,77 @@ class _AddPatientPageState extends State<AddPatientPage> {
   // ================= UI =================
 
   Widget _syncBanner() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFE6FAFA),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.cloud_off, size: 18, color: Color(0xFF00A6A6)),
-          const SizedBox(width: 8),
-          const Text("Pending Sync",
-              style: TextStyle(fontWeight: FontWeight.w500)),
-          const Spacer(),
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF00A6A6),
-              side: const BorderSide(color: Color(0xFF00A6A6)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: const Text("Sync Now"),
-          ),
-        ],
-      ),
-    );
-  }
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFE6FAFA),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.cloud_off,
+            size: 18, color: Color(0xFF00A6A6)),
+        const SizedBox(width: 8),
+        const Text(
+          "Pending Sync",
+          style: TextStyle(fontWeight: FontWeight.w500),
+        ),
+        const Spacer(),
+        OutlinedButton(
+          onPressed: _isLoading
+              ? null
+              : () async {
+                  setState(() => _isLoading = true);
+
+                  try {
+                    // ✅ FIX: pass token
+                    final token =
+                        context.read<LoginCubit>().state.token!;
+
+                    final didSync =
+                        await PatientSyncService().sync(token);
+
+                    if (!mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          didSync
+                              ? "Sync completed successfully"
+                              : "No internet or nothing to sync",
+                        ),
+                        backgroundColor:
+                            didSync ? Colors.green : Colors.orange,
+                      ),
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.toString()),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isLoading = false);
+                    }
+                  }
+                },
+          child: _isLoading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text("Sync Now"),
+        ),
+      ],
+    ),
+  );
+}
+
+
 
   Widget _profilePhoto() {
     return Column(
@@ -141,7 +189,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
           _inputField("Patient Name", _nameController),
           _inputField("Age", _ageController,
               keyboard: TextInputType.number),
-          _dobField(), // 👈 calendar field
+          _dobField(), 
           _genderDropdown(),
           _inputField("Address", _addressController),
           _inputField("Phone Number", _phoneController,
@@ -296,7 +344,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
  Future<void> _handleSave() async {
   if (!_formKey.currentState!.validate()) return;
 
-  // ❌ PHOTO IS MANDATORY
   if (_selectedImage == null) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -310,16 +357,30 @@ class _AddPatientPageState extends State<AddPatientPage> {
   setState(() => _isLoading = true);
 
   try {
-    final id = await _savePatient();
-    await _uploadPhoto(id);
+    final isOnline = await ConnectivityService().isOnline();
+
+    if (isOnline) {
+      // ================= ONLINE =================
+      final id = await _savePatient();
+      await _uploadPhoto(id);
+    } else {
+      // ================= OFFLINE =================
+      await PatientOfflineService().saveOffline(
+        name: _nameController.text.trim(),
+        gender: _gender,
+        age: int.parse(_ageController.text.trim()),
+        dateOfBirth: _dobController.text.trim(),
+        address: _addressController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        photoPath: _selectedImage!.path,
+      );
+    }
 
     if (!mounted) return;
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const PatientSuccessPage(),
-      ),
+      MaterialPageRoute(builder: (_) => const PatientSuccessPage()),
     );
   } catch (e) {
     if (!mounted) return;
@@ -331,6 +392,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
     }
   }
 }
+
 
 
 

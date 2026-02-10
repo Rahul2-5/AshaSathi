@@ -1,5 +1,11 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../offline/patient_sync_service.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -18,13 +24,37 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  late final PatientSyncService _patientSyncService;
+  late final StreamSubscription _connectivitySub;
+
   @override
   void initState() {
     super.initState();
 
     final token = context.read<LoginCubit>().state.token!;
+
+    // Initial load
     context.read<TaskCubit>().loadTasks(token);
     context.read<PatientCubit>().loadPatients(token);
+
+    // Sync service
+    _patientSyncService = PatientSyncService();
+
+    // Auto-sync when network comes back
+    _connectivitySub =
+        Connectivity().onConnectivityChanged.listen((_) async {
+      final synced = await _patientSyncService.sync(token);
+
+      if (synced && mounted) {
+        context.read<PatientCubit>().loadPatients(token);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _connectivitySub.cancel();
+    super.dispose();
   }
 
   @override
@@ -43,10 +73,8 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-
       body: CustomScrollView(
         slivers: [
-
           // 🔹 HEADER + WELCOME
           SliverPadding(
             padding: const EdgeInsets.all(16),
@@ -66,7 +94,6 @@ class _HomePageState extends State<HomePage> {
                     style: TextStyle(color: Colors.grey.shade600),
                   ),
                   const SizedBox(height: 20),
-
                   _tasksHeader(),
                   const SizedBox(height: 12),
                 ],
@@ -74,7 +101,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // 🔹 TASK LIST (SLIVER – CORRECT)
+          // 🔹 TASK LIST
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: _taskSliverList(),
@@ -94,7 +121,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // 🔹 RECENT PATIENTS HORIZONTAL LIST
+          // 🔹 RECENT PATIENTS LIST
           SliverToBoxAdapter(
             child: SizedBox(
               height: 190,
@@ -158,12 +185,10 @@ class _HomePageState extends State<HomePage> {
 
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: TaskCard(task: state.tasks[index]),
-              );
-            },
+            (context, index) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: TaskCard(task: state.tasks[index]),
+            ),
             childCount: state.tasks.length,
           ),
         );
@@ -198,10 +223,23 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _patientCard(Patient patient) {
-    final String? imageUrl =
-        patient.photoPath != null && patient.photoPath!.isNotEmpty
+    final String? localPath =
+        patient.photoPath != null && patient.photoPath!.startsWith('/')
+            ? patient.photoPath
+            : null;
+
+    final String? networkUrl =
+        patient.photoPath != null && !patient.photoPath!.startsWith('/')
             ? "http://10.0.2.2:8080${patient.photoPath}"
             : null;
+
+    ImageProvider? imageProvider;
+
+    if (localPath != null && File(localPath).existsSync()) {
+      imageProvider = FileImage(File(localPath));
+    } else if (networkUrl != null) {
+      imageProvider = NetworkImage(networkUrl);
+    }
 
     return InkWell(
       onTap: () {
@@ -234,9 +272,8 @@ class _HomePageState extends State<HomePage> {
                 CircleAvatar(
                   radius: 24,
                   backgroundColor: Colors.grey.shade200,
-                  backgroundImage:
-                      imageUrl != null ? NetworkImage(imageUrl) : null,
-                  child: imageUrl == null
+                  backgroundImage: imageProvider,
+                  child: imageProvider == null
                       ? const Icon(Icons.person, color: Colors.grey)
                       : null,
                 ),

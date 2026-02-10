@@ -24,22 +24,34 @@ class TaskCubit extends Cubit<TaskState> {
   TaskCubit(this.taskService) : super(const TaskState());
 
   Future<void> loadTasks(String token) async {
-    emit(TaskState(loading: true, tasks: state.tasks));
+  emit(TaskState(loading: true, tasks: state.tasks));
+  try {
+    final tasks = await taskService.fetchTodayTasks(token);
+    emit(TaskState(tasks: tasks));
+  } catch (_) {
+    // 🔴 DO NOT wipe tasks on offline error
+    emit(TaskState(tasks: state.tasks));
+  }
+}
+
+
+  Future<void> addTask(TaskModel task, String token) async {
     try {
-      final tasks = await taskService.fetchTodayTasks(token);
-      emit(TaskState(tasks: tasks));
+      await taskService.addTask(task, token);
+
+      // 🔑 Only reload from backend if online
+      await loadTasks(token);
     } catch (e) {
       emit(TaskState(error: e.toString(), tasks: state.tasks));
     }
   }
 
-  Future<void> addTask(TaskModel task, String token) async {
-    await taskService.addTask(task, token);
-    await loadTasks(token);
-  }
-
   Future<void> deleteTask(int taskId, String token) async {
-    await taskService.deleteTask(taskId, token);
-    await loadTasks(token);
+    try {
+      await taskService.deleteTask(taskId, token);
+      await loadTasks(token);
+    } catch (e) {
+      emit(TaskState(error: e.toString(), tasks: state.tasks));
+    }
   }
 }

@@ -1,5 +1,6 @@
 package com.Rahul.AshaSathi.Services;
 
+import com.Rahul.AshaSathi.DTO.TaskResponse;
 import com.Rahul.AshaSathi.Entity.Task;
 import com.Rahul.AshaSathi.Repository.TaskRepository;
 import org.springframework.stereotype.Service;
@@ -20,17 +21,26 @@ public class TaskService {
 
     // ✅ CREATE TASK
     public Task createTask(Task task) {
-        task.setCreatedDate(LocalDate.now().toString()); // YYYY-MM-DD
+        task.setCreatedDate(LocalDate.now().toString());
         return taskRepo.save(task);
     }
 
-    // ✅ GET TODAY TASKS
+    // ✅ GET TODAY TASKS (RETURN DTO, NOT ENTITY)
     @Transactional(readOnly = true)
-    public List<Task> getTodayTasks(Long userId) {
+    public List<TaskResponse> getTodayTasks(Long userId) {
+
         return taskRepo.findByUserIdAndCreatedDate(
-                userId,
-                LocalDate.now().toString()
-        );
+                        userId,
+                        LocalDate.now().toString()
+                ).stream()
+                .map(task -> new TaskResponse(
+                        task.getId(),
+                        task.getTitle(),
+                        task.getDescription(),
+                        task.getStatus(),
+                        task.getCreatedDate()
+                ))
+                .toList();
     }
 
     // ✅ DELETE TASK

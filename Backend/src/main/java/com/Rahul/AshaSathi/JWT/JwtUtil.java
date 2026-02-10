@@ -61,4 +61,18 @@ public class JwtUtil {
 
         return resolver.apply(claims);
     }
+
+
+    public boolean validateToken(String token) {
+        try {
+            Jwts.parser()
+                    .setSigningKey(key)
+                    .build()
+                    .parseSignedClaims(token);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

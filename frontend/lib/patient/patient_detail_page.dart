@@ -18,11 +18,6 @@ class PatientDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String? imageUrl =
-        patient.photoPath != null && patient.photoPath!.isNotEmpty
-            ? "$baseUrl${patient.photoPath}"
-            : null;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
@@ -36,7 +31,7 @@ class PatientDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _profileSection(imageUrl),
+            _profileSection(),
             const SizedBox(height: 24),
             _infoCard(),
             const SizedBox(height: 28),
@@ -49,17 +44,19 @@ class PatientDetailPage extends StatelessWidget {
 
   // ================= PROFILE =================
 
-  Widget _profileSection(String? imageUrl) {
+  Widget _profileSection() {
     return Column(
       children: [
         CircleAvatar(
           radius: 55,
           backgroundColor: Colors.grey.shade200,
-          backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
-          onBackgroundImageError: (_, __) {},
-          child: imageUrl == null
-              ? const Icon(Icons.person, size: 50, color: Colors.grey)
-              : null,
+          child: ClipOval(
+            child: SizedBox(
+              width: 110,
+              height: 110,
+              child: _buildPatientImage(),
+            ),
+          ),
         ),
         const SizedBox(height: 12),
         Text(
@@ -79,6 +76,40 @@ class PatientDetailPage extends StatelessWidget {
       ],
     );
   }
+
+  /// 🔥 SAFE IMAGE HANDLER (OFFLINE + ONLINE)
+Widget _buildPatientImage() {
+  final path = patient.photoPath;
+
+  if (path == null || path.isEmpty) {
+    return const Icon(Icons.person, size: 50, color: Colors.grey);
+  }
+
+  // 🔴 LOCAL FILE (offline / cached)
+  if (path.startsWith('/') && File(path).existsSync()) {
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          const Icon(Icons.broken_image),
+    );
+  }
+
+  // 🟢 BACKEND IMAGE ONLY (uploads)
+  if (path.startsWith('/uploads/')) {
+    return Image.network(
+      "$baseUrl$path",
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) =>
+          const Icon(Icons.broken_image),
+    );
+  }
+
+  // ❌ Anything else → fallback
+  return const Icon(Icons.broken_image);
+}
+
+
 
   // ================= INFO CARD =================
 
@@ -194,20 +225,24 @@ class PatientDetailPage extends StatelessWidget {
     final token = context.read<LoginCubit>().state.token!;
     final url = Uri.parse("$baseUrl/api/patients/${patient.id}");
 
-    final response = await http.delete(
-      url,
-      headers: {
-        "Authorization": "Bearer $token",
-      },
-    );
+    try {
+      final response = await http.delete(
+        url,
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
 
-    if (response.statusCode == 204) {
-      if (!context.mounted) return;
-      Navigator.pop(context); // back to Home
-    } else {
+      if (response.statusCode == 204) {
+        if (!context.mounted) return;
+        Navigator.pop(context);
+      } else {
+        throw Exception();
+      }
+    } catch (_) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to delete patient")),
+        const SnackBar(content: Text("Delete failed (offline?)")),
       );
     }
   }
