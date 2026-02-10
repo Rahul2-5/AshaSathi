@@ -6,7 +6,7 @@ import 'package:http/http.dart' as http;
 import '../auth/cubit/login_cubit.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/connectivity_service.dart';
-import '../offline/sync_status_offline.dart';
+
 import 'patient_model.dart';
 
 class PatientDetailPage extends StatelessWidget {
@@ -24,10 +24,16 @@ class PatientDetailPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        title: const Text("Patient Details"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
         elevation: 0,
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        title: const Text(
+          "Patient Details",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

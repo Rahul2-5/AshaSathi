@@ -1,4 +1,4 @@
-import 'package:sqflite/sqflite.dart';
+
 import 'app_database_offline.dart';
 import 'patient_offline_entity.dart';
 import 'sync_status_offline.dart';

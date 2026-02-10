@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_state.dart';
 import '../../services/auth_service.dart';
 
@@ -20,6 +21,8 @@ class LoginCubit extends Cubit<LoginState> {
       "password": password.trim(),
     });
 
+    // 💾 Save token to shared_preferences
+    await _saveToken(token);
     emit(state.copyWith(isLoading: false, token: token));
   } catch (e) {
     final message =
@@ -38,6 +41,8 @@ class LoginCubit extends Cubit<LoginState> {
           "password": password.trim(),
         });
 
+        // 💾 Save token to shared_preferences
+        await _saveToken(token);
         emit(state.copyWith(isLoading: false, token: token));
         return;
       } catch (_) {
@@ -55,7 +60,9 @@ class LoginCubit extends Cubit<LoginState> {
 
 
   // 🔑 Google / GitHub login
-  void setToken(String token) {
+  Future<void> setToken(String token) async {
+    // 💾 Save token to shared_preferences
+    await _saveToken(token);
     emit(
       state.copyWith(
         token: token,
@@ -65,8 +72,36 @@ class LoginCubit extends Cubit<LoginState> {
     );
   }
 
-  // 🚪 Logout (optional but recommended)
-  void logout() {
+  // 🚪 Logout
+  Future<void> logout() async {
+    // 🗑️ Clear token from shared_preferences
+    await _clearToken();
     emit(LoginState());
+  }
+
+  // 💾 Save token to persistent storage
+  Future<void> _saveToken(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('auth_token', token);
+  }
+
+  // 📂 Load token from persistent storage
+  Future<String?> loadSavedToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  // 🗑️ Clear token from persistent storage
+  Future<void> _clearToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('auth_token');
+  }
+
+  // ⚡ Initialize - Load saved token on app startup
+  Future<void> initializeAuth() async {
+    final savedToken = await loadSavedToken();
+    if (savedToken != null) {
+      emit(state.copyWith(token: savedToken));
+    }
   }
 }

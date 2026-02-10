@@ -41,14 +41,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
-
-      appBar: AppBar(
-        title: const Text("Patient Visit"),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

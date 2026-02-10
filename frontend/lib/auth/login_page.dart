@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../home/home_page.dart';
 import '../services/auth_service.dart';
 import 'cubit/login_cubit.dart';
 import 'cubit/login_state.dart';
 import 'signup_page.dart';
 import '../utils/appValidator.dart';
-import '../navigation/main_navigation.dart';
 
 
 class LoginView extends StatefulWidget {
@@ -51,13 +49,10 @@ class _LoginViewState extends State<LoginView> {
 
         // ✅ Success → Navigate to Home
         if (state.token != null) {
-        Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(
-    builder: (_) => const MainNavigation(),
-  ),
-);
-
+          Navigator.pushReplacementNamed(
+            context,
+            '/main',
+          );
         }
       },
       builder: (context, state) {
@@ -117,14 +112,14 @@ class _LoginViewState extends State<LoginView> {
                                 try {
                                   final token =
                                       await AuthService().loginWithGoogle();
-                                      context.read<LoginCubit>().setToken(token);
+                                  await context.read<LoginCubit>().setToken(token);
 
-                                  Navigator.pushReplacement(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => const HomePage(),
-                                    ),
-                                  );
+                                  if (context.mounted) {
+                                    Navigator.pushReplacementNamed(
+                                      context,
+                                      '/main',
+                                    );
+                                  }
                                 } catch (e) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     SnackBar(

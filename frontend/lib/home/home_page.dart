@@ -61,18 +61,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        title: const Text(
-          "ASHA Dashboard",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
       body: CustomScrollView(
         slivers: [
           // 🔹 HEADER + WELCOME

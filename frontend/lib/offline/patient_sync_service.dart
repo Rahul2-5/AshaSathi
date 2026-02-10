@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 
 import 'connectivity_service.dart';
 import 'patient_offline_dao.dart';
-import 'sync_status_offline.dart';
+
 
 class PatientSyncService {
   final PatientOfflineDao _dao = PatientOfflineDao();
