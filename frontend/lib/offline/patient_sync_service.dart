@@ -4,16 +4,15 @@ import 'package:http/http.dart' as http;
 
 import 'connectivity_service.dart';
 import 'patient_offline_dao.dart';
+import 'sync_status_offline.dart';
 
 class PatientSyncService {
   final PatientOfflineDao _dao = PatientOfflineDao();
   final ConnectivityService _connectivity = ConnectivityService();
 
   static const String baseUrl = "http://10.0.2.2:8080";
-
   bool _syncing = false;
 
-  /// Returns TRUE only if actual sync happened
   Future<bool> sync(String token) async {
     if (_syncing) return false;
     _syncing = true;
@@ -21,88 +20,89 @@ class PatientSyncService {
     try {
       if (!await _connectivity.isOnline()) return false;
 
+      // 🔹 CREATE / UPDATE
       final pending = await _dao.getPending();
-      if (pending.isEmpty) return false;
 
       for (final patient in pending) {
         if (patient.localId == null) continue;
 
         String? uploadedPhotoPath;
 
-        // ================= 1️⃣ UPLOAD PHOTO =================
         if (patient.photoPath != null &&
             patient.photoPath!.startsWith("/") &&
             File(patient.photoPath!).existsSync()) {
-          try {
-            final request = http.MultipartRequest(
-              "POST",
-              Uri.parse("$baseUrl/api/patients/photo"),
-            );
+          final req = http.MultipartRequest(
+            "POST",
+            Uri.parse("$baseUrl/api/patients/photo"),
+          );
 
-            request.headers["Authorization"] = "Bearer $token";
+          req.headers["Authorization"] = "Bearer $token";
+          req.files.add(await http.MultipartFile.fromPath(
+            "photo",
+            patient.photoPath!,
+          ));
 
-            request.files.add(
-              await http.MultipartFile.fromPath(
-                "photo",
-                patient.photoPath!,
-              ),
-            );
-
-            final response = await request.send().timeout(
-                  const Duration(seconds: 15),
-                );
-
-            final body = await response.stream.bytesToString();
-
-            if (response.statusCode == 200) {
-              uploadedPhotoPath = body; // backend-relative path
-            } else {
-              continue; // retry later
-            }
-          } catch (_) {
-            continue;
+          final res = await req.send();
+          if (res.statusCode == 200) {
+            uploadedPhotoPath = await res.stream.bytesToString();
           }
         }
 
-        // ================= 2️⃣ CREATE PATIENT =================
-        try {
-          final res = await http
-              .post(
-                Uri.parse("$baseUrl/api/patients"),
-                headers: {
-                  "Authorization": "Bearer $token",
-                  "Content-Type": "application/json",
-                },
-                body: jsonEncode({
-                  "patientName": patient.name,
-                  "gender": patient.gender,
-                  "age": patient.age,
-                  "dateOfBirth": patient.dateOfBirth,
-                  "address": patient.address,
-                  "phoneNumber": patient.phoneNumber,
-                  "photoPath": uploadedPhotoPath, // backend path only
-                  "clientTempId": patient.localId, // optional safety
-                }),
-              )
-              .timeout(const Duration(seconds: 10));
+        final response = await http.post(
+          Uri.parse("$baseUrl/api/patients"),
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+          body: jsonEncode({
+            "patientName": patient.name,
+            "gender": patient.gender,
+            "age": patient.age,
+            "dateOfBirth": patient.dateOfBirth,
+            "address": patient.address,
+            "phoneNumber": patient.phoneNumber,
+            "photoPath": uploadedPhotoPath,
+            "clientTempId": patient.uuid,
+          }),
+        );
 
-          if (res.statusCode == 200 || res.statusCode == 201) {
-            final serverId = jsonDecode(res.body)["id"];
-
-            await _dao.markSynced(
-              localId: patient.localId!,
-              serverId: serverId,
-              updatedAt: DateTime.now().millisecondsSinceEpoch,
-            );
-          }
-        } catch (_) {
-          continue;
+        if (response.statusCode == 200 || response.statusCode == 201) {
+          final serverId = jsonDecode(response.body)["id"];
+          await _dao.markSynced(
+            localId: patient.localId!,
+            serverId: serverId,
+            updatedAt: DateTime.now().millisecondsSinceEpoch,
+          );
         }
       }
+
+      // 🔹 DELETE SYNC
+      await _syncDeleted(token);
 
       return true;
     } finally {
       _syncing = false;
+    }
+  }
+
+  Future<void> _syncDeleted(String token) async {
+    final deleted = await _dao.getDeleted();
+
+    for (final patient in deleted) {
+      if (patient.serverId == null) continue;
+
+      try {
+        final res = await http.delete(
+          Uri.parse("$baseUrl/api/patients/${patient.serverId}"),
+          headers: {"Authorization": "Bearer $token"},
+        );
+
+        if (res.statusCode == 200 || res.statusCode == 204) {
+          // keep local deleted state (or hard delete later)
+        }
+      } catch (_) {
+        // retry next sync
+      }
     }
   }
 }

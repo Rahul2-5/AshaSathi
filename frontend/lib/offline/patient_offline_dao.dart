@@ -86,4 +86,28 @@ class PatientOfflineDao {
       whereArgs: [localId],
     );
   }
+
+  Future<void> markDeletedByUuid(String uuid) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'syncStatus': SyncStatusOffline.deleted,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
+
+  /// Hard delete patient from offline storage (used when deleted online)
+  Future<void> hardDeleteByUuid(String uuid) async {
+    final db = await _db.database;
+    await db.delete(
+      'patients',
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
 }
+

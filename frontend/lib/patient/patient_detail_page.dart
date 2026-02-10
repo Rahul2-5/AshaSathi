@@ -4,6 +4,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 
 import '../auth/cubit/login_cubit.dart';
+import '../offline/patient_offline_dao.dart';
+import '../offline/connectivity_service.dart';
+import '../offline/sync_status_offline.dart';
 import 'patient_model.dart';
 
 class PatientDetailPage extends StatelessWidget {
@@ -69,49 +72,31 @@ class PatientDetailPage extends StatelessWidget {
         const SizedBox(height: 6),
         Text(
           patient.gender,
-          style: const TextStyle(
-            color: Colors.grey,
-          ),
+          style: const TextStyle(color: Colors.grey),
         ),
       ],
     );
   }
 
-  /// 🔥 SAFE IMAGE HANDLER (OFFLINE + ONLINE)
-Widget _buildPatientImage() {
-  final path = patient.photoPath;
+  Widget _buildPatientImage() {
+    final path = patient.photoPath;
 
-  if (path == null || path.isEmpty) {
-    return const Icon(Icons.person, size: 50, color: Colors.grey);
+    if (path == null || path.isEmpty) {
+      return const Icon(Icons.person, size: 50, color: Colors.grey);
+    }
+
+    if (path.startsWith('/') && File(path).existsSync()) {
+      return Image.file(File(path), fit: BoxFit.cover);
+    }
+
+    if (path.startsWith('/uploads/')) {
+      return Image.network("$baseUrl$path", fit: BoxFit.cover);
+    }
+
+    return const Icon(Icons.broken_image);
   }
 
-  // 🔴 LOCAL FILE (offline / cached)
-  if (path.startsWith('/') && File(path).existsSync()) {
-    return Image.file(
-      File(path),
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) =>
-          const Icon(Icons.broken_image),
-    );
-  }
-
-  // 🟢 BACKEND IMAGE ONLY (uploads)
-  if (path.startsWith('/uploads/')) {
-    return Image.network(
-      "$baseUrl$path",
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) =>
-          const Icon(Icons.broken_image),
-    );
-  }
-
-  // ❌ Anything else → fallback
-  return const Icon(Icons.broken_image);
-}
-
-
-
-  // ================= INFO CARD =================
+  // ================= INFO =================
 
   Widget _infoCard() {
     return Card(
@@ -140,35 +125,25 @@ Widget _buildPatientImage() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             flex: 3,
-            child: Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            child: Text(label,
+                style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontWeight: FontWeight.w600)),
           ),
           Expanded(
             flex: 5,
-            child: Text(
-              value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            child: Text(value,
+                style: const TextStyle(fontWeight: FontWeight.w500)),
           ),
         ],
       ),
     );
   }
 
-  Widget _divider() {
-    return Divider(color: Colors.grey.shade300);
-  }
+  Widget _divider() => Divider(color: Colors.grey.shade300);
 
   // ================= DELETE =================
 
@@ -184,10 +159,7 @@ Widget _buildPatientImage() {
       icon: const Icon(Icons.delete, color: Colors.white),
       label: const Text(
         "Delete Patient",
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
       ),
       onPressed: () => _confirmDelete(context),
     );
@@ -199,7 +171,7 @@ Widget _buildPatientImage() {
       builder: (ctx) => AlertDialog(
         title: const Text("Delete Patient"),
         content: const Text(
-          "This will permanently delete the patient and all related data. This action cannot be undone.",
+          "This will delete the patient. You can sync later if offline.",
         ),
         actions: [
           TextButton(
@@ -211,10 +183,8 @@ Widget _buildPatientImage() {
               Navigator.pop(ctx);
               await _deletePatient(context);
             },
-            child: const Text(
-              "Delete",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Delete",
+                style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -222,28 +192,76 @@ Widget _buildPatientImage() {
   }
 
   Future<void> _deletePatient(BuildContext context) async {
-    final token = context.read<LoginCubit>().state.token!;
-    final url = Uri.parse("$baseUrl/api/patients/${patient.id}");
+  final token = context.read<LoginCubit>().state.token!;
+  final dao = PatientOfflineDao();
+  final connectivity = ConnectivityService();
 
-    try {
-      final response = await http.delete(
-        url,
-        headers: {
-          "Authorization": "Bearer $token",
-        },
-      );
+  debugPrint("Delete patient: id=${patient.id}, uuid=${patient.uuid}, online=${await connectivity.isOnline()}");
 
-      if (response.statusCode == 204) {
-        if (!context.mounted) return;
-        Navigator.pop(context);
-      } else {
-        throw Exception();
-      }
-    } catch (_) {
+  // 📴 OFFLINE OR NOT YET SYNCED
+  if (!await connectivity.isOnline() || patient.id == null) {
+    await dao.markDeletedByUuid(patient.uuid);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Patient marked for deletion (will sync when online)")),
+    );
+    Navigator.pop(context, true);
+    return;
+  }
+
+  // 🟢 ONLINE DELETE
+  try {
+    final url = "$baseUrl/api/patients/${patient.id}";
+    debugPrint("Attempting DELETE: $url");
+    debugPrint("Patient ID: ${patient.id}");
+    debugPrint("Token: ${token.substring(0, 10)}...");
+
+    final res = await http.delete(
+      Uri.parse(url),
+      headers: {
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    debugPrint("Delete response status: ${res.statusCode}");
+    debugPrint("Delete response headers: ${res.headers}");
+    debugPrint("Delete response body: ${res.body}");
+
+    if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201) {
+      debugPrint("Delete successful! Removing from local storage...");
+      // Hard delete from offline storage
+      await dao.hardDeleteByUuid(patient.uuid);
+
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Delete failed (offline?)")),
+        const SnackBar(content: Text("Patient deleted successfully")),
       );
+      debugPrint("Returning to previous page...");
+      Navigator.pop(context, true);
+    } else {
+      debugPrint("Delete failed with status: ${res.statusCode}");
+      // Delete failed, try offline
+      await dao.markDeletedByUuid(patient.uuid);
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Delete failed: ${res.statusCode}. Will sync later")),
+      );
+      Navigator.pop(context, true);
     }
+  } catch (e, stackTrace) {
+    debugPrint("Delete error: $e");
+    debugPrint("Stack trace: $stackTrace");
+    // fallback to offline delete
+    await dao.markDeletedByUuid(patient.uuid);
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error deleting: $e. Will sync later")),
+    );
+    Navigator.pop(context, true);
   }
+}
+
 }

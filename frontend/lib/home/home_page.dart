@@ -242,14 +242,20 @@ class _HomePageState extends State<HomePage> {
     }
 
     return InkWell(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PatientDetailPage(patient: patient),
-          ),
-        );
-      },
+      onTap: () async {
+  final deleted = await Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (_) => PatientDetailPage(patient: patient),
+    ),
+  );
+
+  if (deleted == true && context.mounted) {
+    final token = context.read<LoginCubit>().state.token!;
+    context.read<PatientCubit>().loadPatients(token);
+  }
+},
+
       child: Container(
         width: 160,
         padding: const EdgeInsets.all(12),
