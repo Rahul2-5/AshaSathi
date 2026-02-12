@@ -5,27 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Backend/data/ashasathi.db" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/data/ashasathi.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/TaskController.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/TaskController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Entity/Task.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Entity/Task.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/JWT/JWTAuthenticationFilter.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/JWT/JWTAuthenticationFilter.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/JWT/JwtUtil.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/JWT/JwtUtil.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/PatientPhotoService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/PatientPhotoService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/PatientService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/PatientService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/uploads/patients/2/profile.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/services/task_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/services/task_service.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/task/task_cubit.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/task/task_cubit.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/macos/Flutter/GeneratedPluginRegistrant.swift" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/pubspec.lock" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.lock" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/pubspec.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/pubspec.yaml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugin_registrant.cc" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/windows/flutter/generated_plugins.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

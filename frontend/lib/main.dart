@@ -8,6 +8,7 @@ import 'auth/cubit/login_state.dart';
 import 'auth/cubit/signup_cubit.dart';
 import 'auth/login_page.dart';
 import 'navigation/main_navigation.dart';
+import 'splash/splash_page.dart';
 
 import 'services/auth_service.dart';
 import 'services/task_service.dart';
@@ -50,7 +51,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: const AuthCheckPage(),
+      home: const SplashPage(),
       routes: {
         '/main': (_) => const MainNavigation(),
         '/login': (_) => const LoginView(),

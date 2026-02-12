@@ -3,7 +3,5 @@
     <item>
         <bitmap android:gravity="fill" android:src="@drawable/background"/>
     </item>
-    <item>
-        <bitmap android:gravity="center" android:src="@drawable/splash"/>
-    </item>
+    <!-- No logo in native launch; Flutter `SplashPage` will show the app logo -->
 </layer-list>

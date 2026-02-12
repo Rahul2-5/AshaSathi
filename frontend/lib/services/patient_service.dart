@@ -17,11 +17,10 @@ class PatientService {
     final isOnline = await _connectivity.isOnline();
 
     // ===============================
-    // 🔴 1. LOAD OFFLINE PATIENTS (non-deleted only)
+    //  1. LOAD OFFLINE PATIENTS (non-deleted only)
     // ===============================
     final offlinePatients = await _offlineDao.getAll();
     debugPrint("Loaded ${offlinePatients.length} offline patients");
-
     final offlineModels = offlinePatients.map((p) {
       return Patient(
         id: p.serverId,
