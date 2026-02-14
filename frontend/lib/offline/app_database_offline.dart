@@ -27,7 +27,7 @@ class AppDatabaseOffline {
 
     return openDatabase(
       path,
-      version: 3, // 🔼 bump version
+      version: 3, //  bump version
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );

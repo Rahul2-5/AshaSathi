@@ -17,7 +17,7 @@ class TaskSyncService {
 
     // 🔹 SYNC PENDING TASKS
     final pendingTasks = await _dao.getPending();
-    debugPrint("Syncing ${pendingTasks.length} pending tasks");
+    debugPrint("[TaskSync] Syncing ${pendingTasks.length} pending tasks");
 
     for (final task in pendingTasks) {
       try {
@@ -34,6 +34,7 @@ class TaskSyncService {
           }),
         );
 
+        debugPrint('[TaskSync] POST ${response.statusCode}');
         if (response.statusCode == 200 || response.statusCode == 201) {
           final serverId = jsonDecode(response.body)["id"];
 
@@ -41,7 +42,9 @@ class TaskSyncService {
             localId: task.localId!,
             serverId: serverId,
           );
-          debugPrint("Task ${task.localId} synced with server ID: $serverId");
+          debugPrint("[TaskSync] Task ${task.localId} synced with server ID: $serverId");
+        } else {
+          debugPrint('[TaskSync] failed to create task ${task.localId}: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         debugPrint("Error syncing task ${task.localId}: $e");
@@ -50,7 +53,7 @@ class TaskSyncService {
 
     // 🔹 SYNC DELETED TASKS
     final deletedTasks = await _dao.getDeleted();
-    debugPrint("Syncing ${deletedTasks.length} deleted tasks");
+    debugPrint("[TaskSync] Syncing ${deletedTasks.length} deleted tasks");
 
     for (final task in deletedTasks) {
       if (task.serverId == null) continue; // Skip if never synced to server
@@ -64,7 +67,9 @@ class TaskSyncService {
         if (response.statusCode == 200 || response.statusCode == 204) {
           // Hard delete from local storage after successful deletion on backend
           await _dao.hardDeleteByUuid(task.uuid);
-          debugPrint("Task ${task.uuid} deleted from server");
+          debugPrint("[TaskSync] Task ${task.uuid} deleted from server");
+        } else {
+          debugPrint('[TaskSync] failed to delete task ${task.uuid}: ${response.statusCode} ${response.body}');
         }
       } catch (e) {
         debugPrint("Error deleting task ${task.uuid}: $e");

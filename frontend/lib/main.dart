@@ -21,7 +21,7 @@ void main() {
   runApp(
     MultiBlocProvider(
       providers: [
-        // 🔐 Auth
+        //  Auth
         BlocProvider(
           create: (_) => LoginCubit(AuthService()),
         ),
@@ -29,7 +29,7 @@ void main() {
           create: (_) => SignupCubit(AuthService()),
         ),
 
-        // ✅ Tasks
+        //  Tasks
         BlocProvider(
           create: (_) => TaskCubit(TaskService()),
         ),
@@ -60,7 +60,7 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// 🔄 Check if user is already logged in
+// Check if user is already logged in
 class AuthCheckPage extends StatefulWidget {
   const AuthCheckPage({super.key});
 
@@ -87,7 +87,7 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
     final token = context.read<LoginCubit>().state.token;
 
     if (token != null) {
-      // ✅ User is logged in → Go to MainNavigation
+      //  User is logged in → Go to MainNavigation
       if (mounted) {
         Navigator.pushReplacementNamed(context, '/main');
       }

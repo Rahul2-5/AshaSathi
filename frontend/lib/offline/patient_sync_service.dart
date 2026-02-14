@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import 'connectivity_service.dart';
@@ -18,37 +19,23 @@ class PatientSyncService {
     _syncing = true;
 
     try {
-      if (!await _connectivity.isOnline()) return false;
+      debugPrint("[PatientSync] checking connectivity...");
+      if (!await _connectivity.isOnline()) {
+        debugPrint("[PatientSync] offline - skipping");
+        return false;
+      }
+
+      debugPrint("[PatientSync] starting sync");
 
       // 🔹 CREATE / UPDATE
       final pending = await _dao.getPending();
+      debugPrint("[PatientSync] pending patients: ${pending.length}");
 
       for (final patient in pending) {
         if (patient.localId == null) continue;
 
-        String? uploadedPhotoPath;
-
-        if (patient.photoPath != null &&
-            patient.photoPath!.startsWith("/") &&
-            File(patient.photoPath!).existsSync()) {
-          final req = http.MultipartRequest(
-            "POST",
-            Uri.parse("$baseUrl/api/patients/photo"),
-          );
-
-          req.headers["Authorization"] = "Bearer $token";
-          req.files.add(await http.MultipartFile.fromPath(
-            "photo",
-            patient.photoPath!,
-          ));
-
-          final res = await req.send();
-          if (res.statusCode == 200) {
-            uploadedPhotoPath = await res.stream.bytesToString();
-          }
-        }
-
-        final response = await http.post(
+        // 1) Create patient on server (without photo)
+        final createRes = await http.post(
           Uri.parse("$baseUrl/api/patients"),
           headers: {
             "Authorization": "Bearer $token",
@@ -61,27 +48,59 @@ class PatientSyncService {
             "dateOfBirth": patient.dateOfBirth,
             "address": patient.address,
             "phoneNumber": patient.phoneNumber,
-            "photoPath": uploadedPhotoPath,
             "clientTempId": patient.uuid,
           }),
         );
 
-        if (response.statusCode == 200 || response.statusCode == 201) {
-          final serverId = jsonDecode(response.body)["id"];
-          await _dao.markSynced(
-            localId: patient.localId!,
-            serverId: serverId,
-            updatedAt: DateTime.now().millisecondsSinceEpoch,
-          );
+        debugPrint('[PatientSync] create patient POST ${createRes.statusCode}');
+        if (createRes.statusCode != 200 && createRes.statusCode != 201) {
+          debugPrint('[PatientSync] failed to create patient ${patient.localId}: ${createRes.statusCode} ${createRes.body}');
+          continue;
         }
+
+        final body = jsonDecode(createRes.body);
+        final serverId = body['id'];
+        debugPrint('[PatientSync] created patient serverId=$serverId');
+
+        // 2) If there's a local photo file, upload it to the server endpoint that accepts patientId
+        if (patient.photoPath != null && patient.photoPath!.startsWith('/') && File(patient.photoPath!).existsSync()) {
+          try {
+            final req = http.MultipartRequest(
+              "POST",
+              Uri.parse("$baseUrl/api/patients/$serverId/photo"),
+            );
+            req.headers["Authorization"] = "Bearer $token";
+            req.files.add(await http.MultipartFile.fromPath("photo", patient.photoPath!));
+
+            final streamed = await req.send();
+            final respBody = await streamed.stream.bytesToString();
+            debugPrint('[PatientSync] upload photo status=${streamed.statusCode} body=$respBody');
+            // backend updates patient.photoPath in DB
+          } catch (e) {
+            debugPrint('[PatientSync] photo upload failed for local ${patient.localId}: $e');
+          }
+        }
+
+        // 3) Mark local record as synced with serverId
+        await _dao.markSynced(
+          localId: patient.localId!,
+          serverId: serverId,
+          updatedAt: DateTime.now().millisecondsSinceEpoch,
+        );
+        debugPrint('[PatientSync] marked local ${patient.localId} as synced -> serverId=$serverId');
       }
 
       // 🔹 DELETE SYNC
       await _syncDeleted(token);
 
       return true;
+      // 🔹 DELETE SYNC
+      await _syncDeleted(token);
+
+      return true;
     } finally {
       _syncing = false;
+      debugPrint("[PatientSync] finished sync");
     }
   }
 

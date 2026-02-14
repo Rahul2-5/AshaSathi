@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/auth/cubit/patient_cubit.dart';
+import 'package:frontend/task/task_cubit.dart';
 
 import '../home/home_page.dart';
 import '../patient/add_patient_page.dart';
@@ -48,6 +50,16 @@ class _MainNavigationState extends State<MainNavigation> {
           setState(() {
             _currentIndex = index;
           });
+
+          // When navigating back to Home, refresh patients/tasks
+          if (index == 0) {
+            final token = context.read<LoginCubit>().state.token;
+            if (token != null) {
+              // reload patients to reflect any recent changes
+              context.read<PatientCubit>().loadPatients(token);
+              context.read<TaskCubit>().loadTasks(token);
+            }
+          }
         },
         items: const [
           BottomNavigationBarItem(

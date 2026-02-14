@@ -51,7 +51,7 @@ class _SignUpViewState extends State<SignUpView> {
               backgroundColor:Colors.red));
         }
 
-        // ✅ Normal signup success → go to Login
+        //  Normal signup success 
         if (state.isSuccess) {
           Navigator.pushReplacement(
             context,
@@ -210,7 +210,7 @@ class _SignUpViewState extends State<SignUpView> {
     );
   }
 
-  // ================= UI HELPERS =================
+  //  UI HELPERS
 
   Widget _buildSignupButton(SignupState state) {
     return SizedBox(

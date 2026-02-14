@@ -5,8 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes">
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Backend/data/ashasathi.db" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/data/ashasathi.db" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/AuthController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/auth/cubit/login_state.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/auth/cubit/login_state.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/auth/signup_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/auth/signup_page.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/main.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/offline/app_database_offline.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/offline/app_database_offline.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/offline/patient_offline_dao.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/offline/patient_offline_dao.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/phc_dashboard/phc_dashboard_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/phc_dashboard/phc_dashboard_page.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -44,6 +56,10 @@
     &quot;accountId&quot;: &quot;602e68d4-5401-4e0a-9f4b-72efca49bf26&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/Google/AndroidStudio2025.3.1/device-explorer/Google sdk_gphone64_x86_64/_/data/data/com.example.frontend/databases/asha_sathi_offline.db" root0="SKIP_INSPECTION" />
+    <setting file="file://$USER_HOME$/AppData/Local/Google/AndroidStudio2025.3.1/device-explorer/Google sdk_gphone64_x86_64/_/data/data/com.example.frontend/databases/asha_sathi_offline.db-journal" root0="SKIP_INSPECTION" />
+  </component>
   <component name="MavenImportPreferences">
     <option name="generalSettings">
       <MavenGeneralSettings>
@@ -73,6 +89,7 @@
     &quot;Maven.Unknown [clean].executor&quot;: &quot;Run&quot;,
     &quot;Maven.Unknown [package].executor&quot;: &quot;Run&quot;,
     &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;PROJECT_TRUSTED_KEY&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.cidr.known.project.marker&quot;: &quot;true&quot;,
@@ -81,6 +98,7 @@
     &quot;Spring Boot.AshaSathiApplication.executor&quot;: &quot;Run&quot;,
     &quot;cf.first.check.clang-format&quot;: &quot;false&quot;,
     &quot;cidr.known.project.marker&quot;: &quot;true&quot;,
+    &quot;com.google.services.firebase.aqiPopupShown&quot;: &quot;true&quot;,
     &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,

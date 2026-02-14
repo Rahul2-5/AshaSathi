@@ -37,7 +37,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
     );
   }
 
-  // ================= KEY METRICS =================
+  //  KEY METRICS 
 
   Widget _buildKeyMetricsSection() {
     return Column(
@@ -126,7 +126,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
     );
   }
 
-  // ================= SUMMARY CARDS =================
+  // SUMMARY CARDS 
 
   Widget _buildSummaryCards() {
     return Column(

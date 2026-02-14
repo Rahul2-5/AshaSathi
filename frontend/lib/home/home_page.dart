@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../offline/patient_sync_service.dart';
+import '../offline/task_sync_service.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -25,6 +26,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final PatientSyncService _patientSyncService;
+  late final TaskSyncService _taskSyncService;
   late final StreamSubscription _connectivitySub;
 
   @override
@@ -39,14 +41,33 @@ class _HomePageState extends State<HomePage> {
 
     // Sync service
     _patientSyncService = PatientSyncService();
+    _taskSyncService = TaskSyncService();
+
+    // Try an initial sync once on startup (useful after regaining connectivity)
+    (() async {
+      final initialPatientSynced = await _patientSyncService.sync(token);
+      final initialTaskSynced = await _taskSyncService.sync(token);
+
+      if (initialPatientSynced && mounted) {
+        context.read<PatientCubit>().loadPatients(token);
+      }
+      if (initialTaskSynced && mounted) {
+        context.read<TaskCubit>().loadTasks(token);
+      }
+    })();
 
     // Auto-sync when network comes back
-    _connectivitySub =
-        Connectivity().onConnectivityChanged.listen((_) async {
-      final synced = await _patientSyncService.sync(token);
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((_) async {
+      // Try both patient and task sync when network state changes
+      final patientSynced = await _patientSyncService.sync(token);
+      final taskSynced = await _taskSyncService.sync(token);
 
-      if (synced && mounted) {
+      if (patientSynced && mounted) {
         context.read<PatientCubit>().loadPatients(token);
+      }
+
+      if (taskSynced && mounted) {
+        context.read<TaskCubit>().loadTasks(token);
       }
     });
   }
@@ -125,7 +146,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ================= TASKS =================
+  // TASKS 
 
   Widget _tasksHeader() {
     return Row(
@@ -211,15 +232,24 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _patientCard(Patient patient) {
-    final String? localPath =
-        patient.photoPath != null && patient.photoPath!.startsWith('/')
-            ? patient.photoPath
-            : null;
+    final String? photo = patient.photoPath;
+    String? localPath;
+    String? networkUrl;
 
-    final String? networkUrl =
-        patient.photoPath != null && !patient.photoPath!.startsWith('/')
-            ? "http://10.0.2.2:8080${patient.photoPath}"
-            : null;
+    if (photo != null && photo.isNotEmpty) {
+      // Server stores relative paths like "/uploads/patients/1/profile.jpg"
+      if (photo.startsWith('/uploads/') || photo.contains('/uploads/')) {
+        networkUrl = "http://10.0.2.2:8080$photo";
+      } else if (photo.startsWith('/') && !photo.startsWith('/uploads/')) {
+        // Assume absolute local file path on device
+        localPath = photo;
+      } else if (photo.startsWith('http')) {
+        networkUrl = photo;
+      } else {
+        // Treat as relative server path
+        networkUrl = "http://10.0.2.2:8080/$photo";
+      }
+    }
 
     ImageProvider? imageProvider;
 

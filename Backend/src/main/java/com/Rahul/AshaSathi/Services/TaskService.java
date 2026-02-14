@@ -19,13 +19,13 @@ public class TaskService {
         this.taskRepo = taskRepo;
     }
 
-    // ✅ CREATE TASK
+    //  CREATE TASK
     public Task createTask(Task task) {
         task.setCreatedDate(LocalDate.now().toString());
         return taskRepo.save(task);
     }
 
-    // ✅ GET TODAY TASKS (RETURN DTO, NOT ENTITY)
+    //  GET TODAY TASKS (RETURN DTO, NOT ENTITY)
     @Transactional(readOnly = true)
     public List<TaskResponse> getTodayTasks(Long userId) {
 
@@ -43,7 +43,7 @@ public class TaskService {
                 .toList();
     }
 
-    // ✅ DELETE TASK
+    //  DELETE TASK
     public void deleteTask(Long taskId, Long userId) {
         taskRepo.deleteByIdAndUserId(taskId, userId);
     }

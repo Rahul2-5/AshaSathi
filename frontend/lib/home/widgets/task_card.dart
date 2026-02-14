@@ -75,7 +75,7 @@ class TaskCard extends StatelessWidget {
             ),
           ),
 
-          // 🏷️ STATUS CHIP
+          //  STATUS CHIP
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
@@ -94,7 +94,7 @@ class TaskCard extends StatelessWidget {
 
           const SizedBox(width: 6),
 
-          // 🗑️ DELETE BUTTON
+          //  DELETE BUTTON
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.red),
             onPressed: () async {

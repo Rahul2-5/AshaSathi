@@ -19,6 +19,26 @@ public class PatientService {
     }
 
     public Patient savePatient(PatientRequest request) {
+        // If clientTempId is provided and a patient with that clientTempId exists,
+        // return the existing patient (avoid duplicate creates from offline retries).
+        if (request.clientTempId != null && !request.clientTempId.isEmpty()) {
+            Patient existing = patientRepository.findAll().stream()
+                    .filter(p -> request.clientTempId.equals(p.getClientTempId()))
+                    .findFirst()
+                    .orElse(null);
+            if (existing != null) {
+                // update existing fields
+                existing.setPatientName(request.patientName);
+                existing.setAge(request.age);
+                existing.setDateOfBirth(request.dateOfBirth);
+                existing.setGender(request.gender);
+                existing.setAddress(request.address);
+                existing.setPhoneNumber(request.phoneNumber);
+                if (request.photoPath != null) existing.setPhotoPath(request.photoPath);
+                return patientRepository.save(existing);
+            }
+        }
+
         Patient patient = new Patient();
 
         patient.setPatientName(request.patientName);
@@ -27,6 +47,8 @@ public class PatientService {
         patient.setGender(request.gender);
         patient.setAddress(request.address);
         patient.setPhoneNumber(request.phoneNumber);
+        if (request.photoPath != null) patient.setPhotoPath(request.photoPath);
+        if (request.clientTempId != null) patient.setClientTempId(request.clientTempId);
 
         return patientRepository.save(patient);
     }

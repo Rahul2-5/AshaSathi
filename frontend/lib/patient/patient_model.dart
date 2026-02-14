@@ -25,7 +25,7 @@ class Patient {
   factory Patient.fromJson(Map<String, dynamic> json) {
     return Patient(
       id: json['id'],
-      uuid: json['uuid'], // 👈 BACKEND MUST RETURN THIS
+      uuid: json['uuid'] ?? (json['id'] != null ? json['id'].toString() : ''), // fallback to id if uuid missing
       name: json['patientName'],
       gender: json['gender'],
       age: json['age'],

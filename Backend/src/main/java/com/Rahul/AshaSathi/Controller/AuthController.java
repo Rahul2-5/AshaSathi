@@ -23,7 +23,7 @@ public class AuthController {
         return ResponseEntity.ok(authService.signup(request));
     }
 
-    // ✅ FIXED LOGIN
+    //  FIXED LOGIN
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequestDTO request) {
         try {

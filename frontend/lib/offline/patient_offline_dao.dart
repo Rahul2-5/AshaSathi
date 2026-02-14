@@ -22,7 +22,7 @@ class PatientOfflineDao {
     }
   }
 
-  /// ✅ REQUIRED FOR UI (offline-first)
+  ///  REQUIRED FOR UI (offline-first)
   Future<List<PatientOfflineEntity>> getAll() async {
     final db = await _db.database;
 
