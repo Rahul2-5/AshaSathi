@@ -1,5 +1,6 @@
 package com.Rahul.AshaSathi.Entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +29,10 @@ public class Patient {
 
     @Column(name = "photo_path")
     private String photoPath;
+
+    @Column(name = "client_temp_id")
+    @JsonProperty("uuid")
+    private String clientTempId;
 
 
     private LocalDateTime createdAt;
@@ -109,6 +114,14 @@ public class Patient {
 
     public void setPhotoPath(String photoPath) {
         this.photoPath = photoPath;
+    }
+
+    public String getClientTempId() {
+        return clientTempId;
+    }
+
+    public void setClientTempId(String clientTempId) {
+        this.clientTempId = clientTempId;
     }
 
 }

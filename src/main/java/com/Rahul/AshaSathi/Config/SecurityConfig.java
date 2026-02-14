@@ -23,26 +23,26 @@ public class SecurityConfig {
         this.jwtUtil = jwtUtil;
     }
 
-    // ✅ JWT FILTER (STATELESS)
+    //  JWT FILTER (STATELESS)
     @Bean
     public JWTAuthenticationFilter jwtAuthenticationFilter() {
         return new JWTAuthenticationFilter(jwtUtil);
     }
 
-    // ✅ SECURITY CHAIN
+    //  SECURITY CHAIN
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                // ❌ CSRF not needed for JWT APIs
+                //  CSRF not needed for JWT APIs
                 .csrf(AbstractHttpConfigurer::disable)
 
-                // ❌ NO SESSION (STATELESS)
+                //  NO SESSION (STATELESS)
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
 
-                // ✅ AUTH RULES
+                //  AUTH RULES
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/auth/**",
@@ -53,7 +53,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
 
-                // ✅ JWT FILTER
+                //  JWT FILTER
                 .addFilterBefore(
                         jwtAuthenticationFilter(),
                         UsernamePasswordAuthenticationFilter.class
@@ -62,7 +62,7 @@ public class SecurityConfig {
         return http.build();
     }
 
-    // ✅ AUTH MANAGER (USED ONLY FOR LOGIN)
+    //  AUTH MANAGER (USED ONLY FOR LOGIN)
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration configuration) throws Exception {
