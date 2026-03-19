@@ -18,72 +18,120 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
   TaskStatus status = TaskStatus.pending;
 
+  static const Color _primaryTeal = Color(0xFF14A7A0);
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B);
+
     return Scaffold(
-        backgroundColor:Color.fromRGBO(249, 250, 251, 100),
-    appBar: AppBar(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+        foregroundColor: textColor,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "Add New Task",
           style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
+            color: textColor,
+            fontWeight: FontWeight.w700,
+            fontSize: 24,
           ),
         ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 22),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               "Create New Task",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: textColor,
+              ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            const Text("Task Title", style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              "Task Title",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: titleController,
-              decoration: InputDecoration(
-                hintText: "e.g., Patient Follow-up",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+              style: TextStyle(fontSize: 16, color: textColor),
+              decoration: _fieldDecoration("e.g., Patient Follow-up", isDark),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            const Text("Task Description", style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              "Task Description",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
             const SizedBox(height: 8),
             TextField(
               controller: descController,
               maxLines: 4,
-              decoration: InputDecoration(
-                hintText: "Describe the task...",
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+              style: TextStyle(fontSize: 16, color: textColor),
+              decoration: _fieldDecoration("Describe the task...", isDark),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            const Text("Status", style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(
+              "Status",
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: textColor,
+              ),
+            ),
             const SizedBox(height: 12),
 
             Wrap(
               spacing: 10,
+              runSpacing: 10,
               children: TaskStatus.values.map((s) {
                 final isSelected = status == s;
                 return ChoiceChip(
+                  showCheckmark: isSelected,
                   label: Text(_statusText(s)),
                   selected: isSelected,
-                  selectedColor: const Color(0xFF00A7A7),
-                  backgroundColor: Colors.grey.shade200,
+                  selectedColor: _chipSelectedColor(s),
+                  backgroundColor:
+                      isDark ? const Color(0xFF1A232C) : Colors.white,
+                  side: BorderSide(
+                    color: isSelected
+                        ? _chipSelectedColor(s)
+                        : (isDark
+                            ? const Color(0xFF32414E)
+                            : const Color(0xFFD4DAE0)),
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 9),
                   labelStyle: TextStyle(
-                    color: isSelected ? Colors.white : Colors.black,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark
+                            ? const Color(0xFFC8D4DE)
+                            : const Color(0xFF3A434C)),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
                   ),
                   onSelected: (_) => setState(() => status = s),
                 );
@@ -97,9 +145,10 @@ class _AddTaskPageState extends State<AddTaskPage> {
               height: 52,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF00A7A7),
+                  elevation: 0,
+                  backgroundColor: _primaryTeal,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
                 onPressed: () async {
@@ -146,7 +195,11 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 },
                 child: const Text(
                   "Save Task",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold , color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
                 ),
               ),
             ),
@@ -154,6 +207,42 @@ class _AddTaskPageState extends State<AddTaskPage> {
         ),
       ),
     );
+  }
+
+  InputDecoration _fieldDecoration(String hint, bool isDark) {
+    return InputDecoration(
+      hintText: hint,
+      hintStyle: TextStyle(
+        color: isDark ? const Color(0xFF98A6B3) : const Color(0xFF8D959E),
+        fontSize: 14,
+      ),
+      filled: true,
+      fillColor: isDark ? const Color(0xFF1A232C) : Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF32414E) : const Color(0xFFD9DEE3),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: _primaryTeal, width: 1.4),
+      ),
+    );
+  }
+
+  Color _chipSelectedColor(TaskStatus value) {
+    switch (value) {
+      case TaskStatus.urgent:
+        return const Color(0xFFE95A5A);
+      case TaskStatus.pending:
+        return _primaryTeal;
+      case TaskStatus.inProgress:
+        return const Color(0xFFE39A20);
+      case TaskStatus.completed:
+        return const Color(0xFF56B978);
+    }
   }
 
   String _statusText(TaskStatus status) {

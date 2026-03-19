@@ -7,6 +7,7 @@ import '../home/home_page.dart';
 import '../patient/add_patient_page.dart';
 import '../phc_dashboard/phc_dashboard_page.dart';
 import '../auth/cubit/login_cubit.dart';
+import '../main.dart';
 
 class MainNavigation extends StatefulWidget {
   const MainNavigation({super.key});
@@ -26,26 +27,74 @@ class _MainNavigationState extends State<MainNavigation> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final themeModeNotifier = ThemeModeController.notifierOf(context);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          _getPageTitle(),
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        backgroundColor: isDark
+            ? const Color(0xFF10171E)
+            : const Color(0xFFF5F6F8),
+        elevation: 0.6,
+        scrolledUnderElevation: 0.8,
+        title: _buildAppBarTitle(isDark),
         centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: IconThemeData(
+          color: isDark ? const Color(0xFFD3DEE8) : const Color(0xFF494D53),
+        ),
+        actions: _currentIndex == 0
+            ? [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF1E2A35)
+                          : const Color(0xFFE9F3F0),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        themeModeNotifier.value = isDark
+                            ? ThemeMode.light
+                            : ThemeMode.dark;
+                      },
+                      icon: Icon(
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        size: 20,
+                        color: isDark
+                            ? const Color(0xFFFFD166)
+                            : const Color(0xFF1D2127),
+                      ),
+                      tooltip: isDark
+                          ? 'Switch to light mode'
+                          : 'Switch to dark mode',
+                      padding: EdgeInsets.zero,
+                      splashRadius: 20,
+                    ),
+                  ),
+                ),
+              ]
+            : null,
       ),
       drawer: _buildDrawer(context),
       body: _pages[_currentIndex],
 
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
-        selectedItemColor: const Color(0xFF00A6A6),
+        backgroundColor: isDark
+          ? const Color(0xFF10171E)
+          : const Color(0xFFF7F7F8),
+        selectedItemColor: const Color(0xFF4DC982),
+        unselectedItemColor:
+          isDark ? const Color(0xFF8FA0B0) : const Color(0xFF8E949C),
+        selectedFontSize: 12,
+        unselectedFontSize: 11,
+        type: BottomNavigationBarType.fixed,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
@@ -63,16 +112,19 @@ class _MainNavigationState extends State<MainNavigation> {
         },
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: "ASHA Dashboard",
+            icon: Icon(Icons.home_outlined),
+            activeIcon: Icon(Icons.home),
+            label: "Dashboard",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_add),
+            icon: Icon(Icons.person_add_alt_1_outlined),
+            activeIcon: Icon(Icons.person_add_alt_1),
             label: "Add Patient",
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: "PHC Dashboard",
+            icon: Icon(Icons.insert_chart_outlined_rounded),
+            activeIcon: Icon(Icons.insert_chart_rounded),
+            label: "PHC Portal",
           ),
         ],
       ),
@@ -82,33 +134,82 @@ class _MainNavigationState extends State<MainNavigation> {
   String _getPageTitle() {
     switch (_currentIndex) {
       case 0:
-        return "ASHA Dashboard";
+        return "ASHA DashBoard";
       case 1:
-        return "Patient Visit";
+        return "Add Patient";
       case 2:
-        return "PHC Dashboard";
+        return "PHC Portal";
       default:
         return "AshaSathi";
     }
   }
 
+  Widget _buildAppBarTitle(bool isDark) {
+    if (_currentIndex != 0) {
+      return Text(
+        _getPageTitle(),
+        style: TextStyle(
+          color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF23262B),
+          fontWeight: FontWeight.w700,
+          fontSize: 20,
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1E2228),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            Icons.monitor_heart_outlined,
+            size: 18,
+            color: isDark ? const Color(0xFF1E2228) : Colors.white,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          'DASHBOARD',
+          style: TextStyle(
+            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1F2329),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDrawer(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Drawer(
+      backgroundColor: isDark ? const Color(0xFF1A232C) : Colors.white,
       child: ListView(
         children: [
           DrawerHeader(
-            decoration: const BoxDecoration(
-              color: Color(0xFF00A6A6),
+            decoration: BoxDecoration(
+              color: isDark
+                  ? const Color(0xFF22303C)
+                  : const Color(0xFF00A6A6),
             ),
-            child: const Column(
+            child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.person, size: 48, color: Colors.white),
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(
                   "AshaSathi",
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark
+                        ? const Color(0xFFE6EDF3)
+                        : Colors.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
@@ -118,7 +219,14 @@ class _MainNavigationState extends State<MainNavigation> {
           ),
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text("Logout"),
+            title: Text(
+              "Logout",
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFFE6EDF3)
+                    : const Color(0xFF1F252B),
+              ),
+            ),
             onTap: () async {
               Navigator.pop(context); // Close drawer
               await context.read<LoginCubit>().logout();

@@ -21,16 +21,18 @@ class PatientDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "Patient Details",
           style: TextStyle(
-            color: Colors.black,
+            color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -40,9 +42,9 @@ class PatientDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _profileSection(),
+            _profileSection(context),
             const SizedBox(height: 24),
-            _infoCard(),
+            _infoCard(context),
             const SizedBox(height: 28),
             _deleteButton(context),
           ],
@@ -53,12 +55,15 @@ class PatientDetailPage extends StatelessWidget {
 
   // ================= PROFILE =================
 
-  Widget _profileSection() {
+  Widget _profileSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         CircleAvatar(
           radius: 55,
-          backgroundColor: Colors.grey.shade200,
+          backgroundColor:
+              isDark ? const Color(0xFF2A3642) : Colors.grey.shade200,
           child: ClipOval(
             child: SizedBox(
               width: 110,
@@ -70,15 +75,18 @@ class PatientDetailPage extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           patient.name,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.w600,
+            color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF111418),
           ),
         ),
         const SizedBox(height: 6),
         Text(
           patient.gender,
-          style: const TextStyle(color: Colors.grey),
+          style: TextStyle(
+            color: isDark ? const Color(0xFF9EABB7) : Colors.grey,
+          ),
         ),
       ],
     );
@@ -104,9 +112,12 @@ class PatientDetailPage extends StatelessWidget {
 
   // ================= INFO =================
 
-  Widget _infoCard() {
+  Widget _infoCard(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Card(
       elevation: 0,
+      color: isDark ? const Color(0xFF1A232C) : Colors.white,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -114,20 +125,22 @@ class PatientDetailPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _infoRow("Age", "${patient.age} years"),
+            _infoRow(context, "Age", "${patient.age} years"),
             _divider(),
-            _infoRow("Date of Birth", patient.dateOfBirth),
+            _infoRow(context, "Date of Birth", patient.dateOfBirth),
             _divider(),
-            _infoRow("Phone", patient.phoneNumber),
+            _infoRow(context, "Phone", patient.phoneNumber),
             _divider(),
-            _infoRow("Address", patient.address),
+            _infoRow(context, "Address", patient.address),
           ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(String label, String value) {
+  Widget _infoRow(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -135,14 +148,21 @@ class PatientDetailPage extends StatelessWidget {
           Expanded(
             flex: 3,
             child: Text(label,
-                style: const TextStyle(
-                    color: Color(0xFF6B7280),
+                style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFA6B3BF)
+                        : const Color(0xFF6B7280),
                     fontWeight: FontWeight.w600)),
           ),
           Expanded(
             flex: 5,
             child: Text(value,
-                style: const TextStyle(fontWeight: FontWeight.w500)),
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: isDark
+                      ? const Color(0xFFD5E1EB)
+                      : const Color(0xFF111418),
+                )),
           ),
         ],
       ),

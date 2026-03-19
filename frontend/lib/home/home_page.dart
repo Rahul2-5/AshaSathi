@@ -12,10 +12,10 @@ import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
 import '../task/task_cubit.dart';
 import '../task/add_task_page.dart';
-import '../utils/app_colors.dart';
 import 'widgets/task_card.dart';
 import '../patient/patient_detail_page.dart';
 import '../patient/patient_model.dart';
+import '../patient/patients_list_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -80,29 +80,57 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final titleColor = isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F);
+    final subtitleColor = isDark ? const Color(0xFF9AA7B3) : const Color(0xFF8D959E);
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
-          // 🔹 HEADER + WELCOME
+          // Header + welcome
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
             sliver: SliverList(
               delegate: SliverChildListDelegate(
                 [
-                  const Text(
-                    "Welcome, ASHA Worker!",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  RichText(
+                    text: TextSpan(
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                        height: 1.14,
+                      ),
+                      children: const [
+                        TextSpan(text: "Welcome,\n"),
+                        TextSpan(
+                          text: "Asha Worker!",
+                          style: TextStyle(color: Color(0xFF50C5A3)),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Your daily overview",
-                    style: TextStyle(color: Colors.grey.shade600),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.monitor_heart_outlined,
+                        size: 16,
+                        color: Color(0xFF55C58D),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Your daily health overview is ready",
+                        style: TextStyle(
+                          color: subtitleColor,
+                          fontSize: 14,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 28),
                   _tasksHeader(),
                   const SizedBox(height: 12),
                 ],
@@ -110,30 +138,54 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          // 🔹 TASK LIST
+          // Task list
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             sliver: _taskSliverList(),
           ),
 
-          // 🔹 RECENT PATIENTS TITLE
+          // Recent patients title
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 12),
-            sliver: const SliverToBoxAdapter(
-              child: Text(
-                "Recent Patients",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Recent Patients",
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: titleColor,
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PatientsListPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "View All",
+                      style: TextStyle(
+                        color: Color(0xFF50C785),
+                        fontWeight: FontWeight.w700,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
 
-          // 🔹 RECENT PATIENTS LIST
+          // Recent patients list
           SliverToBoxAdapter(
             child: SizedBox(
-              height: 190,
+              height: 252,
               child: _recentPatientsList(),
             ),
           ),
@@ -146,32 +198,48 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // TASKS 
-
   Widget _tasksHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        const Text(
+        Text(
           "Daily Tasks",
           style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+            color: isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F),
           ),
         ),
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () async {
+        InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: () async {
             final result = await Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const AddTaskPage()),
             );
+
+            if (!mounted) return;
 
             if (result == true) {
               final token = context.read<LoginCubit>().state.token!;
               context.read<TaskCubit>().loadTasks(token);
             }
           },
+          child: Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: const Color(0xFFDFF4EC),
+              borderRadius: BorderRadius.circular(18),
+            ),
+            child: const Icon(
+              Icons.add,
+              size: 20,
+              color: Color(0xFF54BD9E),
+            ),
+          ),
         ),
       ],
     );
@@ -232,6 +300,10 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _patientCard(Patient patient) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF1A232C) : Colors.white;
+    final cardBorder = isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC);
+
     final String? photo = patient.photoPath;
     String? localPath;
     String? networkUrl;
@@ -261,65 +333,94 @@ class _HomePageState extends State<HomePage> {
 
     return InkWell(
       onTap: () async {
-  final deleted = await Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => PatientDetailPage(patient: patient),
-    ),
-  );
+        final deleted = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PatientDetailPage(patient: patient),
+          ),
+        );
 
-  if (deleted == true && context.mounted) {
-    final token = context.read<LoginCubit>().state.token!;
-    context.read<PatientCubit>().loadPatients(token);
-  }
-},
+        if (!mounted) return;
+
+        if (deleted == true) {
+          final token = context.read<LoginCubit>().state.token!;
+          context.read<PatientCubit>().loadPatients(token);
+        }
+      },
 
       child: Container(
-        width: 160,
-        padding: const EdgeInsets.all(12),
+        width: 150,
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: cardBorder),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 8,
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                CircleAvatar(
-                  radius: 24,
-                  backgroundColor: Colors.grey.shade200,
-                  backgroundImage: imageProvider,
-                  child: imageProvider == null
-                      ? const Icon(Icons.person, color: Colors.grey)
-                      : null,
-                ),
-                const Icon(Icons.chevron_right, size: 20),
-              ],
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: const Color(0xFFE5EDF3),
+              backgroundImage: imageProvider,
+              child: imageProvider == null
+                  ? const Icon(Icons.person, color: Color(0xFF80909A))
+                  : null,
             ),
             const SizedBox(height: 10),
             Text(
-              patient.name,
+              patient.name.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 4),
             Text(
-              patient.gender,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
+              "${patient.gender.toUpperCase()}  •  ${patient.age} YRS",
+              style: TextStyle(
+                fontSize: 10,
+                letterSpacing: 0.3,
+                color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF7B838C),
+              ),
+            ),
+            const Spacer(),
+            Container(
+              width: double.infinity,
+              height: 32,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFFFF5),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFA9E1C2)),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "View",
+                    style: TextStyle(
+                      color: Color(0xFF49BD83),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(width: 6),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 16,
+                    color: Color(0xFF49BD83),
+                  ),
+                ],
               ),
             ),
           ],

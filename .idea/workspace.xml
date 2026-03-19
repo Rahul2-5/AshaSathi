@@ -6,19 +6,13 @@
   <component name="ChangeListManager">
     <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes">
       <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Backend/data/ashasathi.db" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/data/ashasathi.db" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/AuthController.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/AuthController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Services/TaskService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/auth/cubit/login_state.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/auth/cubit/login_state.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/auth/signup_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/auth/signup_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/offline/app_database_offline.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/offline/app_database_offline.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/offline/patient_offline_dao.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/offline/patient_offline_dao.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/phc_dashboard/phc_dashboard_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/phc_dashboard/phc_dashboard_page.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/uploads/patients/1/profile.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/uploads/patients/1/profile.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/uploads/patients/2/profile.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/uploads/patients/2/profile.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/uploads/patients/3/profile.jpg" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/uploads/patients/3/profile.jpg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -103,7 +97,7 @@
     &quot;git-widget-placeholder&quot;: &quot;master&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;D:/Flutter_Projects/AshaSathi&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;com.google.gct.login2.settings.GoogleLoginApplicationSettingsConfigurableProvider&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;studioLabs&quot;,
     &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;
   }
 }</component>

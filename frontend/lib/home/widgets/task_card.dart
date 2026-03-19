@@ -23,80 +23,126 @@ class TaskCard extends StatelessWidget {
     }
   }
 
+  String _statusLabel() {
+    switch (task.status) {
+      case TaskStatus.urgent:
+        return 'Urgent';
+      case TaskStatus.completed:
+        return 'Done';
+      case TaskStatus.inProgress:
+        return 'In Progress';
+      default:
+        return 'Pending';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A232C) : Colors.white,
         borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE9EDF0),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           )
         ],
       ),
       child: Row(
         children: [
-          // 📌 ICON
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: Colors.teal.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(10),
+              color: const Color(0xFFDFF4EC),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: const Icon(Icons.assignment, color: Colors.teal),
+            child: const Center(
+              child: Icon(
+                Icons.assignment,
+                color: Color(0xFF18A39B),
+                size: 20,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
 
-          // 📄 TITLE + DESCRIPTION
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  task.title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 15,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        task.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 14,
+                          color: isDark ? Color(0xFFE6EDF3) : Color(0xFF202329),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      height: 26,
+                      alignment: Alignment.center,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _statusColor().withValues(alpha: 0.14),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 1),
+                        child: Text(
+                          task.status == TaskStatus.urgent
+                              ? _statusLabel().toUpperCase()
+                              : _statusLabel(),
+                          style: TextStyle(
+                            color: _statusColor(),
+                            fontWeight: FontWeight.w700,
+                            fontSize: 11,
+                            letterSpacing: 0.2,
+                            height: 1.1,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
                   task.description,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
+                    color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF8B939C),
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
           ),
-
-          //  STATUS CHIP
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: _statusColor().withOpacity(0.1),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              task.status.name.toUpperCase(),
-              style: TextStyle(
-                color: _statusColor(),
-                fontWeight: FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 6),
-
-          //  DELETE BUTTON
           IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
+            icon: const Icon(
+              Icons.delete_outline,
+              color: Color(0xFFFF5252),
+              size: 20,
+            ),
             onPressed: () async {
               final confirm = await showDialog<bool>(
                 context: context,
@@ -121,6 +167,8 @@ class TaskCard extends StatelessWidget {
                 ),
               );
 
+              if (!context.mounted) return;
+
               if (confirm == true) {
                 final token =
                     context.read<LoginCubit>().state.token!;
@@ -131,7 +179,7 @@ class TaskCard extends StatelessWidget {
                       .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
 
                   if (!context.mounted) return;
-                  
+
                   if (deleted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -158,6 +206,9 @@ class TaskCard extends StatelessWidget {
                 }
               }
             },
+            splashRadius: 18,
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
           ),
         ],
       ),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth/cubit/login_cubit.dart';
@@ -33,6 +34,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
   bool _isLoading = false;
 
   File? _selectedImage;
+  Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
 
   static const String baseUrl = "http://10.0.2.2:8080/api/patients";
@@ -40,7 +42,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -59,6 +61,8 @@ class _AddPatientPageState extends State<AddPatientPage> {
   // ================= UI =================
 
   Widget _profilePhoto() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       children: [
         GestureDetector(
@@ -66,16 +70,18 @@ class _AddPatientPageState extends State<AddPatientPage> {
           child: Stack(
             alignment: Alignment.bottomRight,
             children: [
-              CircleAvatar(
+                CircleAvatar(
                 radius: 52,
-                backgroundColor: Colors.grey.shade200,
-                backgroundImage:
-                    _selectedImage != null ? FileImage(_selectedImage!) : null,
+                backgroundColor:
+                    isDark ? const Color(0xFF293542) : Colors.grey.shade200,
+                backgroundImage: _selectedImageBytes != null
+                  ? MemoryImage(_selectedImageBytes!)
+                  : (_selectedImage != null ? FileImage(_selectedImage!) : null),
                 child: _selectedImage == null
-                    ? const Icon(Icons.person,
-                        size: 48, color: Colors.grey)
-                    : null,
-              ),
+                  ? const Icon(Icons.person,
+                    size: 48, color: Colors.grey)
+                  : null,
+                ),
               Container(
                 decoration: const BoxDecoration(
                   color: Color(0xFF00A6A6),
@@ -89,10 +95,13 @@ class _AddPatientPageState extends State<AddPatientPage> {
           ),
         ),
         const SizedBox(height: 8),
-        const Text("Add Photo",
-            style: TextStyle(
-                color: Color(0xFF00A6A6),
-                fontWeight: FontWeight.w600)),
+        Text(
+          "Add Photo",
+          style: TextStyle(
+            color: isDark ? const Color(0xFF66CFC7) : const Color(0xFF00A6A6),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
       ],
     );
   }
@@ -120,16 +129,18 @@ class _AddPatientPageState extends State<AddPatientPage> {
     TextEditingController controller, {
     TextInputType keyboard = TextInputType.text,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
+            Text(title,
+              style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280))),
+                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
@@ -145,16 +156,18 @@ class _AddPatientPageState extends State<AddPatientPage> {
 
   // 📅 DATE OF BIRTH FIELD
   Widget _dobField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Date of Birth",
+            Text("Date of Birth",
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280))),
+                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
           TextFormField(
             controller: _dobController,
@@ -171,16 +184,18 @@ class _AddPatientPageState extends State<AddPatientPage> {
   }
 
   Widget _genderDropdown() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text("Gender",
+            Text("Gender",
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF6B7280))),
+                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _gender,
@@ -198,10 +213,12 @@ class _AddPatientPageState extends State<AddPatientPage> {
   }
 
   InputDecoration _inputDecoration(String hint) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InputDecoration(
       hintText: hint,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: isDark ? const Color(0xFF1A232C) : Colors.white,
       contentPadding:
           const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
@@ -209,7 +226,9 @@ class _AddPatientPageState extends State<AddPatientPage> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.grey.shade300),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFF31414F) : Colors.grey.shade300,
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -350,8 +369,10 @@ Future<int> _savePatient() async {
   );
 
   if (image != null) {
+    final bytes = await image.readAsBytes();
     setState(() {
       _selectedImage = File(image.path);
+      _selectedImageBytes = bytes;
     });
   }
 }

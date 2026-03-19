@@ -22,7 +22,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -40,15 +40,17 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   //  KEY METRICS 
 
   Widget _buildKeyMetricsSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Key Metrics",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
           ),
         ),
         const SizedBox(height: 16),
@@ -76,10 +78,12 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
     required Color backgroundColor,
     required Color iconColor,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: backgroundColor,
+        color: isDark ? const Color(0xFF1A232C) : backgroundColor,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -104,18 +108,18 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black,
+                  color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
                 ),
               ),
               const SizedBox(height: 4),
               Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B7280),
+                  color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -129,15 +133,17 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   // SUMMARY CARDS 
 
   Widget _buildSummaryCards() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           "Gender Distribution",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
           ),
         ),
         const SizedBox(height: 16),
@@ -195,10 +201,12 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
     required IconData icon,
     required Color color,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: isDark ? const Color(0xFF1A232C) : Colors.white,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -213,18 +221,18 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
           const SizedBox(height: 8),
           Text(
             count.toString(),
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.black,
+              color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
-              color: Color(0xFF6B7280),
+              color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
               fontWeight: FontWeight.w500,
             ),
           ),
