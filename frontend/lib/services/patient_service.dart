@@ -63,13 +63,41 @@ class PatientService {
       final onlineModels = data.map((e) => Patient.fromJson(e)).toList();
       debugPrint("Loaded ${onlineModels.length} patients from backend");
 
+      final unsyncedLocal =
+          offlineModels.where((patient) => patient.id == null).toList();
+      if (unsyncedLocal.isEmpty) {
+        return onlineModels;
+      }
+
+      final onlineKeys = onlineModels.map(_patientKey).toSet();
+      final merged = <Patient>[...onlineModels];
+
+      for (final localPatient in unsyncedLocal) {
+        final key = _patientKey(localPatient);
+        if (!onlineKeys.contains(key)) {
+          merged.insert(0, localPatient);
+        }
+      }
+
+      debugPrint(
+        "Merged ${unsyncedLocal.length} unsynced local patients with backend list",
+      );
+
       // ===============================
-      // ✅ 4. RETURN BACKEND PATIENTS (server is source of truth)
+      // ✅ 4. RETURN BACKEND + UNSYNCED LOCAL
       // ===============================
-      return onlineModels;
+      return merged;
     } catch (e) {
       debugPrint("Error fetching from backend: $e");
       return offlineModels;
     }
+  }
+
+  String _patientKey(Patient patient) {
+    final uuid = patient.uuid.trim();
+    if (uuid.isNotEmpty) {
+      return "uuid:$uuid";
+    }
+    return "id:${patient.id ?? -1}";
   }
 }

@@ -286,13 +286,17 @@ class _HomePageState extends State<HomePage> {
           return const Center(child: Text("No patients found"));
         }
 
+        final recentPatients = [...state.patients]
+          ..sort((a, b) => (b.id ?? -1).compareTo(a.id ?? -1));
+        final visiblePatients = recentPatients.take(5).toList();
+
         return ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: state.patients.length,
+          itemCount: visiblePatients.length,
           separatorBuilder: (_, _) => const SizedBox(width: 12),
           itemBuilder: (context, index) {
-            return _patientCard(state.patients[index]);
+            return _patientCard(visiblePatients[index]);
           },
         );
       },

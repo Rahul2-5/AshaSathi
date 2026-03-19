@@ -1,17 +1,17 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../auth/cubit/login_cubit.dart';
+import '../auth/cubit/patient_cubit.dart';
 import 'package:frontend/patient/patient_success_page.dart';
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:http/http.dart' as http;
 
 import '../offline/patient_offline_service.dart';
 import '../offline/connectivity_service.dart';
+import '../offline/patient_sync_service.dart';
 
 
 class AddPatientPage extends StatefulWidget {
@@ -36,8 +36,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
-
-  static const String baseUrl = "http://10.0.2.2:8080/api/patients";
 
   @override
   Widget build(BuildContext context) {
@@ -292,26 +290,31 @@ class _AddPatientPageState extends State<AddPatientPage> {
   setState(() => _isLoading = true);
 
   try {
+    await PatientOfflineService().saveOffline(
+      name: _nameController.text.trim(),
+      gender: _gender,
+      age: int.parse(_ageController.text.trim()),
+      dateOfBirth: _dobController.text.trim(),
+      address: _addressController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
+      photoPath: _selectedImage!.path,
+    );
+
     final isOnline = await ConnectivityService().isOnline();
 
     if (isOnline) {
-      // ================= ONLINE =================
-      final id = await _savePatient();
-      await _uploadPhoto(id);
-    } else {
-      // ================= OFFLINE =================
-      await PatientOfflineService().saveOffline(
-        name: _nameController.text.trim(),
-        gender: _gender,
-        age: int.parse(_ageController.text.trim()),
-        dateOfBirth: _dobController.text.trim(),
-        address: _addressController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        photoPath: _selectedImage!.path,
-      );
+      final token = context.read<LoginCubit>().state.token;
+      if (token != null) {
+        await PatientSyncService().sync(token);
+      }
     }
 
     if (!mounted) return;
+
+    final token = context.read<LoginCubit>().state.token;
+    if (token != null) {
+      await context.read<PatientCubit>().loadPatients(token);
+    }
 
     Navigator.push(
       context,
@@ -328,40 +331,6 @@ class _AddPatientPageState extends State<AddPatientPage> {
   }
 }
 
-
-
-
-Future<int> _savePatient() async {
-  final token = context.read<LoginCubit>().state.token!;
-
-  final res = await http.post(
-    Uri.parse(baseUrl),
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer $token", // ✅ THIS FIXES 403
-    },
-    body: jsonEncode({
-      "patientName": _nameController.text.trim(),
-      "age": int.parse(_ageController.text.trim()),
-      "dateOfBirth": _dobController.text.trim(),
-      "gender": _gender,
-      "address": _addressController.text.trim(),
-      "phoneNumber": _phoneController.text.trim(),
-    }),
-  );
-
-  debugPrint("STATUS CODE: ${res.statusCode}");
-  debugPrint("RESPONSE BODY: ${res.body}");
-
-  if (res.statusCode != 200 && res.statusCode != 201) {
-    throw Exception("Failed to save patient");
-  }
-
-  return jsonDecode(res.body)["id"];
-}
-
-
-
  Future<void> _pickImage(ImageSource source) async {
   final image = await _picker.pickImage(
     source: source,
@@ -374,37 +343,6 @@ Future<int> _savePatient() async {
       _selectedImage = File(image.path);
       _selectedImageBytes = bytes;
     });
-  }
-}
-
-
-Future<void> _uploadPhoto(int patientId) async {
-  if (_selectedImage == null) return;
-
-  final token = context.read<LoginCubit>().state.token!;
-
-  final uri = Uri.parse("$baseUrl/$patientId/photo");
-  final request = http.MultipartRequest("POST", uri);
-
-  request.headers["Authorization"] = "Bearer $token";
-
-  request.files.add(
-    await http.MultipartFile.fromPath(
-      "photo",
-      _selectedImage!.path,
-    ),
-  );
-
-  final response = await request.send();
-
-  // 🔥 READ BACKEND ERROR MESSAGE
-  final responseBody = await response.stream.bytesToString();
-
-  debugPrint("PHOTO UPLOAD STATUS: ${response.statusCode}");
-  debugPrint("PHOTO UPLOAD BODY: $responseBody");
-
-  if (response.statusCode != 200) {
-    throw Exception(responseBody);
   }
 }
 
