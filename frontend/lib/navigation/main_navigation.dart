@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/auth/cubit/patient_cubit.dart';
 import 'package:frontend/task/task_cubit.dart';
+import 'package:frontend/localization/app_localizations.dart';
 
 import '../home/home_page.dart';
 import '../patient/add_patient_page.dart';
@@ -29,6 +30,7 @@ class _MainNavigationState extends State<MainNavigation> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final themeModeNotifier = ThemeModeController.notifierOf(context);
+    final l10n = context.l10n;
 
     return Scaffold(
       appBar: AppBar(
@@ -71,8 +73,8 @@ class _MainNavigationState extends State<MainNavigation> {
                             : const Color(0xFF1D2127),
                       ),
                       tooltip: isDark
-                          ? 'Switch to light mode'
-                          : 'Switch to dark mode',
+                          ? l10n.tr('theme.switchToLight')
+                          : l10n.tr('theme.switchToDark'),
                       padding: EdgeInsets.zero,
                       splashRadius: 20,
                     ),
@@ -110,44 +112,45 @@ class _MainNavigationState extends State<MainNavigation> {
             }
           }
         },
-        items: const [
+        items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
-            label: "Dashboard",
+            label: l10n.tr('nav.dashboard'),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_add_alt_1_outlined),
             activeIcon: Icon(Icons.person_add_alt_1),
-            label: "Add Patient",
+            label: l10n.tr('nav.addPatient'),
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.insert_chart_outlined_rounded),
             activeIcon: Icon(Icons.insert_chart_rounded),
-            label: "PHC Portal",
+            label: l10n.tr('nav.phcPortal'),
           ),
         ],
       ),
     );
   }
 
-  String _getPageTitle() {
+  String _getPageTitle(BuildContext context) {
+    final l10n = context.l10n;
     switch (_currentIndex) {
       case 0:
-        return "ASHA DashBoard";
+        return l10n.tr('nav.dashboardTitle');
       case 1:
-        return "Add Patient";
+        return l10n.tr('nav.addPatient');
       case 2:
-        return "PHC Portal";
+        return l10n.tr('nav.phcPortal');
       default:
-        return "AshaSathi";
+        return l10n.tr('app.name');
     }
   }
 
   Widget _buildAppBarTitle(bool isDark) {
     if (_currentIndex != 0) {
       return Text(
-        _getPageTitle(),
+        _getPageTitle(context),
         style: TextStyle(
           color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF23262B),
           fontWeight: FontWeight.w700,
@@ -174,7 +177,7 @@ class _MainNavigationState extends State<MainNavigation> {
         ),
         const SizedBox(width: 8),
         Text(
-          'DASHBOARD',
+          context.l10n.tr('nav.dashboard').toUpperCase(),
           style: TextStyle(
             color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1F2329),
             fontWeight: FontWeight.w800,
@@ -220,7 +223,7 @@ class _MainNavigationState extends State<MainNavigation> {
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: Text(
-              "Logout",
+              context.l10n.tr('drawer.logout'),
               style: TextStyle(
                 color: isDark
                     ? const Color(0xFFE6EDF3)

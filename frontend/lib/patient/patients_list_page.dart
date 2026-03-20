@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/localization/app_localizations.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -64,7 +65,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Patients',
+          context.l10n.tr('patients.title'),
           style: TextStyle(
             color: titleColor,
             fontSize: 20,
@@ -136,7 +137,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
             size: 16,
             color: isDark ? const Color(0xFFA5B3BF) : const Color(0xFF88939D),
           ),
-          hintText: 'Search by name or ID...',
+          hintText: context.l10n.tr('patients.searchHint'),
           hintStyle: TextStyle(
             fontSize: 13,
             color: isDark ? const Color(0xFF8B99A6) : const Color(0xFF98A2AC),
@@ -152,7 +153,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
     return Row(
       children: [
         Text(
-          'QUICK FILTERS',
+          context.l10n.tr('patients.quickFilters'),
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -164,7 +165,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
         InkWell(
           onTap: _clearFilters,
           child: Text(
-            'Clear',
+            context.l10n.tr('common.clear'),
             style: TextStyle(
               color: Color(0xFF23A7CB),
               fontSize: 13,
@@ -182,27 +183,27 @@ class _PatientsListPageState extends State<PatientsListPage> {
       runSpacing: _isCompact ? 6 : 8,
       children: [
         _chip(
-          label: 'All Gender',
+          label: context.l10n.tr('patients.allGender'),
           selected: _genderFilter == _GenderFilter.all,
           onTap: () => setState(() => _genderFilter = _GenderFilter.all),
         ),
         _chip(
-          label: 'Male',
+          label: context.l10n.tr('patient.male'),
           selected: _genderFilter == _GenderFilter.male,
           onTap: () => setState(() => _genderFilter = _GenderFilter.male),
         ),
         _chip(
-          label: 'Female',
+          label: context.l10n.tr('patient.female'),
           selected: _genderFilter == _GenderFilter.female,
           onTap: () => setState(() => _genderFilter = _GenderFilter.female),
         ),
         _chip(
-          label: 'Others',
+          label: context.l10n.tr('patients.others'),
           selected: _genderFilter == _GenderFilter.others,
           onTap: () => setState(() => _genderFilter = _GenderFilter.others),
         ),
         _chip(
-          label: 'Age: 18-35',
+          label: context.l10n.tr('patients.age18to35'),
           selected: _age18to35,
           onTap: () => setState(() => _age18to35 = !_age18to35),
         ),
@@ -257,7 +258,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
           builder: (context, state) {
             final filtered = _applyFilters(state.patients);
             return Text(
-              'Recent Records (${filtered.length})',
+              context.l10n.tr('patients.recentRecords', args: {'count': filtered.length.toString()}),
               style: TextStyle(
                 color: isDark ? const Color(0xFFAAB8C4) : const Color(0xFF5D6975),
                 fontSize: 16,
@@ -287,14 +288,14 @@ class _PatientsListPageState extends State<PatientsListPage> {
             });
           },
           itemBuilder: (_) => [
-            _sortMenuItem(_SortBy.newest, 'Newest'),
-            _sortMenuItem(_SortBy.oldest, 'Oldest'),
-            _sortMenuItem(_SortBy.nameAZ, 'Name (A-Z)'),
+            _sortMenuItem(_SortBy.newest, context.l10n.tr('patients.newest')),
+            _sortMenuItem(_SortBy.oldest, context.l10n.tr('patients.oldest')),
+            _sortMenuItem(_SortBy.nameAZ, context.l10n.tr('patients.nameAZ')),
           ],
           child: Row(
             children: [
               Text(
-                'Sort by: ${_sortLabel()}',
+                context.l10n.tr('patients.sortBy', args: {'sort': _sortLabel()}),
                 style: const TextStyle(
                   color: Color(0xFF23A7CB),
                   fontSize: 16,
@@ -431,8 +432,11 @@ class _PatientsListPageState extends State<PatientsListPage> {
                     spacing: 12,
                     runSpacing: 2,
                     children: [
-                      _metaItem(Icons.calendar_today_outlined, '${patient.age} yrs'),
-                      _metaItem(Icons.person_outline, patient.gender),
+                      _metaItem(
+                        Icons.calendar_today_outlined,
+                        context.l10n.tr('patients.yearsShort', args: {'age': patient.age.toString()}),
+                      ),
+                      _metaItem(Icons.person_outline, _localizedGender(patient.gender)),
                     ],
                   ),
                 ],
@@ -494,7 +498,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            'Showing all registered patients',
+            context.l10n.tr('patients.showingAll'),
             style: TextStyle(
               fontSize: 17,
               color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF4A5561),
@@ -503,7 +507,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Use filters above to refine your search or add a new patient record.',
+            context.l10n.tr('patients.filtersHint'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
@@ -573,11 +577,15 @@ class _PatientsListPageState extends State<PatientsListPage> {
     final photo = patient.photoPath;
     if (photo == null || photo.isEmpty) return null;
 
-    if (photo.startsWith('/uploads/') || photo.contains('/uploads/')) {
-      return NetworkImage('$_baseUrl$photo');
+    final normalizedPhoto = photo.replaceAll('\\', '/');
+    final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
+
+    if (normalizedPhoto.startsWith('/uploads/') ||
+        normalizedPhoto.contains('/uploads/')) {
+      return NetworkImage('$_baseUrl$normalizedPhoto');
     }
 
-    if (photo.startsWith('/')) {
+    if (photo.startsWith('/') || isWindowsAbsolutePath) {
       final file = File(photo);
       if (file.existsSync()) {
         return FileImage(file);
@@ -589,7 +597,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
       return NetworkImage(photo);
     }
 
-    return NetworkImage('$_baseUrl/$photo');
+    return NetworkImage('$_baseUrl/$normalizedPhoto');
   }
 
   void _clearFilters() {
@@ -605,12 +613,19 @@ class _PatientsListPageState extends State<PatientsListPage> {
   String _sortLabel() {
     switch (_sortBy) {
       case _SortBy.newest:
-        return 'Newest';
+        return context.l10n.tr('patients.newest');
       case _SortBy.oldest:
-        return 'Oldest';
+        return context.l10n.tr('patients.oldest');
       case _SortBy.nameAZ:
         return 'A-Z';
     }
+  }
+
+  String _localizedGender(String rawGender) {
+    final normalized = _normalizeGender(rawGender);
+    if (normalized == 'male') return context.l10n.tr('patient.male');
+    if (normalized == 'female') return context.l10n.tr('patient.female');
+    return context.l10n.tr('patient.other');
   }
 
   String _normalizeGender(String rawGender) {

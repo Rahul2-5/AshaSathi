@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
 import '../auth/cubit/login_cubit.dart';
@@ -30,7 +31,7 @@ class PatientDetailPage extends StatelessWidget {
         backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
         centerTitle: true,
         title: Text(
-          "Patient Details",
+          context.l10n.tr('patient.details'),
           style: TextStyle(
             color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
             fontWeight: FontWeight.w600,
@@ -83,7 +84,7 @@ class PatientDetailPage extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          patient.gender,
+          _localizedGender(context, patient.gender),
           style: TextStyle(
             color: isDark ? const Color(0xFF9EABB7) : Colors.grey,
           ),
@@ -99,12 +100,16 @@ class PatientDetailPage extends StatelessWidget {
       return const Icon(Icons.person, size: 50, color: Colors.grey);
     }
 
-    if (path.startsWith('/') && File(path).existsSync()) {
+    final normalizedPath = path.replaceAll('\\', '/');
+    final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(path);
+
+    if ((path.startsWith('/') || isWindowsAbsolutePath) && File(path).existsSync()) {
       return Image.file(File(path), fit: BoxFit.cover);
     }
 
-    if (path.startsWith('/uploads/')) {
-      return Image.network("$baseUrl$path", fit: BoxFit.cover);
+    if (normalizedPath.startsWith('/uploads/') ||
+        normalizedPath.contains('/uploads/')) {
+      return Image.network("$baseUrl$normalizedPath", fit: BoxFit.cover);
     }
 
     return const Icon(Icons.broken_image);
@@ -125,13 +130,17 @@ class PatientDetailPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            _infoRow(context, "Age", "${patient.age} years"),
+            _infoRow(
+              context,
+              context.l10n.tr('patient.age'),
+              context.l10n.tr('patient.ageYears', args: {'age': patient.age.toString()}),
+            ),
             _divider(),
-            _infoRow(context, "Date of Birth", patient.dateOfBirth),
+            _infoRow(context, context.l10n.tr('patient.dateOfBirth'), patient.dateOfBirth),
             _divider(),
-            _infoRow(context, "Phone", patient.phoneNumber),
+            _infoRow(context, context.l10n.tr('patient.phone'), patient.phoneNumber),
             _divider(),
-            _infoRow(context, "Address", patient.address),
+            _infoRow(context, context.l10n.tr('patient.address'), patient.address),
           ],
         ),
       ),
@@ -171,6 +180,13 @@ class PatientDetailPage extends StatelessWidget {
 
   Widget _divider() => Divider(color: Colors.grey.shade300);
 
+  String _localizedGender(BuildContext context, String raw) {
+    final g = raw.trim().toLowerCase();
+    if (g == 'male' || g == 'm') return context.l10n.tr('patient.male');
+    if (g == 'female' || g == 'f') return context.l10n.tr('patient.female');
+    return context.l10n.tr('patient.other');
+  }
+
   // ================= DELETE =================
 
   Widget _deleteButton(BuildContext context) {
@@ -183,9 +199,9 @@ class PatientDetailPage extends StatelessWidget {
         ),
       ),
       icon: const Icon(Icons.delete, color: Colors.white),
-      label: const Text(
-        "Delete Patient",
-        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      label: Text(
+        context.l10n.tr('patient.delete'),
+        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
       ),
       onPressed: () => _confirmDelete(context),
     );
@@ -195,21 +211,21 @@ class PatientDetailPage extends StatelessWidget {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text("Delete Patient"),
-        content: const Text(
-          "This will delete the patient. You can sync later if offline.",
+        title: Text(context.l10n.tr('patient.delete')),
+        content: Text(
+          context.l10n.tr('patient.deleteConfirm'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text("Cancel"),
+            child: Text(context.l10n.tr('common.cancel')),
           ),
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
               await _deletePatient(context);
             },
-            child: const Text("Delete",
+            child: Text(context.l10n.tr('common.delete'),
                 style: TextStyle(color: Colors.red)),
           ),
         ],
@@ -230,7 +246,7 @@ class PatientDetailPage extends StatelessWidget {
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Patient marked for deletion (will sync when online)")),
+      SnackBar(content: Text(context.l10n.tr('patient.markedDeletion'))),
     );
     Navigator.pop(context, true);
     return;
@@ -261,7 +277,7 @@ class PatientDetailPage extends StatelessWidget {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Patient deleted successfully")),
+        SnackBar(content: Text(context.l10n.tr('patient.deletedSuccessfully'))),
       );
       debugPrint("Returning to previous page...");
       Navigator.pop(context, true);
@@ -272,7 +288,14 @@ class PatientDetailPage extends StatelessWidget {
 
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Delete failed: ${res.statusCode}. Will sync later")),
+        SnackBar(
+          content: Text(
+            context.l10n.tr(
+              'patient.deleteFailedStatus',
+              args: {'status': res.statusCode.toString()},
+            ),
+          ),
+        ),
       );
       Navigator.pop(context, true);
     }
@@ -284,7 +307,11 @@ class PatientDetailPage extends StatelessWidget {
 
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error deleting: $e. Will sync later")),
+      SnackBar(
+        content: Text(
+          context.l10n.tr('patient.errorDeleting', args: {'error': e.toString()}),
+        ),
+      ),
     );
     Navigator.pop(context, true);
   }

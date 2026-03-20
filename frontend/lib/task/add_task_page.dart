@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/auth/cubit/login_cubit.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'task_model.dart';
 import 'task_cubit.dart';
@@ -23,6 +24,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = context.l10n;
     final textColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B);
 
     return Scaffold(
@@ -33,7 +35,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
         foregroundColor: textColor,
         centerTitle: true,
         title: Text(
-          "Add New Task",
+          l10n.tr('task.addNewTask'),
           style: TextStyle(
             color: textColor,
             fontWeight: FontWeight.w700,
@@ -47,7 +49,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "Create New Task",
+              l10n.tr('task.createNewTask'),
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -57,7 +59,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
             const SizedBox(height: 20),
 
             Text(
-              "Task Title",
+              l10n.tr('task.taskTitle'),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
@@ -68,13 +70,13 @@ class _AddTaskPageState extends State<AddTaskPage> {
             TextField(
               controller: titleController,
               style: TextStyle(fontSize: 16, color: textColor),
-              decoration: _fieldDecoration("e.g., Patient Follow-up", isDark),
+              decoration: _fieldDecoration(l10n.tr('task.taskTitleHint'), isDark),
             ),
 
             const SizedBox(height: 18),
 
             Text(
-              "Task Description",
+              l10n.tr('task.taskDescription'),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
@@ -86,13 +88,13 @@ class _AddTaskPageState extends State<AddTaskPage> {
               controller: descController,
               maxLines: 4,
               style: TextStyle(fontSize: 16, color: textColor),
-              decoration: _fieldDecoration("Describe the task...", isDark),
+              decoration: _fieldDecoration(l10n.tr('task.taskDescriptionHint'), isDark),
             ),
 
             const SizedBox(height: 18),
 
             Text(
-              "Status",
+              l10n.tr('task.status'),
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 16,
@@ -108,7 +110,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 final isSelected = status == s;
                 return ChoiceChip(
                   showCheckmark: isSelected,
-                  label: Text(_statusText(s)),
+                  label: Text(_statusText(context, s)),
                   selected: isSelected,
                   selectedColor: _chipSelectedColor(s),
                   backgroundColor:
@@ -154,8 +156,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 onPressed: () async {
                   if (titleController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Please enter a task title"),
+                      SnackBar(
+                        content: Text(l10n.tr('task.pleaseEnterTitle')),
                         backgroundColor: Colors.red,
                       ),
                     );
@@ -177,8 +179,8 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Task added successfully!"),
+                      SnackBar(
+                        content: Text(l10n.tr('task.addedSuccessfully')),
                         backgroundColor: Colors.green,
                       ),
                     );
@@ -187,14 +189,14 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text("Error: $e"),
+                        content: Text('Error: $e'),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
                 },
-                child: const Text(
-                  "Save Task",
+                child: Text(
+                  l10n.tr('task.saveTask'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -245,16 +247,16 @@ class _AddTaskPageState extends State<AddTaskPage> {
     }
   }
 
-  String _statusText(TaskStatus status) {
+  String _statusText(BuildContext context, TaskStatus status) {
     switch (status) {
       case TaskStatus.urgent:
-        return "Urgent";
+        return context.l10n.tr('task.urgent');
       case TaskStatus.pending:
-        return "Pending";
+        return context.l10n.tr('task.pending');
       case TaskStatus.inProgress:
-        return "In Progress";
+        return context.l10n.tr('task.inProgress');
       case TaskStatus.completed:
-        return "Completed";
+        return context.l10n.tr('task.completed');
     }
   }
 }

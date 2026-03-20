@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:frontend/auth/cubit/patient_cubit.dart';
 import 'package:frontend/services/patient_service.dart';
 
@@ -7,6 +8,8 @@ import 'auth/cubit/login_cubit.dart';
 import 'auth/cubit/login_state.dart';
 import 'auth/cubit/signup_cubit.dart';
 import 'auth/login_page.dart';
+import 'localization/app_localizations.dart';
+import 'localization/language_controller.dart';
 import 'navigation/main_navigation.dart';
 import 'splash/splash_page.dart';
 
@@ -61,33 +64,63 @@ class _AppRoot extends StatefulWidget {
 }
 
 class _AppRootState extends State<_AppRoot> {
-  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(ThemeMode.light);
+  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(ThemeMode.system);
+  final ValueNotifier<Locale> _locale = ValueNotifier(const Locale('en'));
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLocale();
+  }
+
+  Future<void> _loadSavedLocale() async {
+    final savedLocale = await LanguageStorage.loadLocale();
+    if (!mounted) return;
+    _locale.value = savedLocale;
+  }
 
   @override
   void dispose() {
     _themeMode.dispose();
+    _locale.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return ThemeModeController(
-      notifier: _themeMode,
-      child: ValueListenableBuilder<ThemeMode>(
-        valueListenable: _themeMode,
-        builder: (context, mode, _) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            themeMode: mode,
-            theme: _lightTheme(),
-            darkTheme: _darkTheme(),
-            home: const SplashPage(),
-            routes: {
-              '/main': (_) => const MainNavigation(),
-              '/login': (_) => const LoginView(),
-            },
-          );
-        },
+    return LanguageController(
+      notifier: _locale,
+      child: ThemeModeController(
+        notifier: _themeMode,
+        child: ValueListenableBuilder<Locale>(
+          valueListenable: _locale,
+          builder: (context, locale, _) {
+            return ValueListenableBuilder<ThemeMode>(
+              valueListenable: _themeMode,
+              builder: (context, mode, _) {
+                return MaterialApp(
+                  debugShowCheckedModeBanner: false,
+                  locale: locale,
+                  supportedLocales: AppLocalizations.supportedLocales,
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  themeMode: mode,
+                  theme: _lightTheme(),
+                  darkTheme: _darkTheme(),
+                  home: const SplashPage(),
+                  routes: {
+                    '/main': (_) => const MainNavigation(),
+                    '/login': (_) => const LoginView(),
+                  },
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }

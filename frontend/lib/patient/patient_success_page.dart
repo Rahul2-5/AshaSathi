@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:frontend/localization/app_localizations.dart';
 
 class PatientSuccessPage extends StatefulWidget {
   const PatientSuccessPage({super.key});
@@ -22,29 +23,34 @@ class _PatientSuccessPageState extends State<PatientSuccessPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Icon(
+          children: [
+            const Icon(
               Icons.check_circle,
               color: Color(0xFF00A6A6),
               size: 96,
             ),
-            SizedBox(height: 24),
+            const SizedBox(height: 24),
             Text(
-              "Patient Saved",
+              context.l10n.tr('patient.saved'),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B),
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
-              "Details recorded successfully",
-              style: TextStyle(color: Colors.grey),
+              context.l10n.tr('patient.savedDetails'),
+              style: TextStyle(
+                color: isDark ? const Color(0xFFA6B3BF) : Colors.grey,
+              ),
             ),
           ],
         ),

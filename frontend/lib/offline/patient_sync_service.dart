@@ -63,14 +63,17 @@ class PatientSyncService {
         debugPrint('[PatientSync] created patient serverId=$serverId');
 
         // 2) If there's a local photo file, upload it to the server endpoint that accepts patientId
-        if (patient.photoPath != null && patient.photoPath!.startsWith('/') && File(patient.photoPath!).existsSync()) {
+        final localPhotoPath = patient.photoPath;
+        if (localPhotoPath != null &&
+            localPhotoPath.trim().isNotEmpty &&
+            File(localPhotoPath).existsSync()) {
           try {
             final req = http.MultipartRequest(
               "POST",
               Uri.parse("$baseUrl/api/patients/$serverId/photo"),
             );
             req.headers["Authorization"] = "Bearer $token";
-            req.files.add(await http.MultipartFile.fromPath("photo", patient.photoPath!));
+            req.files.add(await http.MultipartFile.fromPath("photo", localPhotoPath));
 
             final streamed = await req.send();
             final respBody = await streamed.stream.bytesToString();
@@ -90,10 +93,6 @@ class PatientSyncService {
         debugPrint('[PatientSync] marked local ${patient.localId} as synced -> serverId=$serverId');
       }
 
-      // 🔹 DELETE SYNC
-      await _syncDeleted(token);
-
-      return true;
       // 🔹 DELETE SYNC
       await _syncDeleted(token);
 

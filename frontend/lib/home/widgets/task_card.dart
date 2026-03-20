@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/localization/app_localizations.dart';
 
 import '../../auth/cubit/login_cubit.dart';
 import '../../task/task_cubit.dart';
@@ -23,16 +24,16 @@ class TaskCard extends StatelessWidget {
     }
   }
 
-  String _statusLabel() {
+  String _statusLabel(BuildContext context) {
     switch (task.status) {
       case TaskStatus.urgent:
-        return 'Urgent';
+        return context.l10n.tr('task.urgent');
       case TaskStatus.completed:
-        return 'Done';
+        return context.l10n.tr('task.done');
       case TaskStatus.inProgress:
-        return 'In Progress';
+        return context.l10n.tr('task.inProgress');
       default:
-        return 'Pending';
+        return context.l10n.tr('task.pending');
     }
   }
 
@@ -109,8 +110,8 @@ class TaskCard extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 1),
                         child: Text(
                           task.status == TaskStatus.urgent
-                              ? _statusLabel().toUpperCase()
-                              : _statusLabel(),
+                              ? _statusLabel(context).toUpperCase()
+                              : _statusLabel(context),
                           style: TextStyle(
                             color: _statusColor(),
                             fontWeight: FontWeight.w700,
@@ -147,19 +148,19 @@ class TaskCard extends StatelessWidget {
               final confirm = await showDialog<bool>(
                 context: context,
                 builder: (_) => AlertDialog(
-                  title: const Text("Delete Task"),
-                  content: const Text(
-                    "Are you sure you want to delete this task?",
+                  title: Text(context.l10n.tr('task.deleteTask')),
+                  content: Text(
+                    context.l10n.tr('task.deleteTaskConfirm'),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
-                      child: const Text("Cancel"),
+                      child: Text(context.l10n.tr('common.cancel')),
                     ),
                     TextButton(
                       onPressed: () => Navigator.pop(context, true),
-                      child: const Text(
-                        "Delete",
+                      child: Text(
+                        context.l10n.tr('common.delete'),
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
@@ -182,15 +183,15 @@ class TaskCard extends StatelessWidget {
 
                   if (deleted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Task deleted successfully"),
+                      SnackBar(
+                        content: Text(context.l10n.tr('task.deletedSuccessfully')),
                         backgroundColor: Colors.green,
                       ),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("Task marked for deletion (will sync later)"),
+                      SnackBar(
+                        content: Text(context.l10n.tr('task.markedDeletion')),
                         backgroundColor: Colors.orange,
                       ),
                     );
@@ -199,7 +200,9 @@ class TaskCard extends StatelessWidget {
                   if (!context.mounted) return;
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text("Error deleting task: $e"),
+                      content: Text(
+                        context.l10n.tr('task.errorDeleting', args: {'error': e.toString()}),
+                      ),
                       backgroundColor: Colors.red,
                     ),
                   );

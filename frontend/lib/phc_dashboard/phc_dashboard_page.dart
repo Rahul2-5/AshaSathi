@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
 
@@ -46,7 +47,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Key Metrics",
+          context.l10n.tr('phc.keyMetrics'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -60,7 +61,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
             return _metricCard(
               icon: Icons.person,
-              label: "Total Patients",
+              label: context.l10n.tr('phc.totalPatients'),
               value: totalPatients.toString(),
               backgroundColor: const Color(0xFFE0F7F6),
               iconColor: const Color(0xFF00A6A6),
@@ -139,7 +140,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          "Gender Distribution",
+          context.l10n.tr('phc.genderDistribution'),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
@@ -163,7 +164,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
               children: [
                 Expanded(
                   child: _summaryCard(
-                    title: "Male",
+                    title: context.l10n.tr('patient.male'),
                     count: maleCount,
                     icon: Icons.male,
                     color: const Color(0xFF3B82F6),
@@ -172,7 +173,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _summaryCard(
-                    title: "Female",
+                    title: context.l10n.tr('patient.female'),
                     count: femaleCount,
                     icon: Icons.female,
                     color: const Color(0xFFF472B6),
@@ -181,7 +182,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: _summaryCard(
-                    title: "Other",
+                    title: context.l10n.tr('patient.other'),
                     count: otherCount,
                     icon: Icons.person_outline,
                     color: const Color(0xFF8B5CF6),

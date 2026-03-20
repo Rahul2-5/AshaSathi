@@ -40,7 +40,7 @@ class _SplashPageState extends State<SplashPage> {
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Center(
           child: Image.asset(

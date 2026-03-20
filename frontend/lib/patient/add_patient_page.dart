@@ -2,6 +2,9 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/localization/app_localizations.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
 import 'package:frontend/patient/patient_success_page.dart';
@@ -30,7 +33,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  String _gender = "Female";
+  String _gender = 'Female';
   bool _isLoading = false;
 
   File? _selectedImage;
@@ -94,7 +97,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
         ),
         const SizedBox(height: 8),
         Text(
-          "Add Photo",
+          context.l10n.tr('patient.addPhoto'),
           style: TextStyle(
             color: isDark ? const Color(0xFF66CFC7) : const Color(0xFF00A6A6),
             fontWeight: FontWeight.w600,
@@ -109,13 +112,13 @@ class _AddPatientPageState extends State<AddPatientPage> {
       key: _formKey,
       child: Column(
         children: [
-          _inputField("Patient Name", _nameController),
-          _inputField("Age", _ageController,
+            _inputField(context.l10n.tr('patient.patientName'), _nameController),
+            _inputField(context.l10n.tr('patient.age'), _ageController,
               keyboard: TextInputType.number),
           _dobField(), 
           _genderDropdown(),
-          _inputField("Address", _addressController),
-          _inputField("Phone Number", _phoneController,
+            _inputField(context.l10n.tr('patient.address'), _addressController),
+            _inputField(context.l10n.tr('auth.phoneNumber'), _phoneController,
               keyboard: TextInputType.phone),
         ],
       ),
@@ -144,7 +147,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
             controller: controller,
             keyboardType: keyboard,
             validator: (v) =>
-                v == null || v.trim().isEmpty ? "Required" : null,
+                v == null || v.trim().isEmpty ? context.l10n.tr('common.required') : null,
             decoration: _inputDecoration(title),
           ),
         ],
@@ -161,7 +164,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text("Date of Birth",
+            Text(context.l10n.tr('patient.dateOfBirth'),
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -172,8 +175,8 @@ class _AddPatientPageState extends State<AddPatientPage> {
             readOnly: true,
             onTap: _pickDateOfBirth,
             validator: (v) =>
-                v == null || v.isEmpty ? "Required" : null,
-            decoration: _inputDecoration("Select date")
+              v == null || v.isEmpty ? context.l10n.tr('common.required') : null,
+            decoration: _inputDecoration(context.l10n.tr('patient.selectDate'))
                 .copyWith(suffixIcon: const Icon(Icons.calendar_today)),
           ),
         ],
@@ -189,7 +192,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text("Gender",
+            Text(context.l10n.tr('patient.gender'),
               style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -197,13 +200,13 @@ class _AddPatientPageState extends State<AddPatientPage> {
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             value: _gender,
-            items: const [
-              DropdownMenuItem(value: "Female", child: Text("Female")),
-              DropdownMenuItem(value: "Male", child: Text("Male")),
-              DropdownMenuItem(value: "Other", child: Text("Other")),
+            items: [
+              DropdownMenuItem(value: 'Female', child: Text(context.l10n.tr('patient.female'))),
+              DropdownMenuItem(value: 'Male', child: Text(context.l10n.tr('patient.male'))),
+              DropdownMenuItem(value: 'Other', child: Text(context.l10n.tr('patient.other'))),
             ],
             onChanged: (v) => setState(() => _gender = v!),
-            decoration: _inputDecoration("Gender"),
+            decoration: _inputDecoration(context.l10n.tr('patient.gender')),
           ),
         ],
       ),
@@ -249,7 +252,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
         ),
         child: _isLoading
             ? const CircularProgressIndicator(color: Colors.white)
-            : const Text("Save Patient Data",
+            : Text(context.l10n.tr('patient.saveData'),
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -279,8 +282,8 @@ class _AddPatientPageState extends State<AddPatientPage> {
 
   if (_selectedImage == null) {
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Please add a patient photo"),
+      SnackBar(
+        content: Text(context.l10n.tr('patient.pleaseAddPhoto')),
         backgroundColor: Colors.red,
       ),
     );
@@ -338,12 +341,36 @@ class _AddPatientPageState extends State<AddPatientPage> {
   );
 
   if (image != null) {
-    final bytes = await image.readAsBytes();
-    setState(() {
-      _selectedImage = File(image.path);
-      _selectedImageBytes = bytes;
-    });
+    try {
+      final persistedImage = await _persistPickedImage(image);
+      final bytes = await persistedImage.readAsBytes();
+      setState(() {
+        _selectedImage = persistedImage;
+        _selectedImageBytes = bytes;
+      });
+    } catch (_) {
+      // Fallback to source file if persistence fails for any reason.
+      final bytes = await image.readAsBytes();
+      setState(() {
+        _selectedImage = File(image.path);
+        _selectedImageBytes = bytes;
+      });
+    }
   }
+}
+
+Future<File> _persistPickedImage(XFile image) async {
+  final docsDir = await getApplicationDocumentsDirectory();
+  final photosDir = Directory(p.join(docsDir.path, 'patient_photos'));
+  if (!photosDir.existsSync()) {
+    photosDir.createSync(recursive: true);
+  }
+
+  final ext = p.extension(image.path).isNotEmpty ? p.extension(image.path) : '.jpg';
+  final fileName = 'patient_${DateTime.now().microsecondsSinceEpoch}$ext';
+  final savedPath = p.join(photosDir.path, fileName);
+
+  return File(image.path).copy(savedPath);
 }
 
 void _showImageSourceSheet() {
@@ -359,7 +386,7 @@ void _showImageSourceSheet() {
           children: [
             ListTile(
               leading: const Icon(Icons.camera_alt),
-              title: const Text("Take Photo"),
+              title: Text(context.l10n.tr('patient.takePhoto')),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.camera);
@@ -367,7 +394,7 @@ void _showImageSourceSheet() {
             ),
             ListTile(
               leading: const Icon(Icons.photo_library),
-              title: const Text("Choose from Gallery"),
+              title: Text(context.l10n.tr('patient.chooseFromGallery')),
               onTap: () {
                 Navigator.pop(context);
                 _pickImage(ImageSource.gallery);

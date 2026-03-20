@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:frontend/localization/app_localizations.dart';
+import 'package:frontend/localization/language_controller.dart';
 
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
@@ -25,6 +27,8 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const Color _accentTextColor = Color(0xFF56C7AA);
+
   late final PatientSyncService _patientSyncService;
   late final TaskSyncService _taskSyncService;
   late final StreamSubscription _connectivitySub;
@@ -81,6 +85,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = context.l10n;
     final titleColor = isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F);
     final subtitleColor = isDark ? const Color(0xFF9AA7B3) : const Color(0xFF8D959E);
 
@@ -102,17 +107,18 @@ class _HomePageState extends State<HomePage> {
                         color: titleColor,
                         height: 1.14,
                       ),
-                      children: const [
-                        TextSpan(text: "Welcome,\n"),
+                      children: [
+                        TextSpan(text: l10n.tr('home.welcome')),
                         TextSpan(
-                          text: "Asha Worker!",
-                          style: TextStyle(color: Color(0xFF50C5A3)),
+                          text: l10n.tr('home.ashaWorker'),
+                          style: const TextStyle(color: _accentTextColor),
                         ),
                       ],
                     ),
                   ),
                   const SizedBox(height: 10),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Icon(
                         Icons.monitor_heart_outlined,
@@ -120,12 +126,16 @@ class _HomePageState extends State<HomePage> {
                         color: Color(0xFF55C58D),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        "Your daily health overview is ready",
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 14,
-                          fontStyle: FontStyle.italic,
+                      Expanded(
+                        child: Text(
+                          l10n.tr('home.dailyOverview'),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: subtitleColor,
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                          ),
                         ),
                       ),
                     ],
@@ -151,14 +161,19 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    "Recent Patients",
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w800,
-                      color: titleColor,
+                  Expanded(
+                    child: Text(
+                      l10n.tr('home.recentPatients'),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: titleColor,
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
                   InkWell(
                     onTap: () {
                       Navigator.push(
@@ -168,10 +183,10 @@ class _HomePageState extends State<HomePage> {
                         ),
                       );
                     },
-                    child: const Text(
-                      "View All",
+                    child: Text(
+                      l10n.tr('common.viewAll'),
                       style: TextStyle(
-                        color: Color(0xFF50C785),
+                        color: _accentTextColor,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -190,8 +205,11 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              child: _languageSettingsCard(),
+            ),
           ),
         ],
       ),
@@ -204,14 +222,19 @@ class _HomePageState extends State<HomePage> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          "Daily Tasks",
-          style: TextStyle(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F),
+        Expanded(
+          child: Text(
+            context.l10n.tr('home.dailyTasks'),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F),
+            ),
           ),
         ),
+        const SizedBox(width: 12),
         InkWell(
           borderRadius: BorderRadius.circular(18),
           onTap: () async {
@@ -255,8 +278,8 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (state.tasks.isEmpty) {
-          return const SliverToBoxAdapter(
-            child: Center(child: Text("No tasks for today")),
+          return SliverToBoxAdapter(
+            child: Center(child: Text(context.l10n.tr('home.noTasksToday'))),
           );
         }
 
@@ -283,7 +306,7 @@ class _HomePageState extends State<HomePage> {
         }
 
         if (state.patients.isEmpty) {
-          return const Center(child: Text("No patients found"));
+          return Center(child: Text(context.l10n.tr('home.noPatientsFound')));
         }
 
         final recentPatients = [...state.patients]
@@ -313,17 +336,22 @@ class _HomePageState extends State<HomePage> {
     String? networkUrl;
 
     if (photo != null && photo.isNotEmpty) {
+      final normalizedPhoto = photo.replaceAll('\\', '/');
+      final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
+
       // Server stores relative paths like "/uploads/patients/1/profile.jpg"
-      if (photo.startsWith('/uploads/') || photo.contains('/uploads/')) {
-        networkUrl = "http://10.0.2.2:8080$photo";
-      } else if (photo.startsWith('/') && !photo.startsWith('/uploads/')) {
+      if (normalizedPhoto.startsWith('/uploads/') ||
+          normalizedPhoto.contains('/uploads/')) {
+        networkUrl = "http://10.0.2.2:8080$normalizedPhoto";
+      } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) ||
+          isWindowsAbsolutePath) {
         // Assume absolute local file path on device
         localPath = photo;
       } else if (photo.startsWith('http')) {
         networkUrl = photo;
       } else {
         // Treat as relative server path
-        networkUrl = "http://10.0.2.2:8080/$photo";
+        networkUrl = "http://10.0.2.2:8080/$normalizedPhoto";
       }
     }
 
@@ -392,7 +420,9 @@ class _HomePageState extends State<HomePage> {
             ),
             const SizedBox(height: 4),
             Text(
-              "${patient.gender.toUpperCase()}  •  ${patient.age} YRS",
+              "${_localizedGender(patient.gender).toUpperCase()}  •  ${context.l10n.tr('patients.yearsShort', args: {'age': patient.age.toString()}).toUpperCase()}",
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.3,
@@ -408,13 +438,13 @@ class _HomePageState extends State<HomePage> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFFA9E1C2)),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    "View",
-                    style: TextStyle(
-                      color: Color(0xFF49BD83),
+                    context.l10n.tr('common.view'),
+                    style: const TextStyle(
+                      color: _accentTextColor,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -431,5 +461,184 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  String _localizedGender(String value) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'male' || normalized == 'm') {
+      return context.l10n.tr('patient.male');
+    }
+    if (normalized == 'female' || normalized == 'f') {
+      return context.l10n.tr('patient.female');
+    }
+    return context.l10n.tr('patient.other');
+  }
+
+  Widget _languageSettingsCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = context.l10n;
+    final currentCode = LanguageController.notifierOf(context).value.languageCode;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1A232C) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Text(
+              l10n.tr('home.settings'),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.translate),
+            title: Text(l10n.tr('home.language')),
+            trailing: Text(
+              AppLocalizations.nativeLanguageNames[currentCode] ?? 'Hindi',
+              style: TextStyle(
+                color: isDark ? const Color(0xFFA5B3BF) : const Color(0xFF6C7580),
+              ),
+            ),
+            onTap: _showLanguageSelector,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLanguageSelector() async {
+    final currentLocale = LanguageController.notifierOf(context).value;
+    String selectedCode = currentLocale.languageCode;
+    final l10n = context.l10n;
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      clipBehavior: Clip.antiAlias,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final media = MediaQuery.of(modalContext);
+            final maxHeight = media.size.height * 0.86;
+
+            return SafeArea(
+              top: false,
+              child: SizedBox(
+                height: maxHeight,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Column(
+                          children: [
+                            Text(
+                              l10n.tr('common.selectLanguage'),
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              l10n.tr('common.languageHint'),
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Theme.of(context).brightness == Brightness.dark
+                                    ? const Color(0xFF9AA7B3)
+                                    : const Color(0xFF7E8792),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1),
+                      const SizedBox(height: 8),
+                      Expanded(
+                        child: ListView.builder(
+                          itemCount: LanguageStorage.supportedLanguageCodes.length,
+                          itemBuilder: (listContext, index) {
+                            final code = LanguageStorage.supportedLanguageCodes[index];
+                            return RadioListTile<String>(
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                AppLocalizations.nativeLanguageNames[code] ?? code,
+                              ),
+                              subtitle: Text(
+                                AppLocalizations.nativeLanguageScripts[code] ?? '',
+                                style: TextStyle(
+                                  color: Theme.of(context).brightness == Brightness.dark
+                                      ? const Color(0xFF99A6B2)
+                                      : const Color(0xFF7A8592),
+                                ),
+                              ),
+                              value: code,
+                              groupValue: selectedCode,
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setSheetState(() {
+                                  selectedCode = value;
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Navigator.pop(modalContext, false),
+                              child: Text(l10n.tr('common.cancel')),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF14A7A0),
+                                foregroundColor: Colors.white,
+                              ),
+                              onPressed: () => Navigator.pop(modalContext, true),
+                              child: Text(l10n.tr('common.confirmSelection')),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      if (!mounted) return;
+      final notifier = LanguageController.notifierOf(context);
+      final locale = Locale(selectedCode);
+      notifier.value = locale;
+      await LanguageStorage.saveLocale(locale);
+    }
   }
 }
