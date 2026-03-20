@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 
 import 'connectivity_service.dart';
@@ -11,7 +12,7 @@ class PatientSyncService {
   final PatientOfflineDao _dao = PatientOfflineDao();
   final ConnectivityService _connectivity = ConnectivityService();
 
-  static const String baseUrl = "http://10.0.2.2:8080";
+  static String get baseUrl => AppConfig.apiBaseUrl;
   bool _syncing = false;
 
   Future<bool> sync(String token) async {

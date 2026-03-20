@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:frontend/patient/patient_model.dart';
 import 'package:frontend/services/patient_service.dart';
 import 'package:http/http.dart' as http;
@@ -29,7 +30,7 @@ class PatientCubit extends Cubit<PatientState> {
   required int patientId,
   required String token,
 }) async {
-  final url = Uri.parse("http://10.0.2.2:8080/api/patients/$patientId");
+  final url = Uri.parse("${AppConfig.patientsBaseUrl}/$patientId");
 
   final response = await http.delete(
     url,

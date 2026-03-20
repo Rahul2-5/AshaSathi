@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 
 import '../patient/patient_model.dart';
@@ -7,8 +8,7 @@ import '../offline/connectivity_service.dart';
 import '../offline/patient_offline_dao.dart';
 
 class PatientService {
-  static const String baseUrl =
-      "http://10.0.2.2:8080/api/patients";
+  static String get baseUrl => AppConfig.patientsBaseUrl;
 
   final ConnectivityService _connectivity = ConnectivityService();
   final PatientOfflineDao _offlineDao = PatientOfflineDao();

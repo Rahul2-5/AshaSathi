@@ -1,15 +1,19 @@
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
+import '../config/app_config.dart';
 
 class ConnectivityService {
-  static const String baseUrl = "http://10.0.2.2:8080";
+  static String get baseUrl => AppConfig.apiBaseUrl;
 
   /// True only if:
   /// 1) network exists
   /// 2) backend is reachable
   Future<bool> isOnline() async {
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity == ConnectivityResult.none) return false;
+    final connectivityResults = await Connectivity().checkConnectivity();
+    final hasNetwork = connectivityResults.any(
+      (result) => result != ConnectivityResult.none,
+    );
+    if (!hasNetwork) return false;
 
     try {
       // Prefer health endpoint if available, but accept any valid HTTP response

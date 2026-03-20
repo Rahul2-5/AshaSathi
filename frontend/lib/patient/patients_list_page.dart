@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -21,7 +23,7 @@ class PatientsListPage extends StatefulWidget {
 }
 
 class _PatientsListPageState extends State<PatientsListPage> {
-  static const String _baseUrl = 'http://10.0.2.2:8080';
+  static String get _baseUrl => AppConfig.apiBaseUrl;
 
   final TextEditingController _searchController = TextEditingController();
   String _query = '';
@@ -97,13 +99,6 @@ class _PatientsListPageState extends State<PatientsListPage> {
             ),
           ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          FocusScope.of(context).requestFocus();
-        },
-        backgroundColor: const Color(0xFF0F9BB7),
-        child: const Icon(Icons.search, color: Colors.white),
       ),
     );
   }
@@ -351,8 +346,8 @@ class _PatientsListPageState extends State<PatientsListPage> {
   Widget _buildPatientsList() {
     return BlocBuilder<PatientCubit, PatientState>(
       builder: (context, state) {
-        if (state.loading) {
-          return const Center(child: CircularProgressIndicator());
+        if (state.loading && state.patients.isEmpty) {
+          return _buildPatientsSkeletonList();
         }
 
         final filtered = _applyFilters(state.patients);
@@ -368,6 +363,69 @@ class _PatientsListPageState extends State<PatientsListPage> {
           itemBuilder: (context, index) => _patientRow(filtered[index]),
         );
       },
+    );
+  }
+
+  Widget _buildPatientsSkeletonList() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
+    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      period: const Duration(milliseconds: 1100),
+      child: ListView.separated(
+        itemCount: 6,
+        padding: EdgeInsets.only(bottom: _isCompact ? 92 : 104),
+        separatorBuilder: (_, _) => SizedBox(height: _isCompact ? 9 : 10),
+        itemBuilder: (_, index) {
+          return Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: _isCompact ? 12 : 13,
+              vertical: _isCompact ? 12 : 13,
+            ),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A232C) : Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isDark ? const Color(0xFF31414F) : const Color(0xFFE4E9ED),
+              ),
+            ),
+            child: Row(
+              children: [
+                _skeletonBox(44, 44, baseColor, circular: true),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _skeletonBox(128, 14, baseColor),
+                      const SizedBox(height: 8),
+                      _skeletonBox(98, 12, baseColor),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _skeletonBox(16, 16, baseColor, circular: true),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _skeletonBox(double width, double height, Color color,
+      {bool circular = false}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius:
+            circular ? BorderRadius.circular(height / 2) : BorderRadius.circular(8),
+      ),
     );
   }
 

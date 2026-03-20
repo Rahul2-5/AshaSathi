@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,7 +19,7 @@ class PatientDetailPage extends StatelessWidget {
     required this.patient,
   });
 
-  static const String baseUrl = "http://10.0.2.2:8080";
+  static String get baseUrl => AppConfig.apiBaseUrl;
 
   @override
   Widget build(BuildContext context) {

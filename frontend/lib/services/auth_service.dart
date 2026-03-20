@@ -1,10 +1,11 @@
 import 'dart:convert';
+import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AuthService {
-  final String baseUrl = "http://10.0.2.2:8080/api/auth";
+  final String baseUrl = AppConfig.authBaseUrl;
 
   // ------------------ EMAIL LOGIN ------------------
   // ✅ MUST RETURN TOKEN (String)
@@ -90,8 +91,7 @@ Future<String> login(Map<String, dynamic> data) async {
   // ------------------ GITHUB LOGIN ------------------
   Future<void> loginWithGithub() async {
     const clientId = "YOUR_GITHUB_CLIENT_ID";
-    const redirectUri =
-        "http://10.0.2.2:8080/api/auth/github/callback";
+    final redirectUri = "${AppConfig.authBaseUrl}/github/callback";
 
     final url =
         "https://github.com/login/oauth/authorize"

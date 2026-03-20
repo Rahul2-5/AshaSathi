@@ -3,9 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/localization/language_controller.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
@@ -272,9 +274,7 @@ class _HomePageState extends State<HomePage> {
     return BlocBuilder<TaskCubit, TaskState>(
       builder: (context, state) {
         if (state.loading && state.tasks.isEmpty) {
-          return const SliverToBoxAdapter(
-            child: Center(child: CircularProgressIndicator()),
-          );
+          return _buildTaskSkeletonSliver();
         }
 
         if (state.tasks.isEmpty) {
@@ -301,8 +301,8 @@ class _HomePageState extends State<HomePage> {
   Widget _recentPatientsList() {
     return BlocBuilder<PatientCubit, PatientState>(
       builder: (context, state) {
-        if (state.loading) {
-          return const Center(child: CircularProgressIndicator());
+        if (state.loading && state.patients.isEmpty) {
+          return _buildRecentPatientsSkeleton();
         }
 
         if (state.patients.isEmpty) {
@@ -326,6 +326,108 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  SliverToBoxAdapter _buildTaskSkeletonSliver() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
+    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+
+    return SliverToBoxAdapter(
+      child: Shimmer.fromColors(
+        baseColor: baseColor,
+        highlightColor: highlightColor,
+        period: const Duration(milliseconds: 1100),
+        child: Column(
+          children: List.generate(3, (index) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1A232C) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE9EDF0),
+                ),
+              ),
+              child: Row(
+                children: [
+                  _skeletonBox(48, 48, baseColor, circular: true),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _skeletonBox(140, 14, baseColor),
+                        const SizedBox(height: 10),
+                        _skeletonBox(220, 12, baseColor),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _skeletonBox(40, 20, baseColor),
+                ],
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentPatientsSkeleton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
+    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      period: const Duration(milliseconds: 1100),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: 4,
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
+        itemBuilder: (_, index) {
+          return Container(
+            width: 150,
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A232C) : Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC),
+              ),
+            ),
+            child: Column(
+              children: [
+                _skeletonBox(56, 56, baseColor, circular: true),
+                const SizedBox(height: 10),
+                _skeletonBox(92, 14, baseColor),
+                const SizedBox(height: 6),
+                _skeletonBox(110, 10, baseColor),
+                const Spacer(),
+                _skeletonBox(120, 32, baseColor),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _skeletonBox(double width, double height, Color color,
+      {bool circular = false}) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius:
+            circular ? BorderRadius.circular(height / 2) : BorderRadius.circular(8),
+      ),
+    );
+  }
+
   Widget _patientCard(Patient patient) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? const Color(0xFF1A232C) : Colors.white;
@@ -340,18 +442,16 @@ class _HomePageState extends State<HomePage> {
       final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
 
       // Server stores relative paths like "/uploads/patients/1/profile.jpg"
-      if (normalizedPhoto.startsWith('/uploads/') ||
-          normalizedPhoto.contains('/uploads/')) {
-        networkUrl = "http://10.0.2.2:8080$normalizedPhoto";
-      } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) ||
-          isWindowsAbsolutePath) {
+          if (normalizedPhoto.startsWith('/uploads/') || normalizedPhoto.contains('/uploads/')) {
+            networkUrl = "${AppConfig.apiBaseUrl}$normalizedPhoto";
+          } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) || isWindowsAbsolutePath) {
         // Assume absolute local file path on device
         localPath = photo;
       } else if (photo.startsWith('http')) {
         networkUrl = photo;
       } else {
         // Treat as relative server path
-        networkUrl = "http://10.0.2.2:8080/$normalizedPhoto";
+            networkUrl = "${AppConfig.apiBaseUrl}/$normalizedPhoto";
       }
     }
 

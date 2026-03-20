@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 
 import 'task_offline_dao.dart';
@@ -9,7 +10,7 @@ class TaskSyncService {
   final TaskOfflineDao _dao = TaskOfflineDao();
   final ConnectivityService _connectivity = ConnectivityService();
 
-  static const String baseUrl = "http://10.0.2.2:8080/api/tasks";
+  static String get baseUrl => AppConfig.tasksBaseUrl;
 
   /// Returns true ONLY if real sync happened
   Future<bool> sync(String token) async {

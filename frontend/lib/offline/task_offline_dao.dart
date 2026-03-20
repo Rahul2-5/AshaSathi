@@ -27,6 +27,18 @@ class TaskOfflineDao {
     return result.map(TaskOfflineEntity.fromMap).toList();
   }
 
+  Future<List<TaskOfflineEntity>> getAllActive() async {
+    final db = await _db.database;
+    final result = await db.query(
+      AppDatabaseOffline.taskTable,
+      where: 'syncStatus != ?',
+      whereArgs: [SyncStatusOffline.deleted],
+      orderBy: 'updatedAt DESC',
+    );
+
+    return result.map(TaskOfflineEntity.fromMap).toList();
+  }
+
   Future<void> markSynced({
     required int localId,
     required int serverId,

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:uuid/uuid.dart';
 
@@ -9,7 +10,7 @@ import '../offline/task_offline_dao.dart';
 import '../offline/task_offline_entity.dart';
 
 class TaskService {
-  final String baseUrl = "http://10.0.2.2:8080/api/tasks";
+  final String baseUrl = AppConfig.tasksBaseUrl;
 
   final ConnectivityService _connectivity = ConnectivityService();
   final TaskOfflineDao _offlineDao = TaskOfflineDao();
@@ -18,9 +19,9 @@ class TaskService {
   Future<List<TaskModel>> fetchTodayTasks(String token) async {
     final isOnline = await _connectivity.isOnline();
 
-    // 🔴 Load OFFLINE tasks first (only pending/synced, not deleted)
-    final offlineTasks = await _offlineDao.getPending();
-    debugPrint("Loaded ${offlineTasks.length} offline pending tasks");
+    // Load local non-deleted tasks first so we can merge unsynced local data.
+    final offlineTasks = await _offlineDao.getAllActive();
+    debugPrint("Loaded ${offlineTasks.length} local active tasks");
 
     final offlineModels = offlineTasks.map((t) {
       return TaskModel(
@@ -34,7 +35,7 @@ class TaskService {
 
     // 🔴 If offline → return only offline
     if (!isOnline) {
-      debugPrint("Offline mode: returning ${offlineModels.length} locally synced tasks");
+      debugPrint("Offline mode: returning ${offlineModels.length} local tasks");
       return offlineModels;
     }
 
@@ -56,8 +57,27 @@ class TaskService {
       final onlineTasks = list.map((e) => TaskModel.fromJson(e)).toList();
       debugPrint("Loaded ${onlineTasks.length} tasks from backend");
 
-      // ✅ Return BACKEND tasks only (server is source of truth)
-      return onlineTasks;
+      // Keep unsynced local tasks visible while still showing backend source of truth.
+      final unsyncedLocal =
+          offlineModels.where((task) => task.id == null).toList();
+      if (unsyncedLocal.isEmpty) {
+        return onlineTasks;
+      }
+
+      final onlineKeys = onlineTasks.map(_taskKey).toSet();
+      final merged = <TaskModel>[...onlineTasks];
+
+      for (final localTask in unsyncedLocal) {
+        final key = _taskKey(localTask);
+        if (!onlineKeys.contains(key)) {
+          merged.insert(0, localTask);
+        }
+      }
+
+      debugPrint(
+        "Merged ${unsyncedLocal.length} unsynced local tasks with backend list",
+      );
+      return merged;
     } catch (e) {
       debugPrint("Error fetching from backend: $e");
       return offlineModels;
@@ -214,5 +234,13 @@ class TaskService {
       default:
         return TaskStatus.pending;
     }
+  }
+
+  String _taskKey(TaskModel task) {
+    final uuid = task.uuid.trim();
+    if (uuid.isNotEmpty && !RegExp(r'^\d+$').hasMatch(uuid)) {
+      return "uuid:$uuid";
+    }
+    return "id:${task.id ?? -1}";
   }
 }
