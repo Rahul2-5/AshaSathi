@@ -45,6 +45,7 @@ class _LoginViewState extends State<LoginView> {
 
   final ValueNotifier<bool> _showPassword = ValueNotifier(false);
   final Appvalidator appvalidator = Appvalidator();
+  bool _isGoogleLoading = false;
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
@@ -347,7 +348,10 @@ class _LoginViewState extends State<LoginView> {
 
   Widget _buildGoogleButton(AppLocalizations l10n) {
     return OutlinedButton(
-      onPressed: () async {
+      onPressed: _isGoogleLoading
+          ? null
+          : () async {
+        setState(() => _isGoogleLoading = true);
         final loginCubit = context.read<LoginCubit>();
         final messenger = ScaffoldMessenger.of(context);
         final navigator = Navigator.of(context);
@@ -364,6 +368,10 @@ class _LoginViewState extends State<LoginView> {
           if (!mounted) return;
 
           messenger.showSnackBar(SnackBar(content: Text(e.toString())));
+        } finally {
+          if (mounted) {
+            setState(() => _isGoogleLoading = false);
+          }
         }
       },
       style: OutlinedButton.styleFrom(
@@ -372,21 +380,27 @@ class _LoginViewState extends State<LoginView> {
         backgroundColor: _isDark ? const Color(0xFF14202A) : Colors.transparent,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Image.asset('assets/images/google.png', width: 20, height: 20),
-          const SizedBox(width: 8),
-          Text(
-            l10n.tr('auth.google'),
-            style: TextStyle(
-              color: _primaryText,
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
+      child: _isGoogleLoading
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2.2),
+            )
+          : Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/images/google.png', width: 20, height: 20),
+                const SizedBox(width: 8),
+                Text(
+                  l10n.tr('auth.google'),
+                  style: TextStyle(
+                    color: _primaryText,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

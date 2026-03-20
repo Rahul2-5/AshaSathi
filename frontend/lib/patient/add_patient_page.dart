@@ -40,6 +40,58 @@ class _AddPatientPageState extends State<AddPatientPage> {
   Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
 
+  void _showSnackBar(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Colors.red : Colors.green,
+      ),
+    );
+  }
+
+  String? _validateName(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return context.l10n.tr('common.required');
+    if (v.length < 2) return context.l10n.tr('patient.invalidName');
+    return null;
+  }
+
+  String? _validateAge(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return context.l10n.tr('common.required');
+    final age = int.tryParse(v);
+    if (age == null || age < 1 || age > 130) {
+      return context.l10n.tr('patient.invalidAge');
+    }
+    return null;
+  }
+
+  String? _validateAddress(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return context.l10n.tr('common.required');
+    if (v.length < 5) return context.l10n.tr('patient.invalidAddress');
+    return null;
+  }
+
+  String? _validatePhone(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return context.l10n.tr('common.required');
+    if (!RegExp(r'^\d{10}$').hasMatch(v)) {
+      return context.l10n.tr('patient.invalidPhone');
+    }
+    return null;
+  }
+
+  String? _validateDob(String? value) {
+    final v = value?.trim() ?? '';
+    if (v.isEmpty) return context.l10n.tr('common.required');
+    final parsed = DateTime.tryParse(v);
+    if (parsed == null || parsed.isAfter(DateTime.now())) {
+      return context.l10n.tr('patient.invalidDob');
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,16 +162,27 @@ class _AddPatientPageState extends State<AddPatientPage> {
   Widget _patientForm() {
     return Form(
       key: _formKey,
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
-            _inputField(context.l10n.tr('patient.patientName'), _nameController),
+            _inputField(
+              context.l10n.tr('patient.patientName'),
+              _nameController,
+              validator: _validateName,
+            ),
             _inputField(context.l10n.tr('patient.age'), _ageController,
-              keyboard: TextInputType.number),
+              keyboard: TextInputType.number,
+              validator: _validateAge),
           _dobField(), 
           _genderDropdown(),
-            _inputField(context.l10n.tr('patient.address'), _addressController),
+            _inputField(
+              context.l10n.tr('patient.address'),
+              _addressController,
+              validator: _validateAddress,
+            ),
             _inputField(context.l10n.tr('auth.phoneNumber'), _phoneController,
-              keyboard: TextInputType.phone),
+              keyboard: TextInputType.phone,
+              validator: _validatePhone),
         ],
       ),
     );
@@ -129,6 +192,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
     String title,
     TextEditingController controller, {
     TextInputType keyboard = TextInputType.text,
+    String? Function(String?)? validator,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -146,8 +210,11 @@ class _AddPatientPageState extends State<AddPatientPage> {
           TextFormField(
             controller: controller,
             keyboardType: keyboard,
-            validator: (v) =>
-                v == null || v.trim().isEmpty ? context.l10n.tr('common.required') : null,
+            validator: validator ??
+              (v) =>
+                v == null || v.trim().isEmpty
+                  ? context.l10n.tr('common.required')
+                  : null,
             decoration: _inputDecoration(title),
           ),
         ],
@@ -174,8 +241,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
             controller: _dobController,
             readOnly: true,
             onTap: _pickDateOfBirth,
-            validator: (v) =>
-              v == null || v.isEmpty ? context.l10n.tr('common.required') : null,
+            validator: _validateDob,
             decoration: _inputDecoration(context.l10n.tr('patient.selectDate'))
                 .copyWith(suffixIcon: const Icon(Icons.calendar_today)),
           ),
@@ -199,7 +265,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
                 color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
-            value: _gender,
+            initialValue: _gender,
             items: [
               DropdownMenuItem(value: 'Female', child: Text(context.l10n.tr('patient.female'))),
               DropdownMenuItem(value: 'Male', child: Text(context.l10n.tr('patient.male'))),
@@ -277,62 +343,71 @@ class _AddPatientPageState extends State<AddPatientPage> {
     }
   }
 
- Future<void> _handleSave() async {
-  if (!_formKey.currentState!.validate()) return;
+  Future<void> _handleSave() async {
+    if (!_formKey.currentState!.validate()) return;
 
-  if (_selectedImage == null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.l10n.tr('patient.pleaseAddPhoto')),
-        backgroundColor: Colors.red,
-      ),
-    );
-    return;
-  }
+    final l10n = context.l10n;
+    final loginCubit = context.read<LoginCubit>();
+    final patientCubit = context.read<PatientCubit>();
+    final navigator = Navigator.of(context);
 
-  setState(() => _isLoading = true);
+    if (_selectedImage == null) {
+      _showSnackBar(l10n.tr('patient.pleaseAddPhoto'), isError: true);
+      return;
+    }
 
-  try {
-    await PatientOfflineService().saveOffline(
-      name: _nameController.text.trim(),
-      gender: _gender,
-      age: int.parse(_ageController.text.trim()),
-      dateOfBirth: _dobController.text.trim(),
-      address: _addressController.text.trim(),
-      phoneNumber: _phoneController.text.trim(),
-      photoPath: _selectedImage!.path,
-    );
+    final age = int.tryParse(_ageController.text.trim());
+    if (age == null) {
+      _showSnackBar(l10n.tr('patient.invalidAge'), isError: true);
+      return;
+    }
 
-    final isOnline = await ConnectivityService().isOnline();
+    setState(() => _isLoading = true);
 
-    if (isOnline) {
-      final token = context.read<LoginCubit>().state.token;
-      if (token != null) {
+    try {
+      await PatientOfflineService().saveOffline(
+        name: _nameController.text.trim(),
+        gender: _gender,
+        age: age,
+        dateOfBirth: _dobController.text.trim(),
+        address: _addressController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        photoPath: _selectedImage!.path,
+      );
+
+      final isOnline = await ConnectivityService().isOnline();
+      final token = loginCubit.state.token;
+
+      if (isOnline && token != null) {
         await PatientSyncService().sync(token);
       }
-    }
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    final token = context.read<LoginCubit>().state.token;
-    if (token != null) {
-      await context.read<PatientCubit>().loadPatients(token);
-    }
+      if (token != null) {
+        await patientCubit.loadPatients(token);
+      }
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const PatientSuccessPage()),
-    );
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(e.toString())));
-  } finally {
-    if (mounted) {
-      setState(() => _isLoading = false);
+      if (!mounted) return;
+
+      _showSnackBar(
+        isOnline
+            ? l10n.tr('patient.saveSuccessOnline')
+            : l10n.tr('patient.saveSuccessOffline'),
+      );
+
+      navigator.push(
+        MaterialPageRoute(builder: (_) => const PatientSuccessPage()),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      _showSnackBar(l10n.tr('patient.saveFailed'), isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
-}
 
  Future<void> _pickImage(ImageSource source) async {
   final image = await _picker.pickImage(

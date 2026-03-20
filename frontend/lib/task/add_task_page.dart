@@ -18,6 +18,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
   final descController = TextEditingController();
 
   TaskStatus status = TaskStatus.pending;
+  bool _isSaving = false;
 
   static const Color _primaryTeal = Color(0xFF14A7A0);
 
@@ -154,6 +155,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   ),
                 ),
                 onPressed: () async {
+                  if (_isSaving) return;
                   if (titleController.text.trim().isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
@@ -174,6 +176,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     status: status,
                   );
 
+                  setState(() => _isSaving = true);
                   try {
                     await context.read<TaskCubit>().addTask(task, token);
                     
@@ -193,22 +196,42 @@ class _AddTaskPageState extends State<AddTaskPage> {
                         backgroundColor: Colors.red,
                       ),
                     );
+                  } finally {
+                    if (mounted) {
+                      setState(() => _isSaving = false);
+                    }
                   }
                 },
-                child: Text(
-                  l10n.tr('task.saveTask'),
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
+                child: _isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      )
+                    : Text(
+                        l10n.tr('task.saveTask'),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    descController.dispose();
+    super.dispose();
   }
 
   InputDecoration _fieldDecoration(String hint, bool isDark) {

@@ -45,9 +45,6 @@ public class SecurityConfig {
                 //  AUTH RULES
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/",
-                                "/health-check",
-                                "/api/test",
                                 "/api/auth/**",
                                 "/api/health/**",
                                 "/uploads/**",

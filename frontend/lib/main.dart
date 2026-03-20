@@ -109,6 +109,8 @@ class _AppRootState extends State<_AppRoot> {
                     GlobalCupertinoLocalizations.delegate,
                   ],
                   themeMode: mode,
+                  themeAnimationDuration: const Duration(milliseconds: 300),
+                  themeAnimationCurve: Curves.easeOutCubic,
                   theme: _lightTheme(),
                   darkTheme: _darkTheme(),
                   home: const SplashPage(),
@@ -140,6 +142,16 @@ class _AppRootState extends State<_AppRoot> {
         elevation: 0,
         centerTitle: true,
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.iOS: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.linux: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.macOS: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.windows: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: _SmoothPageTransitionsBuilder(),
+        },
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
@@ -161,6 +173,16 @@ class _AppRootState extends State<_AppRoot> {
         elevation: 0,
         centerTitle: true,
       ),
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.iOS: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.linux: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.macOS: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.windows: _SmoothPageTransitionsBuilder(),
+          TargetPlatform.fuchsia: _SmoothPageTransitionsBuilder(),
+        },
+      ),
       cardColor: const Color(0xFF1A232C),
       dividerColor: const Color(0xFF28323D),
       snackBarTheme: const SnackBarThemeData(
@@ -174,14 +196,48 @@ class ThemeModeController extends InheritedNotifier<ValueNotifier<ThemeMode>> {
   const ThemeModeController({
     super.key,
     required ValueNotifier<ThemeMode> notifier,
-    required Widget child,
-  }) : super(notifier: notifier, child: child);
+    required super.child,
+  }) : super(notifier: notifier);
 
   static ValueNotifier<ThemeMode> notifierOf(BuildContext context) {
     final controller =
         context.dependOnInheritedWidgetOfExactType<ThemeModeController>();
     assert(controller != null, 'ThemeModeController not found in widget tree');
     return controller!.notifier!;
+  }
+}
+
+class _SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
+  const _SmoothPageTransitionsBuilder();
+
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    const beginOffset = Offset(0.06, 0);
+    const endOffset = Offset.zero;
+    const curve = Curves.easeOutCubic;
+
+    final curvedAnimation = CurvedAnimation(
+      parent: animation,
+      curve: curve,
+      reverseCurve: curve,
+    );
+
+    final offsetTween = Tween<Offset>(begin: beginOffset, end: endOffset)
+        .chain(CurveTween(curve: curve));
+
+    return FadeTransition(
+      opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
+      child: SlideTransition(
+        position: curvedAnimation.drive(offsetTween),
+        child: child,
+      ),
+    );
   }
 }
 

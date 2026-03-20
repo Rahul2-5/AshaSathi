@@ -37,6 +37,21 @@ class TaskCard extends StatelessWidget {
     }
   }
 
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog(BuildContext context) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -173,6 +188,7 @@ class TaskCard extends StatelessWidget {
               if (confirm == true) {
                 final token =
                     context.read<LoginCubit>().state.token!;
+                _showLoadingDialog(context);
 
                 try {
                   final deleted = await context
@@ -180,12 +196,13 @@ class TaskCard extends StatelessWidget {
                       .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
 
                   if (!context.mounted) return;
+                  _hideLoadingDialog(context);
 
                   if (deleted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(context.l10n.tr('task.deletedSuccessfully')),
-                        backgroundColor: Colors.green,
+                        backgroundColor: Colors.red,
                       ),
                     );
                   } else {
@@ -198,6 +215,7 @@ class TaskCard extends StatelessWidget {
                   }
                 } catch (e) {
                   if (!context.mounted) return;
+                  _hideLoadingDialog(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(

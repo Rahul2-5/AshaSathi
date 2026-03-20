@@ -187,6 +187,21 @@ class PatientDetailPage extends StatelessWidget {
     return context.l10n.tr('patient.other');
   }
 
+  void _showLoadingDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog(BuildContext context) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+  }
+
   // ================= DELETE =================
 
   Widget _deleteButton(BuildContext context) {
@@ -223,7 +238,13 @@ class PatientDetailPage extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(ctx);
-              await _deletePatient(context);
+              _showLoadingDialog(context);
+              final shouldClosePage = await _deletePatient(context);
+              if (!context.mounted) return;
+              _hideLoadingDialog(context);
+              if (shouldClosePage) {
+                Navigator.pop(context, true);
+              }
             },
             child: Text(context.l10n.tr('common.delete'),
                 style: TextStyle(color: Colors.red)),
@@ -233,88 +254,87 @@ class PatientDetailPage extends StatelessWidget {
     );
   }
 
-  Future<void> _deletePatient(BuildContext context) async {
-  final token = context.read<LoginCubit>().state.token!;
-  final dao = PatientOfflineDao();
-  final connectivity = ConnectivityService();
+  Future<bool> _deletePatient(BuildContext context) async {
+    final token = context.read<LoginCubit>().state.token!;
+    final dao = PatientOfflineDao();
+    final connectivity = ConnectivityService();
 
-  debugPrint("Delete patient: id=${patient.id}, uuid=${patient.uuid}, online=${await connectivity.isOnline()}");
+    debugPrint("Delete patient: id=${patient.id}, uuid=${patient.uuid}, online=${await connectivity.isOnline()}");
 
-  //  OFFLINE OR NOT YET SYNCED
-  if (!await connectivity.isOnline() || patient.id == null) {
-    await dao.markDeletedByUuid(patient.uuid);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(context.l10n.tr('patient.markedDeletion'))),
-    );
-    Navigator.pop(context, true);
-    return;
-  }
-
-  // 🟢 ONLINE DELETE
-  try {
-    final url = "$baseUrl/api/patients/${patient.id}";
-    debugPrint("Attempting DELETE: $url");
-    debugPrint("Patient ID: ${patient.id}");
-    debugPrint("Token: ${token.substring(0, 10)}...");
-
-    final res = await http.delete(
-      Uri.parse(url),
-      headers: {
-        "Authorization": "Bearer $token",
-      },
-    );
-
-    debugPrint("Delete response status: ${res.statusCode}");
-    debugPrint("Delete response headers: ${res.headers}");
-    debugPrint("Delete response body: ${res.body}");
-
-    if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201) {
-      debugPrint("Delete successful! Removing from local storage...");
-      // Hard delete from offline storage
-      await dao.hardDeleteByUuid(patient.uuid);
-
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.tr('patient.deletedSuccessfully'))),
-      );
-      debugPrint("Returning to previous page...");
-      Navigator.pop(context, true);
-    } else {
-      debugPrint("Delete failed with status: ${res.statusCode}");
-      // Delete failed, try offline
+    // OFFLINE OR NOT YET SYNCED
+    if (!await connectivity.isOnline() || patient.id == null) {
       await dao.markDeletedByUuid(patient.uuid);
 
-      if (!context.mounted) return;
+      if (!context.mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.l10n.tr('patient.markedDeletion'))),
+      );
+      return true;
+    }
+
+    // ONLINE DELETE
+    try {
+      final url = "$baseUrl/api/patients/${patient.id}";
+      debugPrint("Attempting DELETE: $url");
+      debugPrint("Patient ID: ${patient.id}");
+      debugPrint("Token: ${token.substring(0, 10)}...");
+
+      final res = await http.delete(
+        Uri.parse(url),
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      debugPrint("Delete response status: ${res.statusCode}");
+      debugPrint("Delete response headers: ${res.headers}");
+      debugPrint("Delete response body: ${res.body}");
+
+      if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201) {
+        debugPrint("Delete successful! Removing from local storage...");
+        // Hard delete from offline storage
+        await dao.hardDeleteByUuid(patient.uuid);
+
+        if (!context.mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.l10n.tr('patient.deletedSuccessfully'))),
+        );
+        debugPrint("Returning to previous page...");
+        return true;
+      } else {
+        debugPrint("Delete failed with status: ${res.statusCode}");
+        // Delete failed, try offline
+        await dao.markDeletedByUuid(patient.uuid);
+
+        if (!context.mounted) return false;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              context.l10n.tr(
+                'patient.deleteFailedStatus',
+                args: {'status': res.statusCode.toString()},
+              ),
+            ),
+          ),
+        );
+        return true;
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Delete error: $e");
+      debugPrint("Stack trace: $stackTrace");
+      // fallback to offline delete
+      await dao.markDeletedByUuid(patient.uuid);
+
+      if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.tr(
-              'patient.deleteFailedStatus',
-              args: {'status': res.statusCode.toString()},
-            ),
+            context.l10n.tr('patient.errorDeleting', args: {'error': e.toString()}),
           ),
         ),
       );
-      Navigator.pop(context, true);
+      return true;
     }
-  } catch (e, stackTrace) {
-    debugPrint("Delete error: $e");
-    debugPrint("Stack trace: $stackTrace");
-    // fallback to offline delete
-    await dao.markDeletedByUuid(patient.uuid);
-
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          context.l10n.tr('patient.errorDeleting', args: {'error': e.toString()}),
-        ),
-      ),
-    );
-    Navigator.pop(context, true);
   }
-}
 
 }
