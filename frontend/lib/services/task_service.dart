@@ -57,6 +57,19 @@ class TaskService {
       final onlineTasks = list.map((e) => TaskModel.fromJson(e)).toList();
       debugPrint("Loaded ${onlineTasks.length} tasks from backend");
 
+      for (final onlineTask in onlineTasks) {
+        await _offlineDao.upsertSynced(
+          TaskOfflineEntity(
+            uuid: onlineTask.uuid,
+            serverId: onlineTask.id,
+            title: onlineTask.title,
+            description: onlineTask.description,
+            status: _statusToString(onlineTask.status),
+            createdDate: DateTime.now().toIso8601String(),
+          ),
+        );
+      }
+
       // Keep unsynced local tasks visible while still showing backend source of truth.
       final unsyncedLocal =
           offlineModels.where((task) => task.id == null).toList();
@@ -129,6 +142,27 @@ class TaskService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         debugPrint("Task created successfully on backend");
+
+        int? serverId;
+        try {
+          final body = jsonDecode(response.body);
+          if (body is Map<String, dynamic>) {
+            serverId = (body['id'] as num?)?.toInt();
+          }
+        } catch (_) {
+          serverId = null;
+        }
+
+        await _offlineDao.upsertSynced(
+          TaskOfflineEntity(
+            uuid: task.uuid,
+            serverId: serverId,
+            title: task.title,
+            description: task.description,
+            status: _statusToString(task.status),
+            createdDate: DateTime.now().toIso8601String(),
+          ),
+        );
       } else {
         debugPrint("Backend returned ${response.statusCode}, falling back to offline");
         // Fallback: save offline if backend fails

@@ -22,6 +22,63 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
   static const Color _primaryTeal = Color(0xFF14A7A0);
 
+  void _showStyledSnackBar({
+    required String message,
+    required Color accent,
+    required IconData icon,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+        backgroundColor: Colors.transparent,
+        content: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A232C) : Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: accent.withValues(alpha: 0.35)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: accent, size: 16),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  message,
+                  style: TextStyle(
+                    color:
+                        isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -157,11 +214,10 @@ class _AddTaskPageState extends State<AddTaskPage> {
                 onPressed: () async {
                   if (_isSaving) return;
                   if (titleController.text.trim().isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.tr('task.pleaseEnterTitle')),
-                        backgroundColor: Colors.red,
-                      ),
+                    _showStyledSnackBar(
+                      message: l10n.tr('task.pleaseEnterTitle'),
+                      accent: const Color(0xFFD64242),
+                      icon: Icons.warning_amber_rounded,
                     );
                     return;
                   }
@@ -181,20 +237,18 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     await context.read<TaskCubit>().addTask(task, token);
                     
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(l10n.tr('task.addedSuccessfully')),
-                        backgroundColor: Colors.green,
-                      ),
+                    _showStyledSnackBar(
+                      message: l10n.tr('task.addedSuccessfully'),
+                      accent: const Color(0xFF1F9D60),
+                      icon: Icons.check_circle_outline,
                     );
                     Navigator.pop(context, true);
                   } catch (e) {
                     if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: $e'),
-                        backgroundColor: Colors.red,
-                      ),
+                    _showStyledSnackBar(
+                      message: 'Error: $e',
+                      accent: const Color(0xFFD64242),
+                      icon: Icons.error_outline,
                     );
                   } finally {
                     if (mounted) {

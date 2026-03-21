@@ -7,7 +7,7 @@ import '../home/home_page.dart';
 import '../services/auth_service.dart';
 import 'cubit/signup_cubit.dart';
 import 'cubit/signup_state.dart';
-import '../utils/appValidator.dart';
+import '../utils/app_validator.dart';
 import 'login_page.dart';
 
 class SignUpView extends StatefulWidget {

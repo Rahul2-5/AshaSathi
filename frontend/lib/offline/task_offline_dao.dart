@@ -15,6 +15,57 @@ class TaskOfflineDao {
   );
 }
 
+  Future<void> upsertSynced(TaskOfflineEntity task) async {
+    final db = await _db.database;
+
+    Map<String, dynamic>? existing;
+
+    if (task.serverId != null) {
+      final byServerId = await db.query(
+        AppDatabaseOffline.taskTable,
+        where: 'serverId = ?',
+        whereArgs: [task.serverId],
+        limit: 1,
+      );
+      if (byServerId.isNotEmpty) {
+        existing = byServerId.first;
+      }
+    }
+
+    final byUuid = await db.query(
+      AppDatabaseOffline.taskTable,
+      where: 'uuid = ?',
+      whereArgs: [task.uuid],
+      limit: 1,
+    );
+    if (existing == null && byUuid.isNotEmpty) {
+      existing = byUuid.first;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final payload = {
+      ...task.toMap(),
+      'syncStatus': SyncStatusOffline.synced,
+      'updatedAt': now,
+    };
+
+    if (existing == null) {
+      await db.insert(
+        AppDatabaseOffline.taskTable,
+        payload,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      return;
+    }
+
+    await db.update(
+      AppDatabaseOffline.taskTable,
+      payload,
+      where: 'localId = ?',
+      whereArgs: [existing['localId']],
+    );
+  }
+
 
   Future<List<TaskOfflineEntity>> getPending() async {
     final db = await _db.database;

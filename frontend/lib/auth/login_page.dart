@@ -3,7 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../services/auth_service.dart';
-import '../utils/appValidator.dart';
+import '../utils/app_validator.dart';
 import 'cubit/login_cubit.dart';
 import 'cubit/login_state.dart';
 import 'signup_page.dart';

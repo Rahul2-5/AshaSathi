@@ -32,6 +32,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
   final _dobController = TextEditingController();
   final _addressController = TextEditingController();
   final _phoneController = TextEditingController();
+  bool _isSyncingAgeDob = false;
 
   String _gender = 'Female';
   bool _isLoading = false;
@@ -90,6 +91,12 @@ class _AddPatientPageState extends State<AddPatientPage> {
       return context.l10n.tr('patient.invalidDob');
     }
     return null;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _ageController.addListener(_syncDobFromAge);
   }
 
   @override
@@ -330,17 +337,74 @@ class _AddPatientPageState extends State<AddPatientPage> {
   // ================= LOGIC =================
 
   Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final parsedDob = DateTime.tryParse(_dobController.text.trim());
+    final initialDate =
+        (parsedDob != null && !parsedDob.isAfter(now)) ? parsedDob : now;
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime(2000),
+      initialDate: initialDate,
       firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+      lastDate: now,
     );
 
     if (picked != null) {
       _dobController.text =
           "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
+      _syncAgeFromDob(picked);
     }
+  }
+
+  void _syncDobFromAge() {
+    if (_isSyncingAgeDob) return;
+
+    final rawAge = _ageController.text.trim();
+    if (rawAge.isEmpty) {
+      if (_dobController.text.isEmpty) return;
+      _isSyncingAgeDob = true;
+      _dobController.clear();
+      _isSyncingAgeDob = false;
+      return;
+    }
+
+    final age = int.tryParse(rawAge);
+    if (age == null || age < 1 || age > 130) return;
+
+    final now = DateTime.now();
+    final targetYear = now.year - age;
+    final maxDayInMonth = DateTime(targetYear, now.month + 1, 0).day;
+    final targetDay = now.day <= maxDayInMonth ? now.day : maxDayInMonth;
+    final estimatedDob = DateTime(targetYear, now.month, targetDay);
+    final formattedDob =
+        "${estimatedDob.year}-${estimatedDob.month.toString().padLeft(2, '0')}-${estimatedDob.day.toString().padLeft(2, '0')}";
+
+    if (_dobController.text == formattedDob) return;
+
+    _isSyncingAgeDob = true;
+    _dobController.text = formattedDob;
+    _isSyncingAgeDob = false;
+  }
+
+  void _syncAgeFromDob(DateTime dob) {
+    if (_isSyncingAgeDob) return;
+
+    final now = DateTime.now();
+    var age = now.year - dob.year;
+    final hadBirthdayThisYear =
+        (now.month > dob.month) || (now.month == dob.month && now.day >= dob.day);
+    if (!hadBirthdayThisYear) {
+      age -= 1;
+    }
+
+    if (age < 0 || age > 130) return;
+
+    final ageText = age.toString();
+    if (_ageController.text == ageText) return;
+
+    _isSyncingAgeDob = true;
+    _ageController.text = ageText;
+    _isSyncingAgeDob = false;
   }
 
   Future<void> _handleSave() async {
@@ -487,6 +551,7 @@ void _showImageSourceSheet() {
 
   @override
   void dispose() {
+    _ageController.removeListener(_syncDobFromAge);
     _nameController.dispose();
     _ageController.dispose();
     _dobController.dispose();

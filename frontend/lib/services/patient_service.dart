@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import '../patient/patient_model.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_offline_dao.dart';
+import '../offline/patient_offline_entity.dart';
 
 class PatientService {
   static String get baseUrl => AppConfig.patientsBaseUrl;
@@ -60,8 +64,46 @@ class PatientService {
       }
 
       final List data = jsonDecode(res.body);
-      final onlineModels = data.map((e) => Patient.fromJson(e)).toList();
+      final parsedOnline = data.map((e) => Patient.fromJson(e)).toList();
+      final onlineModels = <Patient>[];
+
+      for (final patient in parsedOnline) {
+        final cachedPhotoPath = await _cachePatientPhotoIfNeeded(
+          patient: patient,
+          token: token,
+        );
+
+        onlineModels.add(
+          Patient(
+            id: patient.id,
+            uuid: patient.uuid,
+            name: patient.name,
+            gender: patient.gender,
+            age: patient.age,
+            dateOfBirth: patient.dateOfBirth,
+            address: patient.address,
+            phoneNumber: patient.phoneNumber,
+            photoPath: cachedPhotoPath,
+          ),
+        );
+      }
       debugPrint("Loaded ${onlineModels.length} patients from backend");
+
+      for (final patient in onlineModels) {
+        await _offlineDao.upsertSynced(
+          PatientOfflineEntity(
+            serverId: patient.id,
+            uuid: patient.uuid,
+            name: patient.name,
+            gender: patient.gender,
+            age: patient.age,
+            dateOfBirth: patient.dateOfBirth,
+            address: patient.address,
+            phoneNumber: patient.phoneNumber,
+            photoPath: patient.photoPath,
+          ),
+        );
+      }
 
       final unsyncedLocal =
           offlineModels.where((patient) => patient.id == null).toList();
@@ -99,5 +141,91 @@ class PatientService {
       return "uuid:$uuid";
     }
     return "id:${patient.id ?? -1}";
+  }
+
+  Future<String?> _cachePatientPhotoIfNeeded({
+    required Patient patient,
+    required String token,
+  }) async {
+    final rawPath = patient.photoPath?.trim();
+    if (rawPath == null || rawPath.isEmpty) {
+      return rawPath;
+    }
+
+    final normalized = rawPath.replaceAll('\\', '/');
+    final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(rawPath);
+
+    if ((rawPath.startsWith('/') || isWindowsAbsolutePath) &&
+        !normalized.startsWith('/uploads/')) {
+      return rawPath;
+    }
+
+    final remoteUrl = _resolveRemotePhotoUrl(rawPath);
+    if (remoteUrl == null) {
+      return rawPath;
+    }
+
+    try {
+      final docsDir = await getApplicationDocumentsDirectory();
+      final cacheDir = Directory(p.join(docsDir.path, 'patient_photo_cache'));
+      if (!cacheDir.existsSync()) {
+        cacheDir.createSync(recursive: true);
+      }
+
+      final uri = Uri.parse(remoteUrl);
+      String extension = p.extension(uri.path);
+      if (extension.isEmpty) {
+        extension = '.jpg';
+      }
+
+      final safeId = (patient.uuid.trim().isNotEmpty
+              ? patient.uuid.trim()
+              : (patient.id?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString()))
+          .replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+
+      final localPath = p.join(cacheDir.path, 'patient_$safeId$extension');
+      final localFile = File(localPath);
+
+      if (!localFile.existsSync()) {
+        final photoRes = await http.get(
+          uri,
+          headers: {
+            'Authorization': 'Bearer $token',
+          },
+        );
+
+        if (photoRes.statusCode == 200) {
+          await localFile.writeAsBytes(photoRes.bodyBytes, flush: true);
+        } else {
+          debugPrint(
+            'Patient photo cache skipped for ${patient.uuid}: HTTP ${photoRes.statusCode}',
+          );
+          return rawPath;
+        }
+      }
+
+      return localPath;
+    } catch (e) {
+      debugPrint('Patient photo cache failed for ${patient.uuid}: $e');
+      return rawPath;
+    }
+  }
+
+  String? _resolveRemotePhotoUrl(String rawPath) {
+    final normalized = rawPath.replaceAll('\\', '/');
+
+    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+      return rawPath;
+    }
+
+    if (normalized.startsWith('/uploads/') || normalized.contains('/uploads/')) {
+      return '${AppConfig.apiBaseUrl}$normalized';
+    }
+
+    if (normalized.startsWith('/')) {
+      return '${AppConfig.apiBaseUrl}$normalized';
+    }
+
+    return '${AppConfig.apiBaseUrl}/$normalized';
   }
 }

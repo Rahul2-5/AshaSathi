@@ -11,6 +11,7 @@ import 'package:shimmer/shimmer.dart';
 
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
+import '../offline/connectivity_service.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -33,7 +34,9 @@ class _HomePageState extends State<HomePage> {
 
   late final PatientSyncService _patientSyncService;
   late final TaskSyncService _taskSyncService;
+  late final ConnectivityService _connectivityService;
   late final StreamSubscription _connectivitySub;
+  bool _isOnline = false;
 
   @override
   void initState() {
@@ -48,6 +51,8 @@ class _HomePageState extends State<HomePage> {
     // Sync service
     _patientSyncService = PatientSyncService();
     _taskSyncService = TaskSyncService();
+    _connectivityService = ConnectivityService();
+    _refreshConnectivityStatus();
 
     // Try an initial sync once on startup (useful after regaining connectivity)
     (() async {
@@ -64,6 +69,8 @@ class _HomePageState extends State<HomePage> {
 
     // Auto-sync when network comes back
     _connectivitySub = Connectivity().onConnectivityChanged.listen((_) async {
+      await _refreshConnectivityStatus();
+
       // Try both patient and task sync when network state changes
       final patientSynced = await _patientSyncService.sync(token);
       final taskSynced = await _taskSyncService.sync(token);
@@ -76,6 +83,12 @@ class _HomePageState extends State<HomePage> {
         context.read<TaskCubit>().loadTasks(token);
       }
     });
+  }
+
+  Future<void> _refreshConnectivityStatus() async {
+    final online = await _connectivityService.isOnline();
+    if (!mounted) return;
+    setState(() => _isOnline = online);
   }
 
   @override
@@ -140,6 +153,8 @@ class _HomePageState extends State<HomePage> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      _connectivityBadge(),
                     ],
                   ),
                   const SizedBox(height: 28),
@@ -211,6 +226,39 @@ class _HomePageState extends State<HomePage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               child: _languageSettingsCard(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _connectivityBadge() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final color = _isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.18 : 0.12),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withValues(alpha: 0.45)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _isOnline ? Icons.wifi : Icons.wifi_off,
+            size: 14,
+            color: color,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            _isOnline ? 'Online' : 'Offline',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
             ),
           ),
         ],
@@ -676,8 +724,24 @@ class _HomePageState extends State<HomePage> {
                           itemCount: LanguageStorage.supportedLanguageCodes.length,
                           itemBuilder: (listContext, index) {
                             final code = LanguageStorage.supportedLanguageCodes[index];
-                            return RadioListTile<String>(
+                            final isSelected = selectedCode == code;
+                            return ListTile(
                               contentPadding: EdgeInsets.zero,
+                              onTap: () {
+                                setSheetState(() {
+                                  selectedCode = code;
+                                });
+                              },
+                              leading: Icon(
+                                isSelected
+                                    ? Icons.radio_button_checked
+                                    : Icons.radio_button_unchecked,
+                                color: isSelected
+                                    ? const Color(0xFF14A7A0)
+                                    : Theme.of(context).brightness == Brightness.dark
+                                        ? const Color(0xFF99A6B2)
+                                        : const Color(0xFF7A8592),
+                              ),
                               title: Text(
                                 AppLocalizations.nativeLanguageNames[code] ?? code,
                               ),
@@ -689,14 +753,6 @@ class _HomePageState extends State<HomePage> {
                                       : const Color(0xFF7A8592),
                                 ),
                               ),
-                              value: code,
-                              groupValue: selectedCode,
-                              onChanged: (value) {
-                                if (value == null) return;
-                                setSheetState(() {
-                                  selectedCode = value;
-                                });
-                              },
                             );
                           },
                         ),

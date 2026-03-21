@@ -33,8 +33,8 @@ class LanguageController extends InheritedNotifier<ValueNotifier<Locale>> {
   const LanguageController({
     super.key,
     required ValueNotifier<Locale> notifier,
-    required Widget child,
-  }) : super(notifier: notifier, child: child);
+    required super.child,
+  }) : super(notifier: notifier);
 
   static ValueNotifier<Locale> notifierOf(BuildContext context) {
     final controller =
