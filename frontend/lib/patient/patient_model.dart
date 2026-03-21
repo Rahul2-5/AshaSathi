@@ -7,6 +7,7 @@ class Patient {
   final String dateOfBirth;
   final String address;
   final String phoneNumber;
+  final String description;
   final String? photoPath;
 
   Patient({
@@ -18,6 +19,7 @@ class Patient {
     required this.dateOfBirth,
     required this.address,
     required this.phoneNumber,
+    this.description = '',
     this.photoPath,
   });
 
@@ -32,6 +34,7 @@ class Patient {
       dateOfBirth: json['dateOfBirth'],
       address: json['address'],
       phoneNumber: json['phoneNumber'],
+      description: (json['description'] ?? '').toString(),
       photoPath: json['photoPath'],
     );
   }
@@ -47,6 +50,7 @@ class Patient {
       dateOfBirth: map['dateOfBirth'],
       address: map['address'],
       phoneNumber: map['phoneNumber'],
+      description: (map['description'] ?? '').toString(),
       photoPath: map['photoPath'],
     );
   }

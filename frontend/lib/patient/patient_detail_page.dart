@@ -142,6 +142,14 @@ class PatientDetailPage extends StatelessWidget {
             _infoRow(context, context.l10n.tr('patient.phone'), patient.phoneNumber),
             _divider(),
             _infoRow(context, context.l10n.tr('patient.address'), patient.address),
+            _divider(),
+            _infoRowMultiline(
+              context,
+              'Description / Notes',
+              patient.description.trim().isEmpty
+                  ? 'No notes added'
+                  : patient.description,
+            ),
           ],
         ),
       ),
@@ -180,6 +188,34 @@ class PatientDetailPage extends StatelessWidget {
   }
 
   Widget _divider() => Divider(color: Colors.grey.shade300);
+
+  Widget _infoRowMultiline(BuildContext context, String label, String value) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF111418),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   String _localizedGender(BuildContext context, String raw) {
     final g = raw.trim().toLowerCase();

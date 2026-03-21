@@ -83,6 +83,7 @@ class PatientSyncService {
             "age": patient.age,
             "dateOfBirth": patient.dateOfBirth,
             "address": patient.address,
+            "description": patient.description,
             "phoneNumber": patient.phoneNumber,
             "clientTempId": patient.uuid,
           }),

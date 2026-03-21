@@ -33,6 +33,7 @@ public class PatientService {
                 existing.setDateOfBirth(request.dateOfBirth);
                 existing.setGender(request.gender);
                 existing.setAddress(request.address);
+                existing.setDescription(request.description);
                 existing.setPhoneNumber(request.phoneNumber);
                 if (request.photoPath != null) existing.setPhotoPath(request.photoPath);
                 return patientRepository.save(existing);
@@ -46,6 +47,7 @@ public class PatientService {
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
         patient.setAddress(request.address);
+        patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);
         if (request.photoPath != null) patient.setPhotoPath(request.photoPath);
         if (request.clientTempId != null) patient.setClientTempId(request.clientTempId);
@@ -86,6 +88,7 @@ public class PatientService {
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
         patient.setAddress(request.address);
+        patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);
 
         return patientRepository.save(patient);

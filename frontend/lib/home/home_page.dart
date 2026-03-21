@@ -577,6 +577,20 @@ class _HomePageState extends State<HomePage> {
                 color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF7B838C),
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              patient.description.trim().isEmpty
+                  ? 'No notes'
+                  : patient.description,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                height: 1.25,
+                color: isDark ? const Color(0xFFB2C0CC) : const Color(0xFF63707D),
+              ),
+            ),
             const Spacer(),
             Container(
               width: double.infinity,

@@ -31,6 +31,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
   final _ageController = TextEditingController();
   final _dobController = TextEditingController();
   final _addressController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _phoneController = TextEditingController();
   bool _isSyncingAgeDob = false;
 
@@ -187,6 +188,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
               _addressController,
               validator: _validateAddress,
             ),
+            _inputField('Description / Notes', _descriptionController),
             _inputField(context.l10n.tr('auth.phoneNumber'), _phoneController,
               keyboard: TextInputType.phone,
               validator: _validatePhone),
@@ -435,6 +437,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
         age: age,
         dateOfBirth: _dobController.text.trim(),
         address: _addressController.text.trim(),
+        description: _descriptionController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
         photoPath: _selectedImage!.path,
       );
@@ -556,6 +559,7 @@ void _showImageSourceSheet() {
     _ageController.dispose();
     _dobController.dispose();
     _addressController.dispose();
+    _descriptionController.dispose();
     _phoneController.dispose();
     super.dispose();
   }

@@ -147,6 +147,7 @@ public class SqliteToPostgresMigration {
                 LocalDate dob = parseDate(getAny(row, "date_of_birth", "dateofbirth"));
                 String gender = asString(getAny(row, "gender"));
                 String address = asString(getAny(row, "address"));
+                String description = asString(getAny(row, "description", "notes"));
                 String phoneNumber = asString(getAny(row, "phone_number", "phonenumber"));
                 String photoPath = asString(getAny(row, "photo_path", "photopath"));
                 String clientTempId = asString(getAny(row, "client_temp_id", "clienttempid", "uuid"));
@@ -160,13 +161,13 @@ public class SqliteToPostgresMigration {
                 postgresJdbc.update("""
                         INSERT INTO patients (
                             id, patient_name, age, date_of_birth, gender, address,
-                            phone_number, photo_path, client_temp_id, created_at, updated_at
+                            description, phone_number, photo_path, client_temp_id, created_at, updated_at
                         )
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                         ON CONFLICT (id) DO NOTHING
                         """,
                         id, patientName, age, dob, gender, address,
-                        phoneNumber, photoPath, clientTempId, createdAt, updatedAt);
+                        description, phoneNumber, photoPath, clientTempId, createdAt, updatedAt);
                 imported++;
             }
         } catch (Exception e) {

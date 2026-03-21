@@ -9,6 +9,7 @@ public class PatientRequest {
     public LocalDate dateOfBirth;
     public String gender;
     public String address;
+    public String description;
     public String phoneNumber;
     // Optional fields sent by clients (offline sync)
     public String photoPath;

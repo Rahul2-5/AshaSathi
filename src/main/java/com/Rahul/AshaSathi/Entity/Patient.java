@@ -24,6 +24,9 @@ public class Patient {
 
     private String address;
 
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
     @Column(length = 15)
     private String phoneNumber;
 
@@ -98,6 +101,14 @@ public class Patient {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getPhoneNumber() {

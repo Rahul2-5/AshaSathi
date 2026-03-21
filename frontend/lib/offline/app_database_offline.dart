@@ -27,7 +27,7 @@ class AppDatabaseOffline {
 
     return openDatabase(
       path,
-      version: 3, //  bump version
+      version: 4,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -47,6 +47,7 @@ class AppDatabaseOffline {
         age INTEGER NOT NULL,
         dateOfBirth TEXT NOT NULL,
         address TEXT NOT NULL,
+        description TEXT,
         phoneNumber TEXT NOT NULL,
         photoPath TEXT,
         syncStatus INTEGER NOT NULL,
@@ -87,6 +88,10 @@ class AppDatabaseOffline {
           updatedAt INTEGER NOT NULL
         )
       ''');
+    }
+
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE $patientTable ADD COLUMN description TEXT');
     }
   }
 }

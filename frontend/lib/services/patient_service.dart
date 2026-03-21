@@ -34,6 +34,7 @@ class PatientService {
         age: p.age,
         dateOfBirth: p.dateOfBirth,
         address: p.address,
+        description: p.description,
         phoneNumber: p.phoneNumber,
         photoPath: p.photoPath,
       );
@@ -82,6 +83,7 @@ class PatientService {
             age: patient.age,
             dateOfBirth: patient.dateOfBirth,
             address: patient.address,
+            description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: cachedPhotoPath,
           ),
@@ -99,6 +101,7 @@ class PatientService {
             age: patient.age,
             dateOfBirth: patient.dateOfBirth,
             address: patient.address,
+            description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: patient.photoPath,
           ),

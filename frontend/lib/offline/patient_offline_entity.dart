@@ -13,6 +13,7 @@ class PatientOfflineEntity {
   final int age;
   final String dateOfBirth;
   final String address;
+  final String description;
   final String phoneNumber;
   final String? photoPath;
 
@@ -28,6 +29,7 @@ class PatientOfflineEntity {
     required this.age,
     required this.dateOfBirth,
     required this.address,
+    this.description = '',
     required this.phoneNumber,
     this.photoPath,
     this.syncStatus = SyncStatusOffline.pending,
@@ -47,6 +49,7 @@ class PatientOfflineEntity {
       age: map['age'],
       dateOfBirth: map['dateOfBirth'],
       address: map['address'],
+      description: (map['description'] ?? '').toString(),
       phoneNumber: map['phoneNumber'],
       photoPath: map['photoPath'],
       syncStatus: map['syncStatus'],
@@ -65,6 +68,7 @@ class PatientOfflineEntity {
       'age': age,
       'dateOfBirth': dateOfBirth,
       'address': address,
+      'description': description,
       'phoneNumber': phoneNumber,
       'photoPath': photoPath,
       'syncStatus': syncStatus,
@@ -87,6 +91,7 @@ class PatientOfflineEntity {
       age: age,
       dateOfBirth: dateOfBirth,
       address: address,
+      description: description,
       phoneNumber: phoneNumber,
       photoPath: photoPath,
       syncStatus: syncStatus ?? this.syncStatus,

@@ -11,6 +11,7 @@ class PatientOfflineService {
     required int age,
     required String dateOfBirth,
     required String address,
+    String? description,
     required String phoneNumber,
     String? photoPath,
   }) async {
@@ -20,6 +21,7 @@ class PatientOfflineService {
       age: age,
       dateOfBirth: dateOfBirth,
       address: address,
+      description: description?.trim() ?? '',
       phoneNumber: phoneNumber,
       photoPath: photoPath,
       syncStatus: SyncStatusOffline.pending,
