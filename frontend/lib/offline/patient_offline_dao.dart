@@ -189,5 +189,49 @@ class PatientOfflineDao {
       whereArgs: [uuid],
     );
   }
+
+  Future<void> updateDescriptionByUuid({
+    required String uuid,
+    required String description,
+  }) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'description': description,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
+
+  Future<void> updatePatientByUuid({
+    required String uuid,
+    required String name,
+    required String gender,
+    required int age,
+    required String dateOfBirth,
+    required String address,
+    required String phoneNumber,
+    required String description,
+  }) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'name': name,
+        'gender': gender,
+        'age': age,
+        'dateOfBirth': dateOfBirth,
+        'address': address,
+        'phoneNumber': phoneNumber,
+        'description': description,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+    );
+  }
 }
 
