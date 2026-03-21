@@ -26,6 +26,22 @@ class PatientCubit extends Cubit<PatientState> {
     emit(PatientState(loading: false, patients: patients));
   }
 
+  void upsertPatient(Patient updated) {
+    final current = List<Patient>.from(state.patients);
+    final index = current.indexWhere((p) => p.uuid == updated.uuid);
+    if (index >= 0) {
+      current[index] = updated;
+    } else {
+      current.insert(0, updated);
+    }
+    emit(PatientState(loading: false, patients: current));
+  }
+
+  void removePatientByUuid(String uuid) {
+    final current = state.patients.where((p) => p.uuid != uuid).toList();
+    emit(PatientState(loading: false, patients: current));
+  }
+
   Future<void> deletePatient({
   required int patientId,
   required String token,
