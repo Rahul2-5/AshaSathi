@@ -7,4 +7,7 @@ class SyncStatusOffline {
 
   /// Deleted locally, needs backend delete
   static const int deleted = -1;
+
+  /// Sync was blocked because server and local versions diverged
+  static const int conflict = -2;
 }

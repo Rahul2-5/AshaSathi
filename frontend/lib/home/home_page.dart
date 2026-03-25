@@ -12,6 +12,7 @@ import 'package:shimmer/shimmer.dart';
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
 import '../offline/connectivity_service.dart';
+import '../offline/patient_sync_conflicts_page.dart';
 
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
@@ -53,6 +54,7 @@ class _HomePageState extends State<HomePage> {
     _taskSyncService = TaskSyncService();
     _connectivityService = ConnectivityService();
     _refreshConnectivityStatus();
+    _patientSyncService.refreshSyncStatus();
 
     // Try an initial sync once on startup (useful after regaining connectivity)
     (() async {
@@ -157,6 +159,8 @@ class _HomePageState extends State<HomePage> {
                       _connectivityBadge(),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  _syncStatusCard(),
                   const SizedBox(height: 28),
                   _tasksHeader(),
                   const SizedBox(height: 12),
@@ -315,6 +319,146 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _syncStatusCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return ValueListenableBuilder<PatientSyncStatusSnapshot>(
+      valueListenable: PatientSyncService.syncStatus,
+      builder: (context, snapshot, _) {
+        final queueCount = snapshot.totalQueueCount;
+        final hasConflicts = snapshot.conflictCount > 0;
+
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A232C) : Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: hasConflicts
+                  ? const Color(0xFFE67E22)
+                  : (isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC)),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    snapshot.isSyncing ? Icons.sync : Icons.sync_alt,
+                    color: snapshot.isSyncing
+                        ? const Color(0xFF0EA5E9)
+                        : (hasConflicts
+                            ? const Color(0xFFE67E22)
+                            : const Color(0xFF14A7A0)),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      snapshot.isSyncing
+                          ? context.l10n.tr('sync.syncingNow')
+                          : context.l10n.tr('sync.statusTitle'),
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? const Color(0xFFE6EDF3)
+                            : const Color(0xFF1F252B),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                context.l10n.tr(
+                  'sync.statusSummary',
+                  args: {
+                    'queue': queueCount.toString(),
+                    'retry': snapshot.retryQueueCount.toString(),
+                    'conflicts': snapshot.conflictCount.toString(),
+                  },
+                ),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark
+                      ? const Color(0xFF9EABB7)
+                      : const Color(0xFF6C7580),
+                ),
+              ),
+              if ((snapshot.lastError ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  snapshot.lastError!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFFDC2626),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  if (queueCount > 0)
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: snapshot.isSyncing
+                            ? null
+                            : () async {
+                                final loginCubit = context.read<LoginCubit>();
+                                final patientCubit = context.read<PatientCubit>();
+                                final token = loginCubit.state.token;
+                                if (token == null) return;
+                                final synced = await _patientSyncService.sync(token);
+                                if (!mounted) return;
+                                if (synced) {
+                                  patientCubit.loadPatients(token);
+                                }
+                              },
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: Text(context.l10n.tr('sync.retryNow')),
+                      ),
+                    ),
+                  if (queueCount > 0 && hasConflicts) const SizedBox(width: 8),
+                  if (hasConflicts)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE67E22),
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () async {
+                          final loginCubit = context.read<LoginCubit>();
+                          final patientCubit = context.read<PatientCubit>();
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PatientSyncConflictsPage(),
+                            ),
+                          );
+                          if (!mounted) return;
+                          final token = loginCubit.state.token;
+                          if (token != null) {
+                            patientCubit.loadPatients(token);
+                          }
+                          await _patientSyncService.refreshSyncStatus();
+                        },
+                        icon: const Icon(Icons.merge_type, size: 16),
+                        label: Text(context.l10n.tr('sync.resolveConflicts')),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

@@ -1,5 +1,6 @@
 
 import 'package:sqflite/sqflite.dart';
+import 'dart:convert';
 
 import 'app_database_offline.dart';
 import 'patient_offline_entity.dart';
@@ -12,12 +13,19 @@ class PatientOfflineDao {
   Future<void> upsert(PatientOfflineEntity patient) async {
     final db = await _db.database;
 
+    final payload = {
+      ...patient.toMap(),
+      'syncStatus': SyncStatusOffline.pending,
+      'lastError': null,
+      'conflictServerPayload': null,
+    };
+
     if (patient.localId == null) {
-      await db.insert('patients', patient.toMap());
+      await db.insert('patients', payload);
     } else {
       await db.update(
         'patients',
-        patient.toMap(),
+        payload,
         where: 'localId = ?',
         whereArgs: [patient.localId],
       );
@@ -58,6 +66,9 @@ class PatientOfflineDao {
       ...patient.toMap(),
       'syncStatus': SyncStatusOffline.synced,
       'updatedAt': now,
+      'retryCount': 0,
+      'lastError': null,
+      'conflictServerPayload': null,
     };
 
     if (existing == null) {
@@ -103,6 +114,66 @@ class PatientOfflineDao {
     return result.map(PatientOfflineEntity.fromMap).toList();
   }
 
+  Future<List<PatientOfflineEntity>> getConflicts() async {
+    final db = await _db.database;
+    final result = await db.query(
+      'patients',
+      where: 'syncStatus = ?',
+      whereArgs: [SyncStatusOffline.conflict],
+      orderBy: 'updatedAt DESC',
+    );
+
+    return result.map(PatientOfflineEntity.fromMap).toList();
+  }
+
+  Future<PatientOfflineEntity?> getByLocalId(int localId) async {
+    final db = await _db.database;
+    final result = await db.query(
+      'patients',
+      where: 'localId = ?',
+      whereArgs: [localId],
+      limit: 1,
+    );
+    if (result.isEmpty) return null;
+    return PatientOfflineEntity.fromMap(result.first);
+  }
+
+  Future<int> getPendingCount() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM patients WHERE syncStatus = ?',
+      [SyncStatusOffline.pending],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> getDeletedCount() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM patients WHERE syncStatus = ?',
+      [SyncStatusOffline.deleted],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> getConflictCount() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM patients WHERE syncStatus = ?',
+      [SyncStatusOffline.conflict],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
+  Future<int> getRetryQueueCount() async {
+    final db = await _db.database;
+    final result = await db.rawQuery(
+      'SELECT COUNT(*) AS c FROM patients WHERE retryCount > 0 AND syncStatus != ?',
+      [SyncStatusOffline.synced],
+    );
+    return (result.first['c'] as int?) ?? 0;
+  }
+
   /// Counts only truly unsynced records.
   /// If a row already has serverId, it is considered synced/recoverable.
   Future<int> getUnsyncedCount() async {
@@ -143,6 +214,7 @@ class PatientOfflineDao {
     required int localId,
     required int serverId,
     required int updatedAt,
+    String? baseHash,
   }) async {
     final db = await _db.database;
     await db.update(
@@ -151,6 +223,10 @@ class PatientOfflineDao {
         'syncStatus': SyncStatusOffline.synced,
         'serverId': serverId,
         'updatedAt': updatedAt,
+        'retryCount': 0,
+        'lastError': null,
+        'baseHash': baseHash,
+        'conflictServerPayload': null,
       },
       where: 'localId = ?',
       whereArgs: [localId],
@@ -174,6 +250,8 @@ class PatientOfflineDao {
       {
         'syncStatus': SyncStatusOffline.deleted,
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        'lastError': null,
+        'conflictServerPayload': null,
       },
       where: 'uuid = ?',
       whereArgs: [uuid],
@@ -200,6 +278,9 @@ class PatientOfflineDao {
       {
         'description': description,
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        'syncStatus': SyncStatusOffline.pending,
+        'lastError': null,
+        'conflictServerPayload': null,
       },
       where: 'uuid = ?',
       whereArgs: [uuid],
@@ -215,11 +296,26 @@ class PatientOfflineDao {
     required String address,
     required String phoneNumber,
     required String description,
+    bool markPending = true,
+    int? serverId,
   }) async {
     final db = await _db.database;
+    final nextSyncStatus = markPending ? SyncStatusOffline.pending : SyncStatusOffline.synced;
+
+    final baseHash = [
+      name.trim().toLowerCase(),
+      gender.trim().toLowerCase(),
+      age.toString(),
+      dateOfBirth.trim(),
+      address.trim().toLowerCase(),
+      phoneNumber.replaceAll(RegExp(r'\D'), ''),
+      description.trim().toLowerCase(),
+    ].join('|');
+
     await db.update(
       'patients',
       {
+        if (serverId != null) 'serverId': serverId,
         'name': name,
         'gender': gender,
         'age': age,
@@ -228,9 +324,98 @@ class PatientOfflineDao {
         'phoneNumber': phoneNumber,
         'description': description,
         'updatedAt': DateTime.now().millisecondsSinceEpoch,
+        'syncStatus': nextSyncStatus,
+        'lastError': null,
+        'conflictServerPayload': null,
+        if (!markPending) 'retryCount': 0,
+        if (!markPending) 'baseHash': baseHash,
       },
       where: 'uuid = ?',
       whereArgs: [uuid],
+    );
+  }
+
+  Future<void> markRetryFailure({
+    required int localId,
+    required String error,
+  }) async {
+    final db = await _db.database;
+    await db.rawUpdate(
+      'UPDATE patients SET retryCount = retryCount + 1, lastError = ?, updatedAt = ? WHERE localId = ?',
+      [error, DateTime.now().millisecondsSinceEpoch, localId],
+    );
+  }
+
+  Future<void> markConflict({
+    required int localId,
+    required Map<String, dynamic> serverPayload,
+    required String reason,
+  }) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'syncStatus': SyncStatusOffline.conflict,
+        'conflictServerPayload': jsonEncode(serverPayload),
+        'lastError': reason,
+        'retryCount': 0,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'localId = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  Future<void> resolveConflictKeepServer({
+    required int localId,
+    required int serverId,
+    required String name,
+    required String gender,
+    required int age,
+    required String dateOfBirth,
+    required String address,
+    required String phoneNumber,
+    required String description,
+    required String? photoPath,
+    required String baseHash,
+  }) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'serverId': serverId,
+        'name': name,
+        'gender': gender,
+        'age': age,
+        'dateOfBirth': dateOfBirth,
+        'address': address,
+        'phoneNumber': phoneNumber,
+        'description': description,
+        'photoPath': photoPath,
+        'syncStatus': SyncStatusOffline.synced,
+        'retryCount': 0,
+        'lastError': null,
+        'baseHash': baseHash,
+        'conflictServerPayload': null,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'localId = ?',
+      whereArgs: [localId],
+    );
+  }
+
+  Future<void> clearConflictAndSetPending(int localId) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'syncStatus': SyncStatusOffline.pending,
+        'lastError': null,
+        'conflictServerPayload': null,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'localId = ?',
+      whereArgs: [localId],
     );
   }
 }

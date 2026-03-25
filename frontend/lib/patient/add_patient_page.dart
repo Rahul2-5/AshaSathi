@@ -441,6 +441,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
         phoneNumber: _phoneController.text.trim(),
         photoPath: _selectedImage!.path,
       );
+      await PatientSyncService().refreshSyncStatus();
 
       final isOnline = await ConnectivityService().isOnline();
       final token = loginCubit.state.token;

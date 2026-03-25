@@ -27,7 +27,7 @@ class AppDatabaseOffline {
 
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -51,7 +51,11 @@ class AppDatabaseOffline {
         phoneNumber TEXT NOT NULL,
         photoPath TEXT,
         syncStatus INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL
+        updatedAt INTEGER NOT NULL,
+        retryCount INTEGER NOT NULL DEFAULT 0,
+        lastError TEXT,
+        baseHash TEXT,
+        conflictServerPayload TEXT
       )
     ''');
 
@@ -93,5 +97,44 @@ class AppDatabaseOffline {
     if (oldVersion < 4) {
       await db.execute('ALTER TABLE $patientTable ADD COLUMN description TEXT');
     }
+
+    if (oldVersion < 5) {
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'retryCount',
+        definition: 'INTEGER NOT NULL DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'lastError',
+        definition: 'TEXT',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'baseHash',
+        definition: 'TEXT',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'conflictServerPayload',
+        definition: 'TEXT',
+      );
+    }
+  }
+
+  Future<void> _addColumnIfMissing(
+    Database db, {
+    required String table,
+    required String column,
+    required String definition,
+  }) async {
+    final cols = await db.rawQuery('PRAGMA table_info($table)');
+    final exists = cols.any((c) => c['name'] == column);
+    if (exists) return;
+    await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
   }
 }

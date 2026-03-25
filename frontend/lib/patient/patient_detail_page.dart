@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../auth/cubit/login_cubit.dart';
 import '../auth/cubit/patient_cubit.dart';
 import '../offline/patient_offline_dao.dart';
+import '../offline/patient_sync_service.dart';
 import '../offline/connectivity_service.dart';
 
 import 'patient_model.dart';
@@ -516,6 +517,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     final connectivity = ConnectivityService();
     final dao = PatientOfflineDao();
     final patientCubit = context.read<PatientCubit>();
+    var updatedOnline = false;
 
     try {
       if (token != null && _patient.id != null && await connectivity.isOnline()) {
@@ -541,6 +543,8 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         if (res.statusCode != 200) {
           throw Exception('Failed to update notes: ${res.statusCode}');
         }
+
+        updatedOnline = true;
       }
 
       await dao.updatePatientByUuid(
@@ -552,7 +556,10 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         address: updated['address'],
         phoneNumber: updated['phoneNumber'],
         description: updated['description'],
+        markPending: !updatedOnline,
+        serverId: _patient.id,
       );
+      await PatientSyncService().refreshSyncStatus();
 
       if (!mounted) return;
       setState(() {
@@ -660,6 +667,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     // OFFLINE OR NOT YET SYNCED
     if (!await connectivity.isOnline() || _patient.id == null) {
       await dao.markDeletedByUuid(_patient.uuid);
+      await PatientSyncService().refreshSyncStatus();
 
       if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -690,6 +698,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         debugPrint("Delete successful! Removing from local storage...");
         // Hard delete from offline storage
         await dao.hardDeleteByUuid(_patient.uuid);
+        await PatientSyncService().refreshSyncStatus();
         patientCubit.removePatientByUuid(_patient.uuid);
 
         if (!context.mounted) return false;
@@ -702,6 +711,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         debugPrint("Delete failed with status: ${res.statusCode}");
         // Delete failed, try offline
         await dao.markDeletedByUuid(_patient.uuid);
+        await PatientSyncService().refreshSyncStatus();
         patientCubit.removePatientByUuid(_patient.uuid);
 
         if (!context.mounted) return false;
@@ -722,6 +732,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
       debugPrint("Stack trace: $stackTrace");
       // fallback to offline delete
       await dao.markDeletedByUuid(_patient.uuid);
+      await PatientSyncService().refreshSyncStatus();
       patientCubit.removePatientByUuid(_patient.uuid);
 
       if (!context.mounted) return false;

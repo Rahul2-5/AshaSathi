@@ -19,6 +19,10 @@ class PatientOfflineEntity {
 
   final int syncStatus;
   final int updatedAt;
+  final int retryCount;
+  final String? lastError;
+  final String? baseHash;
+  final String? conflictServerPayload;
 
   PatientOfflineEntity({
     this.localId,
@@ -34,6 +38,10 @@ class PatientOfflineEntity {
     this.photoPath,
     this.syncStatus = SyncStatusOffline.pending,
     int? updatedAt,
+    this.retryCount = 0,
+    this.lastError,
+    this.baseHash,
+    this.conflictServerPayload,
   })  : uuid = uuid ?? const Uuid().v4(),
         updatedAt = updatedAt ?? DateTime.now().millisecondsSinceEpoch;
 
@@ -54,6 +62,10 @@ class PatientOfflineEntity {
       photoPath: map['photoPath'],
       syncStatus: map['syncStatus'],
       updatedAt: map['updatedAt'],
+      retryCount: (map['retryCount'] as int?) ?? 0,
+      lastError: map['lastError']?.toString(),
+      baseHash: map['baseHash']?.toString(),
+      conflictServerPayload: map['conflictServerPayload']?.toString(),
     );
   }
 
@@ -73,6 +85,10 @@ class PatientOfflineEntity {
       'photoPath': photoPath,
       'syncStatus': syncStatus,
       'updatedAt': updatedAt,
+      'retryCount': retryCount,
+      'lastError': lastError,
+      'baseHash': baseHash,
+      'conflictServerPayload': conflictServerPayload,
     };
   }
 
@@ -81,6 +97,10 @@ class PatientOfflineEntity {
     int? serverId,
     int? syncStatus,
     int? updatedAt,
+    int? retryCount,
+    String? lastError,
+    String? baseHash,
+    String? conflictServerPayload,
   }) {
     return PatientOfflineEntity(
       localId: localId ?? this.localId,
@@ -96,6 +116,10 @@ class PatientOfflineEntity {
       photoPath: photoPath,
       syncStatus: syncStatus ?? this.syncStatus,
       updatedAt: updatedAt ?? this.updatedAt,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError ?? this.lastError,
+      baseHash: baseHash ?? this.baseHash,
+      conflictServerPayload: conflictServerPayload ?? this.conflictServerPayload,
     );
   }
 }
