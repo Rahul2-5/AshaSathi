@@ -9,4 +9,12 @@ class AppConfig {
   static String get authBaseUrl => '$apiBaseUrl/api/auth';
   static String get patientsBaseUrl => '$apiBaseUrl/api/patients';
   static String get tasksBaseUrl => '$apiBaseUrl/api/tasks';
+
+  // Optional override to stabilize Google Sign-In across Android/Web.
+  // Example:
+  // --dart-define=GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
 }

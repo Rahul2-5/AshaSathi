@@ -4,6 +4,7 @@ import com.Rahul.AshaSathi.JWT.JWTAuthenticationFilter;
 import com.Rahul.AshaSathi.JWT.JwtUtil;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -44,6 +45,12 @@ public class SecurityConfig {
 
                 //  AUTH RULES
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/auth/login",
+                                "/api/auth/signup",
+                                "/api/auth/google"
+                        ).permitAll()
                         .requestMatchers(
                                 "/",
                                 "/health-check",

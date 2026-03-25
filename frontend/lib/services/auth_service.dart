@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:google_sign_in/google_sign_in.dart';
@@ -58,33 +59,62 @@ Future<String> login(Map<String, dynamic> data) async {
   }
 
   // ------------------ GOOGLE LOGIN ------------------
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  late final GoogleSignIn _googleSignIn = _buildGoogleSignIn();
+
+  GoogleSignIn _buildGoogleSignIn() {
+    final webClientId = AppConfig.googleWebClientId.trim();
+    if (webClientId.isEmpty) {
+      return GoogleSignIn(scopes: ['email', 'profile']);
+    }
+
+    return GoogleSignIn(
+      scopes: ['email', 'profile'],
+      clientId: webClientId,
+      serverClientId: webClientId,
+    );
+  }
 
   Future<String> loginWithGoogle() async {
-    final user = await _googleSignIn.signIn();
-    if (user == null) throw Exception("Google login cancelled");
+    try {
+      final user = await _googleSignIn.signIn();
+      if (user == null) throw Exception("Google login cancelled");
 
-    final uri = Uri.parse("$baseUrl/google").replace(
-      queryParameters: {
-        "email": user.email,
-        "username": user.displayName ?? "Google User",
-      },
-    );
+      final uri = Uri.parse("$baseUrl/google").replace(
+        queryParameters: {
+          "email": user.email,
+          "username": user.displayName ?? "Google User",
+        },
+      );
 
-    final response = await http.post(
-      uri,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    );
+      final response = await http.post(
+        uri,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      );
 
-    if (response.statusCode == 200) {
-      final body = jsonDecode(response.body);
-      return body['token']; // ✅ RETURN TOKEN
-    } else {
-      throw Exception("Google login failed");
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        return body['token']; // ✅ RETURN TOKEN
+      }
+
+      final backendError = response.body.trim().isEmpty
+          ? 'HTTP ${response.statusCode}'
+          : response.body.trim();
+      throw Exception("Google login failed on backend: $backendError");
+    } on PlatformException catch (e) {
+      final code = e.code;
+      final details = e.message ?? e.details?.toString() ?? 'Unknown platform error';
+
+      if (code == 'sign_in_failed' || code == '10') {
+        throw Exception(
+          'Google Sign-In configuration error. Verify Android package name, SHA-1/SHA-256, and OAuth client ID. Details: $details',
+        );
+      }
+
+      throw Exception('Google Sign-In platform error ($code): $details');
+    } catch (e) {
+      throw Exception('Google login exception: $e');
     }
   }
 
