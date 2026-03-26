@@ -16,6 +16,11 @@ class PatientOfflineEntity {
   final String description;
   final String phoneNumber;
   final String? photoPath;
+  final String caste;
+  final int isPregnant; // 0 or 1 for SQLite
+  final int? monthsOfPregnancy;
+  final String? expectedDeliveryDate;
+  final String medicalConditions; // Comma-separated condition IDs
 
   final int syncStatus;
   final int updatedAt;
@@ -36,6 +41,11 @@ class PatientOfflineEntity {
     this.description = '',
     required this.phoneNumber,
     this.photoPath,
+    this.caste = '',
+    this.isPregnant = 0,
+    this.monthsOfPregnancy,
+    this.expectedDeliveryDate,
+    this.medicalConditions = '',
     this.syncStatus = SyncStatusOffline.pending,
     int? updatedAt,
     this.retryCount = 0,
@@ -60,6 +70,11 @@ class PatientOfflineEntity {
       description: (map['description'] ?? '').toString(),
       phoneNumber: map['phoneNumber'],
       photoPath: map['photoPath'],
+      caste: (map['caste'] ?? '').toString(),
+      isPregnant: (map['isPregnant'] as int?) ?? 0,
+      monthsOfPregnancy: map['monthsOfPregnancy'],
+      expectedDeliveryDate: map['expectedDeliveryDate']?.toString(),
+      medicalConditions: (map['medicalConditions'] ?? '').toString(),
       syncStatus: map['syncStatus'],
       updatedAt: map['updatedAt'],
       retryCount: (map['retryCount'] as int?) ?? 0,
@@ -83,6 +98,11 @@ class PatientOfflineEntity {
       'description': description,
       'phoneNumber': phoneNumber,
       'photoPath': photoPath,
+      'caste': caste,
+      'isPregnant': isPregnant,
+      'monthsOfPregnancy': monthsOfPregnancy,
+      'expectedDeliveryDate': expectedDeliveryDate,
+      'medicalConditions': medicalConditions,
       'syncStatus': syncStatus,
       'updatedAt': updatedAt,
       'retryCount': retryCount,

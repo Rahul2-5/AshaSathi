@@ -27,7 +27,7 @@ class AppDatabaseOffline {
 
     return openDatabase(
       path,
-      version: 5,
+      version: 6,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -50,6 +50,11 @@ class AppDatabaseOffline {
         description TEXT,
         phoneNumber TEXT NOT NULL,
         photoPath TEXT,
+        caste TEXT DEFAULT '',
+        isPregnant INTEGER DEFAULT 0,
+        monthsOfPregnancy INTEGER,
+        expectedDeliveryDate TEXT,
+        medicalConditions TEXT DEFAULT '',
         syncStatus INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
         retryCount INTEGER NOT NULL DEFAULT 0,
@@ -122,6 +127,39 @@ class AppDatabaseOffline {
         table: patientTable,
         column: 'conflictServerPayload',
         definition: 'TEXT',
+      );
+    }
+
+    if (oldVersion < 6) {
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'caste',
+        definition: "TEXT DEFAULT ''",
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'isPregnant',
+        definition: 'INTEGER DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'monthsOfPregnancy',
+        definition: 'INTEGER',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'expectedDeliveryDate',
+        definition: 'TEXT',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'medicalConditions',
+        definition: "TEXT DEFAULT ''",
       );
     }
   }

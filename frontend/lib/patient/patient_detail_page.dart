@@ -166,6 +166,20 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             _divider(),
             _infoRow(context, context.l10n.tr('patient.address'), _patient.address),
             _divider(),
+            _infoRow(context, 'Caste', _patient.caste.isEmpty ? 'Not specified' : _patient.caste),
+            _divider(),
+            if (_patient.isPregnant) ...[
+              _infoRow(context, 'Pregnancy Status', 'Pregnant'),
+              _divider(),
+              _infoRow(context, 'Months of Pregnancy', _patient.monthsOfPregnancy?.toString() ?? '—'),
+              _divider(),
+              _infoRow(context, 'Expected Delivery Date', _patient.expectedDeliveryDate ?? '—'),
+              _divider(),
+            ],
+            if (_patient.medicalConditions.isNotEmpty) ...[
+              _infoRow(context, 'Medical Conditions', _formatMedicalConditions(_patient.medicalConditions)),
+              _divider(),
+            ],
             _infoRow(
               context,
               'Description / Notes',
@@ -227,6 +241,27 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     if (g == 'male' || g == 'm') return context.l10n.tr('patient.male');
     if (g == 'female' || g == 'f') return context.l10n.tr('patient.female');
     return context.l10n.tr('patient.other');
+  }
+
+  String _formatMedicalConditions(List<String> conditionIds) {
+    if (conditionIds.isEmpty) return 'None';
+    
+    final conditionLabels = {
+      'bp': 'BP',
+      'elephantiasis': 'Elephantiasis',
+      'diabetes': 'Diabetes',
+      'heart_disease': 'Heart Disease',
+      'asthma': 'Asthma',
+      'thyroid': 'Thyroid',
+      'arthritis': 'Arthritis',
+      'kidney_disease': 'Kidney Disease',
+      'liver_disease': 'Liver Disease',
+      'cancer': 'Cancer',
+    };
+    
+    return conditionIds
+        .map((id) => conditionLabels[id] ?? id)
+        .join(', ');
   }
 
   Future<void> _showEditPatientDialog() async {

@@ -19,6 +19,10 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    public Long getId() {
+        return id;
+    }
+
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -44,6 +48,11 @@ public class User implements UserDetails {
     @Override
     public String getUsername() {
         return email; // IMPORTANT: email is login ID
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
     }
 
     @Override public boolean isAccountNonExpired() { return true; }
