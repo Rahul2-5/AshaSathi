@@ -153,7 +153,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ===== DEMOGRAPHIC INFORMATION =====
+            _buildSectionHeader(context, 'Demographic Information'),
+            const SizedBox(height: 12),
             _infoRow(
               context,
               context.l10n.tr('patient.age'),
@@ -162,34 +166,79 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
             _divider(),
             _infoRow(context, context.l10n.tr('patient.dateOfBirth'), _patient.dateOfBirth),
             _divider(),
-            _infoRow(context, context.l10n.tr('patient.phone'), _patient.phoneNumber),
-            _divider(),
-            _infoRow(context, context.l10n.tr('patient.address'), _patient.address),
-            _divider(),
-            _infoRow(context, 'Caste', _patient.caste.isEmpty ? 'Not specified' : _patient.caste),
-            _divider(),
-            if (_patient.isPregnant) ...[
-              _infoRow(context, 'Pregnancy Status', 'Pregnant'),
-              _divider(),
-              _infoRow(context, 'Months of Pregnancy', _patient.monthsOfPregnancy?.toString() ?? '—'),
-              _divider(),
-              _infoRow(context, 'Expected Delivery Date', _patient.expectedDeliveryDate ?? '—'),
-              _divider(),
-            ],
-            if (_patient.medicalConditions.isNotEmpty) ...[
-              _infoRow(context, 'Medical Conditions', _formatMedicalConditions(_patient.medicalConditions)),
-              _divider(),
-            ],
             _infoRow(
               context,
-              'Description / Notes',
+              context.l10n.tr('patient.gender') ?? 'Gender',
+              _patient.gender,
+            ),
+            _divider(),
+            _infoRow(context, 'Caste', _patient.caste.isEmpty ? 'Not specified' : _patient.caste),
+            const SizedBox(height: 20),
+
+            // ===== CONTACT INFORMATION =====
+            _buildSectionHeader(context, 'Contact Information'),
+            const SizedBox(height: 12),
+            _infoRow(context, context.l10n.tr('patient.phone'), 
+              _patient.phoneNumber.isEmpty ? 'Not provided' : _patient.phoneNumber),
+            _divider(),
+            _infoRow(context, context.l10n.tr('patient.address'), _patient.address),
+            const SizedBox(height: 20),
+
+            // ===== PREGNANCY INFORMATION (Only for Females) =====
+            if (_patient.gender.toLowerCase() != 'male') ...[
+              const SizedBox(height: 8),
+              _buildSectionHeader(context, 'Pregnancy Information'),
+              const SizedBox(height: 12),
+              _infoRow(context, 'Pregnancy Status', 
+                _patient.isPregnant ? 'Pregnant' : 'Not Pregnant'),
+              if (_patient.isPregnant) ...[
+                _divider(),
+                _infoRow(context, 'Months of Pregnancy', 
+                  _patient.monthsOfPregnancy?.toString() ?? 'Not specified'),
+                _divider(),
+                _infoRow(context, 'Expected Delivery Date', 
+                  _patient.expectedDeliveryDate ?? 'Not specified'),
+              ],
+              const SizedBox(height: 20),
+            ],
+
+            // ===== MEDICAL INFORMATION =====
+            const SizedBox(height: 8),
+            _buildSectionHeader(context, 'Medical Information'),
+            const SizedBox(height: 12),
+            _infoRow(
+              context,
+              'Medical Conditions',
+              _patient.medicalConditions.isEmpty 
+                  ? 'None reported' 
+                  : _formatMedicalConditions(_patient.medicalConditions),
+              maxLines: 3,
+            ),
+            _divider(),
+            _infoRow(
+              context,
+              'Notes / Description',
               _patient.description.trim().isEmpty
                   ? 'No notes added'
                   : _patient.description,
-              maxLines: 3,
+              maxLines: 4,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    return Text(
+      title,
+      style: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+        color: isDark ? const Color(0xFF25D8C3) : const Color(0xFF059669),
+        letterSpacing: 0.5,
       ),
     );
   }
@@ -234,7 +283,16 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
     );
   }
 
-  Widget _divider() => Divider(color: Colors.grey.shade300);
+  Widget _divider() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Divider(
+        color: Colors.grey.shade400,
+        height: 1,
+        thickness: 1,
+      ),
+    );
+  }
 
   String _localizedGender(BuildContext context, String raw) {
     final g = raw.trim().toLowerCase();
@@ -609,6 +667,11 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
           description: updated['description'],
           phoneNumber: updated['phoneNumber'],
           photoPath: _patient.photoPath,
+          caste: _patient.caste,
+          isPregnant: _patient.isPregnant,
+          monthsOfPregnancy: _patient.monthsOfPregnancy,
+          expectedDeliveryDate: _patient.expectedDeliveryDate,
+          medicalConditions: _patient.medicalConditions,
         );
       });
       patientCubit.upsertPatient(_patient);

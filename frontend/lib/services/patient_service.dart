@@ -26,18 +26,7 @@ class PatientService {
     final offlinePatients = await _offlineDao.getAll();
     debugPrint("Loaded ${offlinePatients.length} offline patients");
     final offlineModels = offlinePatients.map((p) {
-      return Patient(
-        id: p.serverId,
-        uuid: p.uuid, // ✅ CRITICAL FIX: must use actual UUID
-        name: p.name,
-        gender: p.gender,
-        age: p.age,
-        dateOfBirth: p.dateOfBirth,
-        address: p.address,
-        description: p.description,
-        phoneNumber: p.phoneNumber,
-        photoPath: p.photoPath,
-      );
+      return Patient.fromOffline(p.toMap());
     }).toList();
 
     // ===============================
@@ -86,6 +75,11 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: cachedPhotoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            medicalConditions: patient.medicalConditions,
           ),
         );
       }
@@ -104,6 +98,11 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: patient.photoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant ? 1 : 0,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            medicalConditions: patient.medicalConditions.join(','),
           ),
         );
       }
