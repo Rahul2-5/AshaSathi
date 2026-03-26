@@ -55,6 +55,15 @@ class TaskCubit extends Cubit<TaskState> {
     }
   }
 
+  Future<void> updateTask(TaskModel task, String token) async {
+    try {
+      await taskService.updateTask(task, token);
+      await loadTasks(token);
+    } catch (e) {
+      emit(TaskState(error: e.toString(), tasks: state.tasks));
+    }
+  }
+
   Future<bool> deleteTaskWithUuid(int taskId, String uuid, String token) async {
     try {
       final deleted = await taskService.deleteTask(taskId, uuid, token);

@@ -78,6 +78,18 @@ class TaskOfflineDao {
     return result.map(TaskOfflineEntity.fromMap).toList();
   }
 
+  Future<List<TaskOfflineEntity>> getPendingOrUpdated() async {
+    final db = await _db.database;
+    final result = await db.query(
+      AppDatabaseOffline.taskTable,
+      where: 'syncStatus = ? OR syncStatus = ?',
+      whereArgs: [SyncStatusOffline.pending, SyncStatusOffline.updated],
+      orderBy: 'updatedAt ASC',
+    );
+
+    return result.map(TaskOfflineEntity.fromMap).toList();
+  }
+
   Future<List<TaskOfflineEntity>> getAllActive() async {
     final db = await _db.database;
     final result = await db.query(
@@ -103,6 +115,42 @@ class TaskOfflineDao {
       },
       where: 'localId = ?',
       whereArgs: [localId],
+    );
+  }
+
+  Future<void> markUpdatedByUuid({
+    required String uuid,
+    required String title,
+    required String description,
+    required String status,
+  }) async {
+    final db = await _db.database;
+    final existing = await db.query(
+      AppDatabaseOffline.taskTable,
+      where: 'uuid = ?',
+      whereArgs: [uuid],
+      limit: 1,
+    );
+
+    if (existing.isEmpty) return;
+
+    final current = existing.first;
+    final currentSync = (current['syncStatus'] as int?) ?? SyncStatusOffline.synced;
+    final nextSync = currentSync == SyncStatusOffline.pending
+        ? SyncStatusOffline.pending
+        : SyncStatusOffline.updated;
+
+    await db.update(
+      AppDatabaseOffline.taskTable,
+      {
+        'title': title,
+        'description': description,
+        'status': status,
+        'syncStatus': nextSync,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'uuid = ?',
+      whereArgs: [uuid],
     );
   }
 

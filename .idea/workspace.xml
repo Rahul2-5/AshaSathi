@@ -4,24 +4,7 @@
     <option name="autoReloadType" value="NONE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes">
-      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/Procfile" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/Procfile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Config/SecurityConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/Health_Check.java" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/java/com/Rahul/AshaSathi/Controller/Health_Check.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Backend/system.properties" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/auth/login_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/auth/login_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/localization/app_localizations.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/localization/app_localizations.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/main.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/main.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/navigation/main_navigation.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/navigation/main_navigation.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/patient_detail_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/patient_detail_page.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/task/add_task_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/task/add_task_page.dart" afterDir="false" />
-    </list>
+    <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />

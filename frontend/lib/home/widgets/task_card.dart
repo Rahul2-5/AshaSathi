@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../../auth/cubit/login_cubit.dart';
+import '../../task/add_task_page.dart';
 import '../../task/task_cubit.dart';
 import '../../task/task_model.dart';
 
@@ -513,6 +514,26 @@ class TaskCard extends StatelessWidget {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            icon: const Icon(
+              Icons.edit_outlined,
+              color: Color(0xFF18A39B),
+            ),
+            onPressed: () async {
+              final edited = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AddTaskPage(initialTask: task),
+                ),
+              );
+
+              if (edited == true && context.mounted) {
+                final token = context.read<LoginCubit>().state.token!;
+                await context.read<TaskCubit>().loadTasks(token);
+              }
+            },
+            tooltip: context.l10n.tr('task.editTask'),
           ),
           IconButton(
             icon: const Icon(

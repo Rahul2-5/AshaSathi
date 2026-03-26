@@ -100,7 +100,7 @@ class TaskService {
   // ================= ADD TASK =================
   Future<void> addTask(TaskModel task, String token) async {
     final isOnline = await _connectivity.isOnline();
-    final uuid = const Uuid().v4();
+    final uuid = task.uuid.isNotEmpty ? task.uuid : const Uuid().v4();
 
     debugPrint("Adding task: online=$isOnline");
 
@@ -187,6 +187,69 @@ class TaskService {
           status: _statusToString(task.status),
           createdDate: DateTime.now().toIso8601String(),
         ),
+      );
+    }
+  }
+
+  // ================= UPDATE TASK =================
+  Future<void> updateTask(TaskModel task, String token) async {
+    final isOnline = await _connectivity.isOnline();
+
+    if (!isOnline) {
+      await _offlineDao.markUpdatedByUuid(
+        uuid: task.uuid,
+        title: task.title,
+        description: task.description,
+        status: _statusToString(task.status),
+      );
+      return;
+    }
+
+    if (task.id == null) {
+      await _offlineDao.markUpdatedByUuid(
+        uuid: task.uuid,
+        title: task.title,
+        description: task.description,
+        status: _statusToString(task.status),
+      );
+      return;
+    }
+
+    try {
+      final response = await http.put(
+        Uri.parse("$baseUrl/${task.id}"),
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer $token",
+        },
+        body: jsonEncode(task.toJson()),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        await _offlineDao.upsertSynced(
+          TaskOfflineEntity(
+            uuid: task.uuid,
+            serverId: task.id,
+            title: task.title,
+            description: task.description,
+            status: _statusToString(task.status),
+            createdDate: DateTime.now().toIso8601String(),
+          ),
+        );
+      } else {
+        await _offlineDao.markUpdatedByUuid(
+          uuid: task.uuid,
+          title: task.title,
+          description: task.description,
+          status: _statusToString(task.status),
+        );
+      }
+    } catch (_) {
+      await _offlineDao.markUpdatedByUuid(
+        uuid: task.uuid,
+        title: task.title,
+        description: task.description,
+        status: _statusToString(task.status),
       );
     }
   }

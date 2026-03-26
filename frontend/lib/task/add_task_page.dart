@@ -7,7 +7,9 @@ import 'task_model.dart';
 import 'task_cubit.dart';
 
 class AddTaskPage extends StatefulWidget {
-  const AddTaskPage({super.key});
+  final TaskModel? initialTask;
+
+  const AddTaskPage({super.key, this.initialTask});
 
   @override
   State<AddTaskPage> createState() => _AddTaskPageState();
@@ -20,7 +22,20 @@ class _AddTaskPageState extends State<AddTaskPage> {
   TaskStatus status = TaskStatus.pending;
   bool _isSaving = false;
 
+  bool get _isEditMode => widget.initialTask != null;
+
   static const Color _primaryTeal = Color(0xFF14A7A0);
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialTask;
+    if (initial != null) {
+      titleController.text = initial.title;
+      descController.text = initial.description;
+      status = initial.status;
+    }
+  }
 
   void _showStyledSnackBar({
     required String message,
@@ -93,7 +108,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
         foregroundColor: textColor,
         centerTitle: true,
         title: Text(
-          l10n.tr('task.addNewTask'),
+          _isEditMode ? l10n.tr('task.editTask') : l10n.tr('task.addNewTask'),
           style: TextStyle(
             color: textColor,
             fontWeight: FontWeight.w700,
@@ -107,7 +122,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              l10n.tr('task.createNewTask'),
+              _isEditMode ? l10n.tr('task.updateTask') : l10n.tr('task.createNewTask'),
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.w800,
@@ -223,10 +238,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   }
 
                   final token = context.read<LoginCubit>().state.token!;
-                  final uuid = const Uuid().v4();
-
                   final task = TaskModel(
-                    uuid: uuid,
+                    id: widget.initialTask?.id,
+                    uuid: widget.initialTask?.uuid ?? const Uuid().v4(),
                     title: titleController.text.trim(),
                     description: descController.text.trim(),
                     status: status,
@@ -234,11 +248,17 @@ class _AddTaskPageState extends State<AddTaskPage> {
 
                   setState(() => _isSaving = true);
                   try {
-                    await context.read<TaskCubit>().addTask(task, token);
+                    if (_isEditMode) {
+                      await context.read<TaskCubit>().updateTask(task, token);
+                    } else {
+                      await context.read<TaskCubit>().addTask(task, token);
+                    }
                     
                     if (!context.mounted) return;
                     _showStyledSnackBar(
-                      message: l10n.tr('task.addedSuccessfully'),
+                      message: _isEditMode
+                          ? l10n.tr('task.updatedSuccessfully')
+                          : l10n.tr('task.addedSuccessfully'),
                       accent: const Color(0xFF1F9D60),
                       icon: Icons.check_circle_outline,
                     );
@@ -266,7 +286,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                         ),
                       )
                     : Text(
-                        l10n.tr('task.saveTask'),
+                        _isEditMode
+                          ? l10n.tr('task.updateTask')
+                          : l10n.tr('task.saveTask'),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,
