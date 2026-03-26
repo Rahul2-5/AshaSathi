@@ -14,4 +14,9 @@ public class PatientRequest {
     // Optional fields sent by clients (offline sync)
     public String photoPath;
     public String clientTempId;
+    public String caste;
+    public Boolean isPregnant;
+    public Integer monthsOfPregnancy;
+    public LocalDate expectedDeliveryDate;
+    public String medicalConditions;
 }

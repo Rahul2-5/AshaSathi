@@ -36,6 +36,11 @@ public class PatientService {
                 existing.setDescription(request.description);
                 existing.setPhoneNumber(request.phoneNumber);
                 if (request.photoPath != null) existing.setPhotoPath(request.photoPath);
+                if (request.caste != null) existing.setCaste(request.caste);
+                if (request.isPregnant != null) existing.setIsPregnant(request.isPregnant);
+                if (request.monthsOfPregnancy != null) existing.setMonthsOfPregnancy(request.monthsOfPregnancy);
+                if (request.expectedDeliveryDate != null) existing.setExpectedDeliveryDate(request.expectedDeliveryDate);
+                if (request.medicalConditions != null) existing.setMedicalConditions(request.medicalConditions);
                 return patientRepository.save(existing);
             }
         }
@@ -51,6 +56,11 @@ public class PatientService {
         patient.setPhoneNumber(request.phoneNumber);
         if (request.photoPath != null) patient.setPhotoPath(request.photoPath);
         if (request.clientTempId != null) patient.setClientTempId(request.clientTempId);
+        if (request.caste != null) patient.setCaste(request.caste);
+        if (request.isPregnant != null) patient.setIsPregnant(request.isPregnant);
+        if (request.monthsOfPregnancy != null) patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        if (request.expectedDeliveryDate != null) patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        if (request.medicalConditions != null) patient.setMedicalConditions(request.medicalConditions);
 
         return patientRepository.save(patient);
     }
@@ -90,6 +100,11 @@ public class PatientService {
         patient.setAddress(request.address);
         patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);
+        if (request.caste != null) patient.setCaste(request.caste);
+        if (request.isPregnant != null) patient.setIsPregnant(request.isPregnant);
+        if (request.monthsOfPregnancy != null) patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        if (request.expectedDeliveryDate != null) patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        if (request.medicalConditions != null) patient.setMedicalConditions(request.medicalConditions);
 
         return patientRepository.save(patient);
     }

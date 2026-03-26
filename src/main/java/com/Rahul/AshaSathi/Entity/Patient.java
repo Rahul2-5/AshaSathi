@@ -37,6 +37,20 @@ public class Patient {
     @JsonProperty("uuid")
     private String clientTempId;
 
+    @Column(length = 50)
+    private String caste;
+
+    @Column(name = "is_pregnant")
+    private Boolean isPregnant = false;
+
+    @Column(name = "months_of_pregnancy")
+    private Integer monthsOfPregnancy;
+
+    @Column(name = "expected_delivery_date")
+    private LocalDate expectedDeliveryDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String medicalConditions;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -133,6 +147,46 @@ public class Patient {
 
     public void setClientTempId(String clientTempId) {
         this.clientTempId = clientTempId;
+    }
+
+    public String getCaste() {
+        return caste;
+    }
+
+    public void setCaste(String caste) {
+        this.caste = caste;
+    }
+
+    public Boolean getIsPregnant() {
+        return isPregnant;
+    }
+
+    public void setIsPregnant(Boolean isPregnant) {
+        this.isPregnant = isPregnant;
+    }
+
+    public Integer getMonthsOfPregnancy() {
+        return monthsOfPregnancy;
+    }
+
+    public void setMonthsOfPregnancy(Integer monthsOfPregnancy) {
+        this.monthsOfPregnancy = monthsOfPregnancy;
+    }
+
+    public LocalDate getExpectedDeliveryDate() {
+        return expectedDeliveryDate;
+    }
+
+    public void setExpectedDeliveryDate(LocalDate expectedDeliveryDate) {
+        this.expectedDeliveryDate = expectedDeliveryDate;
+    }
+
+    public String getMedicalConditions() {
+        return medicalConditions;
+    }
+
+    public void setMedicalConditions(String medicalConditions) {
+        this.medicalConditions = medicalConditions;
     }
 
 }
