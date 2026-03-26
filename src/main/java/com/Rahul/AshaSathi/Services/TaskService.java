@@ -43,6 +43,30 @@ public class TaskService {
                 .toList();
     }
 
+    //  UPDATE TASK
+    public Task updateTask(Long taskId, Task updatedTask, Long userId) {
+        Task task = taskRepo.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        // Verify the task belongs to the user
+        if (!task.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Unauthorized: Task does not belong to this user");
+        }
+
+        // Update fields
+        if (updatedTask.getTitle() != null) {
+            task.setTitle(updatedTask.getTitle());
+        }
+        if (updatedTask.getDescription() != null) {
+            task.setDescription(updatedTask.getDescription());
+        }
+        if (updatedTask.getStatus() != null) {
+            task.setStatus(updatedTask.getStatus());
+        }
+
+        return taskRepo.save(task);
+    }
+
     //  DELETE TASK
     public void deleteTask(Long taskId, Long userId) {
         taskRepo.deleteByIdAndUserId(taskId, userId);
