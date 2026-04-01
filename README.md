@@ -189,15 +189,52 @@ This is a personal project focused on:
 
 
 📸 Screenshots
-<img width="482" height="983" alt="Screenshot 2026-03-29 205737" src="https://github.com/user-attachments/assets/c3b5132b-a69a-41f8-86a5-169c7226a3a0" />
 
-<img width="486" height="991" alt="Screenshot 2026-03-29 205827" src="https://github.com/user-attachments/assets/3219651b-275c-402b-b6c6-029fcc017dad" />
+## 📸 Screenshots
 
-<img width="473" height="970" alt="Screenshot 2026-03-29 205852" src="https://github.com/user-attachments/assets/e3388ab3-ffc1-498b-9a22-a8d146d6ddf5" />
-<img width="470" height="990<img width="481" height="892" alt="Screenshot 2026-03-29 205915" src="https://github.com/user-attachments/assets/663d66c5-6ccd-425c-91ba-6d282ae63b12" />
-" alt="Screenshot 2026-03-29 205906" src="https://github.com/user-attachments/assets/83e3c4ed-fbac-4ae5-bb5a-4f5ad20dea58" />
-<img width="475" height="957" alt="Screenshot 2026-03-29 210131" src="https://github.com/user-attachments/assets/6f843a0c-dbc4-4b42-901e-57496579e82e" />
-<img width="499" height="998" alt="Screenshot 2026-03-29 210828" src="https://github.com/user-attachments/assets/f649af83-a28c-4c86-b6ae-1d8f4ea382a2" />
+### 🔐 Authentication
+<p align="center">
+  <img src="screenshots/login.png" width="250"/>
+  <img src="screenshots/signup.png" width="250"/>
+</p>
+
+---
+
+### 📊 Dashboard & Insights
+<p align="center">
+  <img src="screenshots/dashboard.png" width="250"/>
+</p>
+
+---
+
+### 👨‍👩‍👧 Family Management
+<p align="center">
+  <img src="screenshots/families.png" width="250"/>
+  <img src="screenshots/add_family.png" width="250"/>
+</p>
+
+---
+
+### 🧾 Patient Management
+<p align="center">
+  <img src="screenshots/add_patient.png" width="250"/>
+  <img src="screenshots/medical.png" width="250"/>
+</p>
+
+---
+
+### 🧍 Patient Details
+<p align="center">
+  <img src="screenshots/patient_details.png" width="250"/>
+</p>
+
+---
+
+### 🌐 Multi-language Support
+<p align="center">
+  <img src="screenshots/language.png" width="250"/>
+</p>
+
 
 👨‍💻 Author
 
