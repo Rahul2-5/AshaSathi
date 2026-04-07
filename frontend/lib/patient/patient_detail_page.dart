@@ -143,6 +143,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
   Widget _infoCard(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final activeDiseases = _activeDiseaseLabels(_patient.diseases);
 
     return Card(
       elevation: 0,
@@ -168,6 +169,37 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             _divider(),
             _infoRow(
               context,
+              'Caste',
+              _patient.caste.trim().isEmpty ? '-' : _patient.caste,
+            ),
+            _divider(),
+            _infoRow(
+              context,
+              'Pregnancy',
+              _patient.isPregnant
+                  ? 'Yes${_patient.monthsOfPregnancy != null ? ' (${_patient.monthsOfPregnancy} months)' : ''}'
+                  : 'No',
+            ),
+            if (_patient.expectedDeliveryDate.trim().isNotEmpty) ...[
+              _divider(),
+              _infoRow(context, 'Expected Delivery', _patient.expectedDeliveryDate),
+            ],
+            _divider(),
+            _infoRow(
+              context,
+              'Health Info',
+              _patient.declinedHealthInfo ? 'Declined' : 'Shared',
+            ),
+            _divider(),
+            _infoRow(
+              context,
+              'Medical Conditions',
+              activeDiseases.isEmpty ? 'None recorded' : activeDiseases.join(', '),
+              maxLines: 3,
+            ),
+            _divider(),
+            _infoRow(
+              context,
               'Description / Notes',
               _patient.description.trim().isEmpty
                   ? 'No notes added'
@@ -178,6 +210,13 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         ),
       ),
     );
+  }
+
+  List<String> _activeDiseaseLabels(Map<String, bool> diseases) {
+    return diseases.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
   }
 
   Widget _infoRow(

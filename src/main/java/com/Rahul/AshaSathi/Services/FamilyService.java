@@ -4,8 +4,10 @@ import com.Rahul.AshaSathi.DTO.FamilyRegistrationRequest;
 import com.Rahul.AshaSathi.DTO.FamilyRegistrationResponse;
 import com.Rahul.AshaSathi.Entity.Family;
 import com.Rahul.AshaSathi.Entity.FamilyPatient;
+import com.Rahul.AshaSathi.Entity.Patient;
 import com.Rahul.AshaSathi.Repository.FamilyPatientRepository;
 import com.Rahul.AshaSathi.Repository.FamilyRepository;
+import com.Rahul.AshaSathi.Repository.PatientRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ public class FamilyService {
 
     private final FamilyRepository familyRepository;
     private final FamilyPatientRepository patientRepository;
+    private final PatientRepository mainPatientRepository;
     private final ObjectMapper objectMapper;
 
     @Transactional
@@ -61,6 +64,25 @@ public class FamilyService {
                     }
 
                     patientRepository.save(patient);
+
+                    Patient mainPatient = new Patient();
+                    mainPatient.setPatientName(patientDto.getPatientName());
+                    mainPatient.setAge(patientDto.getAge());
+                    mainPatient.setDateOfBirth(patientDto.getDateOfBirth() == null ? null : java.time.LocalDate.parse(patientDto.getDateOfBirth()));
+                    mainPatient.setGender(patientDto.getGender());
+                    mainPatient.setCaste(patientDto.getCaste());
+                    mainPatient.setIsPregnant(patientDto.getIsPregnant());
+                    mainPatient.setMonthsOfPregnancy(patientDto.getMonthsOfPregnancy());
+                    mainPatient.setExpectedDeliveryDate(patientDto.getExpectedDeliveryDate());
+                    mainPatient.setDeclinedHealthInfo(patientDto.getDeclinedHealthInfo());
+                    mainPatient.setDiseases(patientDto.getDiseases() == null ? "{}" : objectMapper.writeValueAsString(patientDto.getDiseases()));
+                    mainPatient.setAddress(patientDto.getAddress());
+                    mainPatient.setDescription(patientDto.getNotes());
+                    mainPatient.setPhoneNumber(patientDto.getPhoneNumber());
+                    mainPatient.setPhotoPath(patientDto.getPhotoPath());
+                    mainPatient.setClientTempId("family-" + savedFamily.getId() + "-" + patientCount + "-" + java.util.UUID.randomUUID());
+                    mainPatientRepository.save(mainPatient);
+
                     patientCount++;
                 }
             }

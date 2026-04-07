@@ -32,6 +32,12 @@ public class PatientService {
                 existing.setAge(request.age);
                 existing.setDateOfBirth(request.dateOfBirth);
                 existing.setGender(request.gender);
+                existing.setCaste(request.caste);
+                existing.setIsPregnant(request.isPregnant);
+                existing.setMonthsOfPregnancy(request.monthsOfPregnancy);
+                existing.setExpectedDeliveryDate(request.expectedDeliveryDate);
+                existing.setDeclinedHealthInfo(request.declinedHealthInfo);
+                if (request.diseases != null) existing.setDiseases(request.diseases);
                 existing.setAddress(request.address);
                 existing.setDescription(request.description);
                 existing.setPhoneNumber(request.phoneNumber);
@@ -46,6 +52,12 @@ public class PatientService {
         patient.setAge(request.age);
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
+        patient.setCaste(request.caste);
+        patient.setIsPregnant(request.isPregnant);
+        patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        patient.setDeclinedHealthInfo(request.declinedHealthInfo);
+        patient.setDiseases(request.diseases);
         patient.setAddress(request.address);
         patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);
@@ -87,6 +99,12 @@ public class PatientService {
         patient.setAge(request.age);
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
+        patient.setCaste(request.caste);
+        patient.setIsPregnant(request.isPregnant);
+        patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        patient.setDeclinedHealthInfo(request.declinedHealthInfo);
+        if (request.diseases != null) patient.setDiseases(request.diseases);
         patient.setAddress(request.address);
         patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);

@@ -721,6 +721,40 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
             const SizedBox(height: 8),
             Text(
+              [
+                if (patient.caste.trim().isNotEmpty) patient.caste.trim(),
+                if (patient.phoneNumber.trim().isNotEmpty) patient.phoneNumber.trim(),
+              ].join('  •  '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF98A7B2) : const Color(0xFF70808C),
+              ),
+            ),
+            if (patient.isPregnant || patient.activeDiseaseLabels.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                [
+                  if (patient.isPregnant)
+                    'Pregnant${patient.monthsOfPregnancy != null ? ' (${patient.monthsOfPregnancy} mo)' : ''}',
+                  if (patient.activeDiseaseLabels.isNotEmpty)
+                    patient.activeDiseaseLabels.take(2).join(', '),
+                ].join('  •  '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.25,
+                  color: isDark ? const Color(0xFFB2C0CC) : const Color(0xFF63707D),
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Text(
               patient.description.trim().isEmpty
                   ? 'No notes'
                   : patient.description,
