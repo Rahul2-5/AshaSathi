@@ -224,7 +224,7 @@ class AddPatientPageNew extends ConsumerWidget {
     AddPatientFormState state,
   ) async {
     try {
-      final token = ref.read(loginProvider).token;
+      final token = await ref.read(loginProvider.notifier).getValidToken();
       if (token == null || token.isEmpty) {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

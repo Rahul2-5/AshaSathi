@@ -265,7 +265,7 @@ class AddPatientWizardScreen extends ConsumerWidget {
                             if (state.step < 3) {
                               notifier.nextStep();
                             } else {
-                              final token = ref.read(loginProvider).token;
+                              final token = await ref.read(loginProvider.notifier).getValidToken();
                               if (token == null || token.isEmpty) {
                                 if (context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(

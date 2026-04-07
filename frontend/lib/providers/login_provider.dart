@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:frontend/services/auth_service.dart';
@@ -107,6 +109,63 @@ class LoginNotifier extends StateNotifier<LoginState> {
     state = LoginState();
   }
 
+  bool _isJwtExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) {
+        return true;
+      }
+
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      switch (payload.length % 4) {
+        case 2:
+          payload += '==';
+          break;
+        case 3:
+          payload += '=';
+          break;
+      }
+
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final map = jsonDecode(decoded) as Map<String, dynamic>;
+      final exp = map['exp'];
+      if (exp is! num) {
+        return true;
+      }
+
+      final expiry = DateTime.fromMillisecondsSinceEpoch(exp.toInt() * 1000);
+      return DateTime.now().isAfter(expiry);
+    } catch (_) {
+      return true;
+    }
+  }
+
+  Future<String?> getValidToken() async {
+    final currentToken = state.token;
+    if (currentToken != null && currentToken.isNotEmpty) {
+      if (!_isJwtExpired(currentToken)) {
+        return currentToken;
+      }
+
+      await logout();
+      return null;
+    }
+
+    final savedToken = await loadSavedToken();
+    if (savedToken == null || savedToken.isEmpty) {
+      return null;
+    }
+
+    if (_isJwtExpired(savedToken)) {
+      await _clearToken();
+      state = LoginState();
+      return null;
+    }
+
+    state = state.copyWith(token: savedToken);
+    return savedToken;
+  }
+
   // 💾 Save token to persistent storage
   Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
@@ -128,8 +187,13 @@ class LoginNotifier extends StateNotifier<LoginState> {
   // ⚡ Initialize - Load saved token on app startup
   Future<void> initializeAuth() async {
     final savedToken = await loadSavedToken();
-    if (savedToken != null) {
+    if (savedToken != null && savedToken.isNotEmpty && !_isJwtExpired(savedToken)) {
       state = state.copyWith(token: savedToken);
+      return;
+    }
+
+    if (savedToken != null) {
+      await _clearToken();
     }
   }
 }
