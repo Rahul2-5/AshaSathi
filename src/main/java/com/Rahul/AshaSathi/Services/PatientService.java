@@ -3,6 +3,8 @@ package com.Rahul.AshaSathi.Services;
 import com.Rahul.AshaSathi.DTO.PatientRequest;
 import com.Rahul.AshaSathi.Entity.Patient;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,9 @@ import java.io.File;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public PatientService(PatientRepository patientRepository) {
         this.patientRepository = patientRepository;
@@ -70,6 +75,15 @@ public class PatientService {
     public void deletePatient(Long id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        // Legacy schema compatibility: clear dependent disease rows first if table exists.
+        try {
+            entityManager.createNativeQuery("DELETE FROM patient_disease WHERE patient_id = :patientId")
+                    .setParameter("patientId", id)
+                    .executeUpdate();
+        } catch (Exception ignored) {
+            // No-op: table may not exist in newer schema versions.
+        }
 
         deletePatientFiles(id, patient.getPhotoPath());
         patientRepository.delete(patient);

@@ -294,7 +294,10 @@ class AddPatientWizardScreen extends ConsumerWidget {
                                     backgroundColor: Color(0xFF14b8a6),
                                   ),
                                 );
-                                Navigator.of(context).pop();
+                                Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                                  '/main',
+                                  (route) => false,
+                                );
                               }
                             }
                           },

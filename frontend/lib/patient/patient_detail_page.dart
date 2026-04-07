@@ -733,8 +733,12 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       debugPrint("Delete response headers: ${res.headers}");
       debugPrint("Delete response body: ${res.body}");
 
-      if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201) {
-        debugPrint("Delete successful! Removing from local storage...");
+      if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201 || res.statusCode == 404) {
+        if (res.statusCode == 404) {
+          debugPrint("Delete returned 404 - treating as already deleted on server.");
+        } else {
+          debugPrint("Delete successful! Removing from local storage...");
+        }
         // Hard delete from offline storage
         await dao.hardDeleteByUuid(_patient.uuid);
         await PatientSyncService().refreshSyncStatus();

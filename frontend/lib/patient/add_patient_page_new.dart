@@ -263,7 +263,10 @@ class AddPatientPageNew extends ConsumerWidget {
               backgroundColor: Colors.green,
             ),
           );
-          Navigator.pop(context); // Close add patient page
+          Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+            '/main',
+            (route) => false,
+          );
         } else {
           final latestState = ref.read(addPatientFormProvider);
           ScaffoldMessenger.of(context).showSnackBar(
