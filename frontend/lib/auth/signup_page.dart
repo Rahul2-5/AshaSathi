@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/auth/cubit/login_cubit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/providers/login_provider.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../home/home_page.dart';
 import '../services/auth_service.dart';
-import 'cubit/signup_cubit.dart';
-import 'cubit/signup_state.dart';
+import '../providers/signup_provider.dart';
 import '../utils/app_validator.dart';
 import 'login_page.dart';
 
-class SignUpView extends StatefulWidget {
+class SignUpView extends ConsumerStatefulWidget {
   const SignUpView({super.key});
 
   @override
-  State<SignUpView> createState() => _SignUpViewState();
+  ConsumerState<SignUpView> createState() => _SignUpViewState();
 }
 
-class _SignUpViewState extends State<SignUpView> {
+class _SignUpViewState extends ConsumerState<SignUpView> {
   static const Color _accentTextColor = Color(0xFF29A68C);
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -39,65 +38,67 @@ class _SignUpViewState extends State<SignUpView> {
       'password': _passwordController.text,
     };
 
-    context.read<SignupCubit>().signup(data);
+    ref.read(signupProvider.notifier).signup(data);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<SignupCubit, SignupState>(
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
-          );
-        }
+    final signupState = ref.watch(signupProvider);
+    
+    // Handle signup results
+    ref.listen(signupProvider, (prev, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error!), backgroundColor: Colors.red),
+        );
+      }
 
-        if (state.isSuccess) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const LoginView()),
-          );
-        }
-      },
-      builder: (context, state) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        final pageBg = isDark ? const Color(0xFF10141D) : const Color(0xFFF6F7F8);
-        final cardBg = isDark ? const Color(0xFF1A2E40) : const Color(0xFFEEF2F5);
-        final titleColor = isDark ? const Color(0xFFEAF0F7) : const Color(0xFF1E242C);
-        final subtitleColor = isDark ? const Color(0xFFA9B6C5) : const Color(0xFF6B7480);
-        final labelColor = isDark ? const Color(0xFF96A3B3) : const Color(0xFF7C8794);
-        final inputTextColor = isDark ? const Color(0xFFE9EFF6) : const Color(0xFF29313A);
-        final dividerColor = isDark ? const Color(0xFF3A4556) : const Color(0xFFD0D5DC);
+      if (next.isSuccess) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginView()),
+        );
+      }
+    });
 
-        return Scaffold(
-          backgroundColor: pageBg,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _topBar(isDark),
-                    const SizedBox(height: 8),
-                    _sectionTag(isDark),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Create Your',
-                      style: TextStyle(
-                        color: titleColor,
-                        fontSize: 42,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
-                      ),
-                    ),
-                    Text(
-                      'Asha Account',
-                      style: const TextStyle(
-                        color: _accentTextColor,
-                        fontSize: 42,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final pageBg = isDark ? const Color(0xFF10141D) : const Color(0xFFF6F7F8);
+    final cardBg = isDark ? const Color(0xFF1A2E40) : const Color(0xFFEEF2F5);
+    final titleColor = isDark ? const Color(0xFFEAF0F7) : const Color(0xFF1E242C);
+    final subtitleColor = isDark ? const Color(0xFFA9B6C5) : const Color(0xFF6B7480);
+    final labelColor = isDark ? const Color(0xFF96A3B3) : const Color(0xFF7C8794);
+    final inputTextColor = isDark ? const Color(0xFFE9EFF6) : const Color(0xFF29313A);
+    final dividerColor = isDark ? const Color(0xFF3A4556) : const Color(0xFFD0D5DC);
+
+    return Scaffold(
+      backgroundColor: pageBg,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _topBar(isDark),
+                const SizedBox(height: 8),
+                _sectionTag(isDark),
+                const SizedBox(height: 10),
+                Text(
+                  'Create Your',
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 42,
+                    fontWeight: FontWeight.w900,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  'Asha Account',
+                  style: const TextStyle(
+                    color: _accentTextColor,
+                    fontSize: 42,
                         fontWeight: FontWeight.w900,
                         height: 1.0,
                       ),
@@ -157,7 +158,7 @@ class _SignUpViewState extends State<SignUpView> {
                       iconColor: labelColor,
                     ),
                     const SizedBox(height: 26),
-                    _buildSignupButton(state),
+                    _buildSignupButton(signupState),
                     const SizedBox(height: 24),
                     Row(
                       children: [
@@ -180,7 +181,6 @@ class _SignUpViewState extends State<SignUpView> {
                     Center(
                       child: OutlinedButton.icon(
                         onPressed: () async {
-                          final loginCubit = context.read<LoginCubit>();
                           final navigator = Navigator.of(context);
                           final messenger = ScaffoldMessenger.of(context);
 
@@ -188,7 +188,7 @@ class _SignUpViewState extends State<SignUpView> {
                             final token = await AuthService().loginWithGoogle();
                             if (!mounted) return;
 
-                            await loginCubit.setToken(token);
+                            await ref.read(loginProvider.notifier).setToken(token);
                             if (!mounted) return;
 
                             navigator.pushReplacement(
@@ -257,8 +257,6 @@ class _SignUpViewState extends State<SignUpView> {
             ),
           ),
         );
-      },
-    );
   }
 
   Widget _topBar(bool isDark) {
@@ -352,12 +350,12 @@ class _SignUpViewState extends State<SignUpView> {
     );
   }
 
-  Widget _buildSignupButton(SignupState state) {
+  Widget _buildSignupButton(SignupState signupState) {
     return SizedBox(
       height: 56,
       width: double.infinity,
       child: ElevatedButton(
-        onPressed: state.isLoading ? null : _submitForm,
+        onPressed: signupState.isLoading ? null : _submitForm,
         style: ElevatedButton.styleFrom(
           backgroundColor: _accentTextColor,
           foregroundColor: Colors.white,
@@ -365,7 +363,7 @@ class _SignUpViewState extends State<SignUpView> {
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: state.isLoading
+        child: signupState.isLoading
             ? const CircularProgressIndicator(color: Colors.white)
             : const Row(
                 mainAxisAlignment: MainAxisAlignment.center,

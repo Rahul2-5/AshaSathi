@@ -1,17 +1,17 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/auth/cubit/login_cubit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/providers/login_provider.dart';
 
-class SplashPage extends StatefulWidget {
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
+class _SplashPageState extends ConsumerState<SplashPage>
     with TickerProviderStateMixin {
   late final AnimationController _animationController;
   late final AnimationController _loopController;
@@ -77,7 +77,7 @@ class _SplashPageState extends State<SplashPage>
 
   Future<void> _initialize() async {
     try {
-      await context.read<LoginCubit>().initializeAuth();
+      await ref.read(loginProvider.notifier).initializeAuth();
     } catch (_) {}
 
     // Keep the splash visible for a short moment so users can feel the motion.
@@ -85,7 +85,7 @@ class _SplashPageState extends State<SplashPage>
 
     if (!mounted) return;
 
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
 
     if (token != null) {
       Navigator.pushReplacementNamed(context, '/main');

@@ -1,23 +1,23 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 import '../localization/app_localizations.dart';
 import 'patient_offline_dao.dart';
 import 'patient_offline_entity.dart';
 import 'patient_sync_service.dart';
 
-class PatientSyncConflictsPage extends StatefulWidget {
+class PatientSyncConflictsPage extends ConsumerStatefulWidget {
   const PatientSyncConflictsPage({super.key});
 
   @override
-  State<PatientSyncConflictsPage> createState() => _PatientSyncConflictsPageState();
+  ConsumerState<PatientSyncConflictsPage> createState() => _PatientSyncConflictsPageState();
 }
 
-class _PatientSyncConflictsPageState extends State<PatientSyncConflictsPage> {
+class _PatientSyncConflictsPageState extends ConsumerState<PatientSyncConflictsPage> {
   final PatientOfflineDao _dao = PatientOfflineDao();
   final PatientSyncService _syncService = PatientSyncService();
 
@@ -41,8 +41,8 @@ class _PatientSyncConflictsPageState extends State<PatientSyncConflictsPage> {
   }
 
   Future<void> _keepLocal(PatientOfflineEntity entity) async {
-    final token = context.read<LoginCubit>().state.token;
-    final patientCubit = context.read<PatientCubit>();
+    final token = ref.read(loginProvider).token;
+    final patientNotifier = ref.read(patientListProvider.notifier);
     final successMessage = context.l10n.tr('sync.conflictResolvedLocal');
     final localId = entity.localId;
     if (token == null || localId == null) return;
@@ -50,7 +50,7 @@ class _PatientSyncConflictsPageState extends State<PatientSyncConflictsPage> {
     try {
       await _syncService.resolveConflictKeepLocal(localId: localId, token: token);
       if (!mounted) return;
-      await patientCubit.loadPatients(token);
+      await patientNotifier.loadPatients(token);
       await _loadConflicts();
       _showSnackBar(successMessage);
     } catch (e) {
@@ -60,8 +60,8 @@ class _PatientSyncConflictsPageState extends State<PatientSyncConflictsPage> {
   }
 
   Future<void> _keepServer(PatientOfflineEntity entity) async {
-    final token = context.read<LoginCubit>().state.token;
-    final patientCubit = context.read<PatientCubit>();
+    final token = ref.read(loginProvider).token;
+    final patientNotifier = ref.read(patientListProvider.notifier);
     final successMessage = context.l10n.tr('sync.conflictResolvedServer');
     final localId = entity.localId;
     if (localId == null) return;
@@ -70,7 +70,7 @@ class _PatientSyncConflictsPageState extends State<PatientSyncConflictsPage> {
       await _syncService.resolveConflictKeepServer(localId: localId);
       if (!mounted) return;
       if (token != null) {
-        await patientCubit.loadPatients(token);
+        await patientNotifier.loadPatients(token);
       }
       await _loadConflicts();
       _showSnackBar(successMessage);

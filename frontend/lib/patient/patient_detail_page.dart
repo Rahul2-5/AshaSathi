@@ -1,20 +1,20 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:http/http.dart' as http;
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/patient_sync_service.dart';
 import '../offline/connectivity_service.dart';
 
 import 'patient_model.dart';
 
-class PatientDetailPage extends StatefulWidget {
+class PatientDetailPage extends ConsumerStatefulWidget {
   final Patient patient;
 
   const PatientDetailPage({
@@ -23,10 +23,10 @@ class PatientDetailPage extends StatefulWidget {
   });
 
   @override
-  State<PatientDetailPage> createState() => _PatientDetailPageState();
+  ConsumerState<PatientDetailPage> createState() => _PatientDetailPageState();
 }
 
-class _PatientDetailPageState extends State<PatientDetailPage> {
+class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   late Patient _patient;
 
   static String get baseUrl => AppConfig.apiBaseUrl;
@@ -513,10 +513,10 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   }
 
   Future<void> _saveUpdatedPatient(Map<String, dynamic> updated) async {
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
     final connectivity = ConnectivityService();
     final dao = PatientOfflineDao();
-    final patientCubit = context.read<PatientCubit>();
+    final patientNotifier = ref.read(patientListProvider.notifier);
     var updatedOnline = false;
 
     try {
@@ -576,7 +576,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
           photoPath: _patient.photoPath,
         );
       });
-      patientCubit.upsertPatient(_patient);
+      patientNotifier.upsertPatient(_patient);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Patient details updated successfully')),
@@ -657,10 +657,10 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
   }
 
   Future<bool> _deletePatient(BuildContext context) async {
-    final token = context.read<LoginCubit>().state.token!;
+    final token = ref.read(loginProvider).token!;
     final dao = PatientOfflineDao();
     final connectivity = ConnectivityService();
-    final patientCubit = context.read<PatientCubit>();
+    final patientNotifier = ref.read(patientListProvider.notifier);
 
     debugPrint("Delete patient: id=${_patient.id}, uuid=${_patient.uuid}, online=${await connectivity.isOnline()}");
 
@@ -699,7 +699,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         // Hard delete from offline storage
         await dao.hardDeleteByUuid(_patient.uuid);
         await PatientSyncService().refreshSyncStatus();
-        patientCubit.removePatientByUuid(_patient.uuid);
+        patientNotifier.removePatientByUuid(_patient.uuid);
 
         if (!context.mounted) return false;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -712,7 +712,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
         // Delete failed, try offline
         await dao.markDeletedByUuid(_patient.uuid);
         await PatientSyncService().refreshSyncStatus();
-        patientCubit.removePatientByUuid(_patient.uuid);
+        patientNotifier.removePatientByUuid(_patient.uuid);
 
         if (!context.mounted) return false;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -733,7 +733,7 @@ class _PatientDetailPageState extends State<PatientDetailPage> {
       // fallback to offline delete
       await dao.markDeletedByUuid(_patient.uuid);
       await PatientSyncService().refreshSyncStatus();
-      patientCubit.removePatientByUuid(_patient.uuid);
+      patientNotifier.removePatientByUuid(_patient.uuid);
 
       if (!context.mounted) return false;
       ScaffoldMessenger.of(context).showSnackBar(

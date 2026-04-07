@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../services/auth_service.dart';
 import '../utils/app_validator.dart';
-import 'cubit/login_cubit.dart';
-import 'cubit/login_state.dart';
+import '../providers/login_provider.dart';
 import 'signup_page.dart';
 
-class LoginView extends StatefulWidget {
+class LoginView extends ConsumerStatefulWidget {
   const LoginView({super.key});
 
   @override
-  State<LoginView> createState() => _LoginViewState();
+  ConsumerState<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends State<LoginView> {
+class _LoginViewState extends ConsumerState<LoginView> {
   static const Color _brandTeal = Color(0xFF1E8F7D);
   static const Color _accentTeal = Color(0xFF2ED1B0);
 
@@ -49,7 +48,7 @@ class _LoginViewState extends State<LoginView> {
 
   void _submitForm() {
     if (_formKey.currentState!.validate()) {
-      context.read<LoginCubit>().login(
+      ref.read(loginProvider.notifier).login(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -58,26 +57,28 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<LoginCubit, LoginState>(
-      listener: (context, state) {
-        if (state.error != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
-          );
-        }
+    final loginState = ref.watch(loginProvider);
+    
+    // Handle errors
+    ref.listen(loginProvider, (prev, next) {
+      if (next.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.error!), backgroundColor: Colors.red),
+        );
+      }
 
-        if (state.token != null) {
-          Navigator.pushReplacementNamed(context, '/main');
-        }
-      },
-      builder: (context, state) {
-        final l10n = context.l10n;
-        return Scaffold(
-          backgroundColor: _pageBackground,
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-              physics: const BouncingScrollPhysics(),
+      if (next.token != null && prev?.token == null) {
+        Navigator.pushReplacementNamed(context, '/main');
+      }
+    });
+
+    final l10n = context.l10n;
+    return Scaffold(
+      backgroundColor: _pageBackground,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+          physics: const BouncingScrollPhysics(),
               child: Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
@@ -129,7 +130,7 @@ class _LoginViewState extends State<LoginView> {
                             const SizedBox(height: 8),
                             _buildPasswordField(),
                             const SizedBox(height: 26),
-                            _buildLoginButton(state),
+                            _buildLoginButton(loginState),
                             const SizedBox(height: 30),
                             Row(
                               children: [
@@ -210,8 +211,6 @@ class _LoginViewState extends State<LoginView> {
             ),
           ),
         );
-      },
-    );
   }
 
   Widget _buildLogo() {
@@ -352,7 +351,6 @@ class _LoginViewState extends State<LoginView> {
           ? null
           : () async {
         setState(() => _isGoogleLoading = true);
-        final loginCubit = context.read<LoginCubit>();
         final messenger = ScaffoldMessenger.of(context);
         final navigator = Navigator.of(context);
 
@@ -360,7 +358,7 @@ class _LoginViewState extends State<LoginView> {
           final token = await AuthService().loginWithGoogle();
           if (!mounted) return;
 
-          await loginCubit.setToken(token);
+          await ref.read(loginProvider.notifier).setToken(token);
           if (!mounted) return;
 
           navigator.pushReplacementNamed('/main');

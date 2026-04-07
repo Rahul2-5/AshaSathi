@@ -1,23 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/auth/cubit/patient_cubit.dart';
-import 'package:frontend/task/task_cubit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../home/home_page.dart';
-import '../patient/add_patient_page.dart';
+import '../patient/add_patient_page_new.dart';
 import '../phc_dashboard/phc_dashboard_page.dart';
-import '../auth/cubit/login_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
+import '../providers/task_provider.dart';
 import '../main.dart';
 
-class MainNavigation extends StatefulWidget {
+class MainNavigation extends ConsumerStatefulWidget {
   const MainNavigation({super.key});
 
   @override
-  State<MainNavigation> createState() => _MainNavigationState();
+  ConsumerState<MainNavigation> createState() => _MainNavigationState();
 }
 
-class _MainNavigationState extends State<MainNavigation>
+class _MainNavigationState extends ConsumerState<MainNavigation>
   with TickerProviderStateMixin {
   static const Duration _themeTransitionDuration =
   Duration(milliseconds: 820);
@@ -35,7 +35,7 @@ class _MainNavigationState extends State<MainNavigation>
 
   final List<Widget> _pages = const [
     HomePage(),
-    AddPatientPage(),
+    AddPatientPageNew(),
     PhcDashboardPage(),
   ];
 
@@ -196,9 +196,9 @@ class _MainNavigationState extends State<MainNavigation>
         type: BottomNavigationBarType.fixed,
         onTap: (index) async {
           if (_currentIndex == index) return;
-          final token = context.read<LoginCubit>().state.token;
-          final patientCubit = context.read<PatientCubit>();
-          final taskCubit = context.read<TaskCubit>();
+          final token = ref.read(loginProvider).token;
+          final patientNotifier = ref.read(patientListProvider.notifier);
+          final taskNotifier = ref.read(taskListProvider.notifier);
 
           await _pageController.animateToPage(
             index,
@@ -210,8 +210,8 @@ class _MainNavigationState extends State<MainNavigation>
           if (index == 0) {
             if (token != null) {
               // reload patients to reflect any recent changes
-              patientCubit.loadPatients(token);
-              taskCubit.loadTasks(token);
+              patientNotifier.loadPatients(token);
+              taskNotifier.loadTasks(token);
             }
           }
         },
@@ -397,7 +397,7 @@ class _MainNavigationState extends State<MainNavigation>
                 ),
                 onTap: () async {
                   Navigator.pop(context); // Close drawer
-                  await context.read<LoginCubit>().logout();
+                  await ref.read(loginProvider.notifier).logout();
                   if (context.mounted) {
                     Navigator.pushNamedAndRemoveUntil(
                       context,

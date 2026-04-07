@@ -1,48 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:frontend/auth/cubit/patient_cubit.dart';
-import 'package:frontend/services/patient_service.dart';
 
-import 'auth/cubit/login_cubit.dart';
-import 'auth/cubit/login_state.dart';
-import 'auth/cubit/signup_cubit.dart';
 import 'auth/login_page.dart';
 import 'localization/app_localizations.dart';
 import 'localization/language_controller.dart';
 import 'navigation/main_navigation.dart';
 import 'splash/splash_page.dart';
-
-import 'services/auth_service.dart';
-import 'services/task_service.dart';
-
-import 'task/task_cubit.dart';
+import 'providers/login_provider.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
   runApp(
-    MultiBlocProvider(
-      providers: [
-        //  Auth
-        BlocProvider(
-          create: (_) => LoginCubit(AuthService()),
-        ),
-        BlocProvider(
-          create: (_) => SignupCubit(AuthService()),
-        ),
-
-        //  Tasks
-        BlocProvider(
-          create: (_) => TaskCubit(TaskService()),
-        ),
-        BlocProvider(
-        create: (_) => PatientCubit(PatientService()),
-),
-
-
-      ],
-      child: const MyApp(),
+    const ProviderScope(
+      child: MyApp(),
     ),
   );
 }
@@ -56,27 +28,35 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _AppRoot extends StatefulWidget {
+class _AppRoot extends ConsumerStatefulWidget {
   const _AppRoot();
 
   @override
-  State<_AppRoot> createState() => _AppRootState();
+  ConsumerState<_AppRoot> createState() => _AppRootState();
 }
 
-class _AppRootState extends State<_AppRoot> {
-  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(ThemeMode.system);
-  final ValueNotifier<Locale> _locale = ValueNotifier(const Locale('en'));
+class _AppRootState extends ConsumerState<_AppRoot> {
+  late final ValueNotifier<ThemeMode> _themeMode;
+  late final ValueNotifier<Locale> _locale;
 
   @override
   void initState() {
     super.initState();
+    _themeMode = ValueNotifier(ThemeMode.system);
+    _locale = ValueNotifier(const Locale('en'));
     _loadSavedLocale();
+    _initializeAuth();
   }
 
   Future<void> _loadSavedLocale() async {
     final savedLocale = await LanguageStorage.loadLocale();
     if (!mounted) return;
     _locale.value = savedLocale;
+  }
+
+  Future<void> _initializeAuth() async {
+    final loginNotifier = ref.read(loginProvider.notifier);
+    await loginNotifier.initializeAuth();
   }
 
   @override
@@ -242,14 +222,14 @@ class _SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 // Check if user is already logged in
-class AuthCheckPage extends StatefulWidget {
+class AuthCheckPage extends ConsumerStatefulWidget {
   const AuthCheckPage({super.key});
 
   @override
-  State<AuthCheckPage> createState() => _AuthCheckPageState();
+  ConsumerState<AuthCheckPage> createState() => _AuthCheckPageState();
 }
 
-class _AuthCheckPageState extends State<AuthCheckPage> {
+class _AuthCheckPageState extends ConsumerState<AuthCheckPage> {
   @override
   void initState() {
     super.initState();
@@ -258,14 +238,14 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   Future<void> _checkAuth() async {
     // Initialize auth (loads saved token if exists)
-    await context.read<LoginCubit>().initializeAuth();
+    await ref.read(loginProvider.notifier).initializeAuth();
 
     // Wait a moment then check if token was loaded
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (!mounted) return;
 
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
 
     if (token != null) {
       //  User is logged in → Go to MainNavigation
@@ -277,20 +257,18 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LoginCubit, LoginState>(
-      builder: (context, state) {
-        if (state.token != null) {
-          // Navigate to home if token exists
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/main');
-            }
-          });
+    final loginState = ref.watch(loginProvider);
+    
+    if (loginState.token != null) {
+      // Navigate to home if token exists
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
         }
+      });
+    }
 
-        // Show login page while checking
-        return const LoginView();
-      },
-    );
+    // Show login page while checking
+    return const LoginView();
   }
 }

@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 import 'patient_detail_page.dart';
 import 'patient_model.dart';
 
@@ -15,14 +15,14 @@ enum _GenderFilter { all, male, female, others }
 
 enum _SortBy { newest, oldest, nameAZ }
 
-class PatientsListPage extends StatefulWidget {
+class PatientsListPage extends ConsumerStatefulWidget {
   const PatientsListPage({super.key});
 
   @override
-  State<PatientsListPage> createState() => _PatientsListPageState();
+  ConsumerState<PatientsListPage> createState() => _PatientsListPageState();
 }
 
-class _PatientsListPageState extends State<PatientsListPage> {
+class _PatientsListPageState extends ConsumerState<PatientsListPage> {
   static String get _baseUrl => AppConfig.apiBaseUrl;
 
   final TextEditingController _searchController = TextEditingController();
@@ -38,9 +38,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
   @override
   void initState() {
     super.initState();
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
     if (token != null) {
-      context.read<PatientCubit>().loadPatients(token);
+      ref.read(patientListProvider.notifier).loadPatients(token);
     }
   }
 
@@ -249,8 +249,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        BlocBuilder<PatientCubit, PatientState>(
-          builder: (context, state) {
+        Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(patientListProvider);
             final filtered = _applyFilters(state.patients);
             return Text(
               context.l10n.tr('patients.recentRecords', args: {'count': filtered.length.toString()}),
@@ -344,8 +345,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
   }
 
   Widget _buildPatientsList() {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         if (state.loading && state.patients.isEmpty) {
           return _buildPatientsSkeletonList();
         }
@@ -442,9 +444,9 @@ class _PatientsListPageState extends State<PatientsListPage> {
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = context.read<LoginCubit>().state.token;
+          final token = ref.read(loginProvider).token;
           if (token != null) {
-            context.read<PatientCubit>().loadPatients(token);
+            ref.read(patientListProvider.notifier).loadPatients(token);
           }
         }
       },

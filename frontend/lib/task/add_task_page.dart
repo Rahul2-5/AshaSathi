@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:frontend/auth/cubit/login_cubit.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/providers/login_provider.dart';
+import 'package:frontend/providers/task_provider.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'task_model.dart';
-import 'task_cubit.dart';
 
-class AddTaskPage extends StatefulWidget {
+class AddTaskPage extends ConsumerStatefulWidget {
   final TaskModel? initialTask;
 
   const AddTaskPage({super.key, this.initialTask});
 
   @override
-  State<AddTaskPage> createState() => _AddTaskPageState();
+  ConsumerState<AddTaskPage> createState() => _AddTaskPageState();
 }
 
-class _AddTaskPageState extends State<AddTaskPage> {
+class _AddTaskPageState extends ConsumerState<AddTaskPage> {
   final titleController = TextEditingController();
   final descController = TextEditingController();
 
@@ -237,7 +237,7 @@ class _AddTaskPageState extends State<AddTaskPage> {
                     return;
                   }
 
-                  final token = context.read<LoginCubit>().state.token!;
+                  final token = ref.read(loginProvider).token!;
                   final task = TaskModel(
                     id: widget.initialTask?.id,
                     uuid: widget.initialTask?.uuid ?? const Uuid().v4(),
@@ -249,9 +249,9 @@ class _AddTaskPageState extends State<AddTaskPage> {
                   setState(() => _isSaving = true);
                   try {
                     if (_isEditMode) {
-                      await context.read<TaskCubit>().updateTask(task, token);
+                      await ref.read(taskListProvider.notifier).updateTask(task, token);
                     } else {
-                      await context.read<TaskCubit>().addTask(task, token);
+                      await ref.read(taskListProvider.notifier).addTask(task, token);
                     }
                     
                     if (!context.mounted) return;

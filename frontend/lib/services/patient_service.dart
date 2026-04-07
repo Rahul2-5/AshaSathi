@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:frontend/config/app_config.dart';
@@ -230,5 +231,85 @@ class PatientService {
     }
 
     return '${AppConfig.apiBaseUrl}/$normalized';
+  }
+
+  /// ============================================
+  /// FAMILY REGISTRATION
+  /// ============================================
+  Future<bool> submitFamilyRegistration(
+    Map<String, dynamic> payload,
+    String token,
+  ) async {
+    try {
+      debugPrint('Submitting family registration: ${payload.toString()}');
+      
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Family registration request timed out');
+        },
+      );
+
+      debugPrint('Family registration response: ${response.statusCode}');
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('Family registered successfully');
+        
+        // Response cached, ready to use
+        return true;
+      } else {
+        debugPrint('Family registration failed: ${response.body}');
+        return false;
+      }
+    } on TimeoutException catch (e) {
+      debugPrint('Timeout during family registration: ${e.message}');
+      return false;
+    } catch (e, stackTrace) {
+      debugPrint('Error during family registration: $e\n$stackTrace');
+      return false;
+    }
+  }
+
+  // Delete patient by ID from backend
+  Future<Map<String, dynamic>> deletePatient({
+    required int patientId,
+    required String token,
+  }) async {
+    try {
+      final url = '${baseUrl.replaceAll('/patients', '').withoutTrailingSlash()}/patients/$patientId';
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200 || response.statusCode == 204 || response.statusCode == 201) {
+        return {'success': true, 'message': 'Patient deleted successfully'};
+      } else {
+        return {'success': false, 'message': 'Failed to delete patient: ${response.statusCode}'};
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error deleting patient: $e\n$stackTrace');
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+}
+
+// Extension to handle trailing slashes
+extension on String {
+  String withoutTrailingSlash() {
+    if (endsWith('/')) {
+      return substring(0, length - 1);
+    }
+    return this;
   }
 }

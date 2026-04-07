@@ -63,4 +63,7 @@ class TaskModel {
         return TaskStatus.pending;
     }
   }
+
+  // Convenience getters
+  bool get isCompleted => status == TaskStatus.completed;
 }

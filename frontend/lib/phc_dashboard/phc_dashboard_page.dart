@@ -1,31 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 
-class PhcDashboardPage extends StatefulWidget {
+class PhcDashboardPage extends ConsumerStatefulWidget {
   const PhcDashboardPage({super.key});
 
   @override
-  State<PhcDashboardPage> createState() => _PhcDashboardPageState();
+  ConsumerState<PhcDashboardPage> createState() => _PhcDashboardPageState();
 }
 
-class _PhcDashboardPageState extends State<PhcDashboardPage> {
+class _PhcDashboardPageState extends ConsumerState<PhcDashboardPage> {
   @override
   void initState() {
     super.initState();
 
     // Load patients data if not already loaded
-    final token = context.read<LoginCubit>().state.token!;
-    context.read<PatientCubit>().loadPatients(token);
+    final token = ref.read(loginProvider).token!;
+    ref.read(patientListProvider.notifier).loadPatients(token);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         final isInitialLoading = state.loading && state.patients.isEmpty;
 
         return Scaffold(
@@ -56,7 +57,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
   //  KEY METRICS 
 
-  Widget _buildKeyMetricsSection(PatientState state) {
+  Widget _buildKeyMetricsSection(PatientListState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -143,7 +144,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
   // SUMMARY CARDS 
 
-  Widget _buildSummaryCards(PatientState state) {
+  Widget _buildSummaryCards(PatientListState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maleCount = state.patients
         .where((p) => p.gender.toLowerCase() == 'male')

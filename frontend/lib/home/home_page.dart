@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/localization/app_localizations.dart';
@@ -14,23 +14,23 @@ import '../offline/task_sync_service.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_conflicts_page.dart';
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
-import '../task/task_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
+import '../providers/task_provider.dart';
 import '../task/add_task_page.dart';
 import 'widgets/task_card.dart';
 import '../patient/patient_detail_page.dart';
 import '../patient/patient_model.dart';
 import '../patient/patients_list_page.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends ConsumerState<HomePage> {
   static const Color _accentTextColor = Color(0xFF56C7AA);
 
   late final PatientSyncService _patientSyncService;
@@ -43,11 +43,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    final token = context.read<LoginCubit>().state.token!;
+    final token = ref.read(loginProvider).token!;
 
     // Initial load
-    context.read<TaskCubit>().loadTasks(token);
-    context.read<PatientCubit>().loadPatients(token);
+    ref.read(taskListProvider.notifier).loadTasks(token);
+    ref.read(patientListProvider.notifier).loadPatients(token);
 
     // Sync service
     _patientSyncService = PatientSyncService();
@@ -62,10 +62,10 @@ class _HomePageState extends State<HomePage> {
       final initialTaskSynced = await _taskSyncService.sync(token);
 
       if (initialPatientSynced && mounted) {
-        context.read<PatientCubit>().loadPatients(token);
+        ref.read(patientListProvider.notifier).loadPatients(token);
       }
       if (initialTaskSynced && mounted) {
-        context.read<TaskCubit>().loadTasks(token);
+        ref.read(taskListProvider.notifier).loadTasks(token);
       }
     })();
 
@@ -78,11 +78,11 @@ class _HomePageState extends State<HomePage> {
       final taskSynced = await _taskSyncService.sync(token);
 
       if (patientSynced && mounted) {
-        context.read<PatientCubit>().loadPatients(token);
+        ref.read(patientListProvider.notifier).loadPatients(token);
       }
 
       if (taskSynced && mounted) {
-        context.read<TaskCubit>().loadTasks(token);
+        ref.read(taskListProvider.notifier).loadTasks(token);
       }
     });
   }
@@ -300,8 +300,8 @@ class _HomePageState extends State<HomePage> {
             if (!mounted) return;
 
             if (result == true) {
-              final token = context.read<LoginCubit>().state.token!;
-              context.read<TaskCubit>().loadTasks(token);
+              final token = ref.read(loginProvider).token!;
+              ref.read(taskListProvider.notifier).loadTasks(token);
             }
           },
           child: Container(
@@ -411,14 +411,12 @@ class _HomePageState extends State<HomePage> {
                         onPressed: snapshot.isSyncing
                             ? null
                             : () async {
-                                final loginCubit = context.read<LoginCubit>();
-                                final patientCubit = context.read<PatientCubit>();
-                                final token = loginCubit.state.token;
+                                final token = ref.read(loginProvider).token;
                                 if (token == null) return;
                                 final synced = await _patientSyncService.sync(token);
                                 if (!mounted) return;
                                 if (synced) {
-                                  patientCubit.loadPatients(token);
+                                  ref.read(patientListProvider.notifier).loadPatients(token);
                                 }
                               },
                         icon: const Icon(Icons.refresh, size: 16),
@@ -434,8 +432,6 @@ class _HomePageState extends State<HomePage> {
                           foregroundColor: Colors.white,
                         ),
                         onPressed: () async {
-                          final loginCubit = context.read<LoginCubit>();
-                          final patientCubit = context.read<PatientCubit>();
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -443,9 +439,9 @@ class _HomePageState extends State<HomePage> {
                             ),
                           );
                           if (!mounted) return;
-                          final token = loginCubit.state.token;
+                          final token = ref.read(loginProvider).token;
                           if (token != null) {
-                            patientCubit.loadPatients(token);
+                            ref.read(patientListProvider.notifier).loadPatients(token);
                           }
                           await _patientSyncService.refreshSyncStatus();
                         },
@@ -463,8 +459,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _taskSliverList() {
-    return BlocBuilder<TaskCubit, TaskState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(taskListProvider);
         if (state.loading && state.tasks.isEmpty) {
           return _buildTaskSkeletonSliver();
         }
@@ -491,8 +488,9 @@ class _HomePageState extends State<HomePage> {
   // ================= PATIENTS =================
 
   Widget _recentPatientsList() {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         if (state.loading && state.patients.isEmpty) {
           return _buildRecentPatientsSkeleton();
         }
@@ -667,8 +665,8 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = context.read<LoginCubit>().state.token!;
-          context.read<PatientCubit>().loadPatients(token);
+          final token = ref.read(loginProvider).token!;
+          ref.read(patientListProvider.notifier).loadPatients(token);
         }
       },
 

@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 import 'package:frontend/patient/patient_success_page.dart';
 
 import 'package:flutter/material.dart';
@@ -17,14 +17,14 @@ import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_service.dart';
 
 
-class AddPatientPage extends StatefulWidget {
+class AddPatientPage extends ConsumerStatefulWidget {
   const AddPatientPage({super.key});
 
   @override
-  State<AddPatientPage> createState() => _AddPatientPageState();
+  ConsumerState<AddPatientPage> createState() => _AddPatientPageState();
 }
 
-class _AddPatientPageState extends State<AddPatientPage> {
+class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -413,8 +413,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
     if (!_formKey.currentState!.validate()) return;
 
     final l10n = context.l10n;
-    final loginCubit = context.read<LoginCubit>();
-    final patientCubit = context.read<PatientCubit>();
+    final patientNotifier = ref.read(patientListProvider.notifier);
     final navigator = Navigator.of(context);
 
     if (_selectedImage == null) {
@@ -444,7 +443,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
       await PatientSyncService().refreshSyncStatus();
 
       final isOnline = await ConnectivityService().isOnline();
-      final token = loginCubit.state.token;
+      final token = ref.read(loginProvider).token;
 
       if (isOnline && token != null) {
         await PatientSyncService().sync(token);
@@ -453,7 +452,7 @@ class _AddPatientPageState extends State<AddPatientPage> {
       if (!mounted) return;
 
       if (token != null) {
-        await patientCubit.loadPatients(token);
+        await patientNotifier.loadPatients(token);
       }
 
       if (!mounted) return;
