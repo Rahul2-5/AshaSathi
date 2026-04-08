@@ -376,17 +376,15 @@ class PatientService {
       debugPrint('[FamilyService] Error loading pending offline families: $e');
     }
 
-    // 🟡 STEP 2: Load cached families if offline
+    // 🟡 STEP 2: Offline → RETURN PENDING ONLY
     if (!isOnline) {
-      final cachedFamilies = await _familyCache.loadFamilies();
-      final combined = [...pendingOfflineFamilies, ...cachedFamilies];
       debugPrint(
-        'Offline mode: returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+        'Offline mode: returning ${pendingOfflineFamilies.length} pending unsynced families',
       );
-      return combined;
+      return pendingOfflineFamilies;
     }
 
-    // 🟢 STEP 3: Try to load from backend
+    // 🟢 STEP 3: ONLINE → Try to load from backend
     try {
       final response = await http.get(
         Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
@@ -401,7 +399,7 @@ class PatientService {
         final combined = [...pendingOfflineFamilies, ...cachedFamilies];
         if (combined.isNotEmpty) {
           debugPrint(
-            'Backend fetch failed (${response.statusCode}), returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+            'Backend fetch failed (${response.statusCode}), returning ${combined.length} families',
           );
           return combined;
         }
@@ -420,19 +418,43 @@ class PatientService {
 
       await _familyCache.saveFamilies(backendFamilies);
       
-      // 🔗 MERGE: Combine pending offline families with backend families
-      final combined = [...pendingOfflineFamilies, ...backendFamilies];
+      // 🔗 MERGE: Backend families + any remaining pending that haven't synced
+      final merged = <FamilyRecord>[...backendFamilies];
+      
+      // Create set of backend family identifiers (head name + address)
+      final backendFamilyKeys = backendFamilies
+          .map((f) => '${f.headOfFamily}::${f.familyAddress}')
+          .toSet();
+
+      // Add pending families that aren't already in backend
+      for (final pendingFamily in pendingOfflineFamilies) {
+        final key = '${pendingFamily.headOfFamily}::${pendingFamily.familyAddress}';
+        if (!backendFamilyKeys.contains(key)) {
+          merged.insert(0, pendingFamily);
+        }
+      }
+
       debugPrint(
-        '[FamilyService] Returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${backendFamilies.length} backend)',
+        '[FamilyService] Returning ${merged.length} merged families (${backendFamilies.length} backend + ${pendingOfflineFamilies.where((p) => !backendFamilyKeys.contains('${p.headOfFamily}::${p.familyAddress}')).length} pending)',
       );
-      return combined;
+      
+      // Clear pending since they've been synced
+      if (pendingOfflineFamilies.isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove('pending_family_registrations_v1');
+          debugPrint('[FamilyService] Cleared pending families after sync');
+        } catch (_) {}
+      }
+      
+      return merged;
     } catch (e, stackTrace) {
       debugPrint('Error fetching families: $e\n$stackTrace');
       final cachedFamilies = await _familyCache.loadFamilies();
       final combined = [...pendingOfflineFamilies, ...cachedFamilies];
       if (combined.isNotEmpty) {
         debugPrint(
-          '[FamilyService] Returning ${combined.length} families after error (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+          '[FamilyService] Returning ${combined.length} families after error',
         );
         return combined;
       }
