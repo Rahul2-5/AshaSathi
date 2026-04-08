@@ -174,6 +174,18 @@ class PatientOfflineDao {
     return (result.first['c'] as int?) ?? 0;
   }
 
+  /// Retrieve all items in retry queue with their error details
+  Future<List<PatientOfflineEntity>> getRetryQueue() async {
+    final db = await _db.database;
+    final result = await db.query(
+      'patients',
+      where: 'retryCount > 0 AND syncStatus != ?',
+      whereArgs: [SyncStatusOffline.synced],
+      orderBy: 'retryCount DESC, updatedAt DESC',
+    );
+    return result.map(PatientOfflineEntity.fromMap).toList();
+  }
+
   /// Counts only truly unsynced records.
   /// If a row already has serverId, it is considered synced/recoverable.
   Future<int> getUnsyncedCount() async {

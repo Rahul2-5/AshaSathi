@@ -418,6 +418,44 @@ class _HomePageState extends ConsumerState<HomePage> {
                   ),
                 ),
               ],
+              if (snapshot.retryQueueCount > 0) ...[
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF493029)
+                        : const Color(0xFFFFE8DE),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '⚠️  ${snapshot.retryQueueCount} item(s) failed to sync',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? const Color(0xFFFFB38F)
+                              : const Color(0xFFB74417),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap Retry to try syncing again.',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isDark
+                              ? const Color(0xFFD4A5A5)
+                              : const Color(0xFF9A5A4A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 10),
               Row(
                 children: [
@@ -427,7 +465,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                         onPressed: snapshot.isSyncing
                             ? null
                             : () async {
-                                final token = ref.read(loginProvider).token;
+                                final token = await ref
+                                    .read(loginProvider.notifier)
+                                    .getValidToken();
                                 if (token == null) return;
                                 await _patientSyncService.refreshSyncStatus();
                                 final synced = await _patientSyncService.sync(token);
@@ -456,7 +496,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                             ),
                           );
                           if (!mounted) return;
-                          final token = ref.read(loginProvider).token;
+                          final token = await ref
+                              .read(loginProvider.notifier)
+                              .getValidToken();
                           if (token != null) {
                             ref.read(patientListProvider.notifier).loadPatients(token);
                           }
