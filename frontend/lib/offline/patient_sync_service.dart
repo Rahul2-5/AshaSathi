@@ -246,7 +246,16 @@ class PatientSyncService {
             final streamed = await req.send();
             final respBody = await streamed.stream.bytesToString();
             debugPrint('[PatientSync] upload photo status=${streamed.statusCode} body=$respBody');
-            // backend updates patient.photoPath in DB
+            
+            // Update local DB with server photoPath after successful upload
+            if (streamed.statusCode == 200) {
+              final serverPhotoPath = "/uploads/patients/$serverId/profile.jpg";
+              await _dao.updatePhotoPathByLocalId(
+                localId: patient.localId!,
+                photoPath: serverPhotoPath,
+              );
+              debugPrint('[PatientSync] updated photoPath to $serverPhotoPath for local ${patient.localId}');
+            }
           } catch (e) {
             debugPrint('[PatientSync] photo upload failed for local ${patient.localId}: $e');
           }

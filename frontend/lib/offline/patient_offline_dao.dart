@@ -418,5 +418,22 @@ class PatientOfflineDao {
       whereArgs: [localId],
     );
   }
+
+  /// Update photPath after successful server sync
+  Future<void> updatePhotoPathByLocalId({
+    required int localId,
+    required String photoPath,
+  }) async {
+    final db = await _db.database;
+    await db.update(
+      'patients',
+      {
+        'photoPath': photoPath,
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      where: 'localId = ?',
+      whereArgs: [localId],
+    );
+  }
 }
 
