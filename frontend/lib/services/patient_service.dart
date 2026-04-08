@@ -48,6 +48,7 @@ class PatientService {
         expectedDeliveryDate: p.expectedDeliveryDate,
         declinedHealthInfo: p.declinedHealthInfo,
         diseases: p.diseases,
+        updatedAt: p.updatedAt, // ✅ Include timestamp for sorting recent patients
       );
     }).toList();
 
@@ -103,6 +104,7 @@ class PatientService {
             expectedDeliveryDate: patient.expectedDeliveryDate,
             declinedHealthInfo: patient.declinedHealthInfo,
             diseases: patient.diseases,
+            updatedAt: patient.updatedAt,
           ),
         );
       }

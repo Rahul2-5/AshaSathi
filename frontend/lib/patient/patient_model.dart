@@ -17,6 +17,7 @@ class Patient {
   final bool declinedHealthInfo;
   final Map<String, bool> diseases;
   final String? photoPath;
+  final int? updatedAt;   // timestamp for sorting recent patients (millisecondsSinceEpoch)
 
   Patient({
     this.id,
@@ -35,6 +36,7 @@ class Patient {
     this.declinedHealthInfo = false,
     this.diseases = const {},
     this.photoPath,
+    this.updatedAt,
   });
 
   static Map<String, bool> _parseDiseases(dynamic value) {
@@ -86,6 +88,9 @@ class Patient {
       declinedHealthInfo: json['declinedHealthInfo'] == true,
       diseases: _parseDiseases(json['diseases']),
       photoPath: json['photoPath'],
+      updatedAt: json['updatedAt'] is int 
+          ? json['updatedAt'] 
+          : int.tryParse((json['updatedAt'] ?? '').toString()),
     );
   }
 
@@ -110,6 +115,7 @@ class Patient {
       declinedHealthInfo: map['declinedHealthInfo'] == true,
       diseases: _parseDiseases(map['diseases']),
       photoPath: map['photoPath'],
+      updatedAt: map['updatedAt'] is int ? map['updatedAt'] : null,
     );
   }
 }

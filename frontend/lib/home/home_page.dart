@@ -11,12 +11,14 @@ import 'package:shimmer/shimmer.dart';
 
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
+import '../offline/family_sync_service.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_conflicts_page.dart';
 
 import '../providers/login_provider.dart';
 import '../providers/patient_provider.dart';
 import '../providers/task_provider.dart';
+import '../providers/family_provider.dart';
 import '../task/add_task_page.dart';
 import 'widgets/task_card.dart';
 import '../patient/patient_detail_page.dart';
@@ -35,6 +37,7 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   late final PatientSyncService _patientSyncService;
   late final TaskSyncService _taskSyncService;
+  late final FamilySyncService _familySyncService;
   late final ConnectivityService _connectivityService;
   late final StreamSubscription _connectivitySub;
   bool _isOnline = false;
@@ -46,6 +49,7 @@ class _HomePageState extends ConsumerState<HomePage> {
     // Sync service - lightweight setup
     _patientSyncService = PatientSyncService();
     _taskSyncService = TaskSyncService();
+    _familySyncService = FamilySyncService();
     _connectivityService = ConnectivityService();
     _refreshConnectivityStatus();
     _patientSyncService.refreshSyncStatus();
@@ -56,9 +60,10 @@ class _HomePageState extends ConsumerState<HomePage> {
       final token = await ref.read(loginProvider.notifier).getValidToken();
       if (token == null || !mounted) return;
 
-      // Try both patient and task sync when network state changes
+      // Try patient, task, and family sync when network state changes
       final patientSynced = await _patientSyncService.sync(token);
       final taskSynced = await _taskSyncService.sync(token);
+      final familySynced = await _familySyncService.syncPendingFamilies(token);
 
       if (patientSynced && mounted) {
         ref.read(patientListProvider.notifier).loadPatients(token);
@@ -66,6 +71,11 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       if (taskSynced && mounted) {
         ref.read(taskListProvider.notifier).loadTasks(token);
+      }
+
+      if (familySynced > 0 && mounted) {
+        // Trigger family list reload if families were synced
+        ref.read(familyListProvider.notifier).loadFamilies(token);
       }
     });
 
@@ -79,20 +89,25 @@ class _HomePageState extends ConsumerState<HomePage> {
     final token = await ref.read(loginProvider.notifier).getValidToken();
     if (token == null || !mounted) return;
 
-    // Initial load
+    // Initial load (always load to show cached data even if offline)
     ref.read(taskListProvider.notifier).loadTasks(token);
     ref.read(patientListProvider.notifier).loadPatients(token);
+    ref.read(familyListProvider.notifier).loadFamilies(token);
 
     // Try an initial sync once on startup (useful after regaining connectivity)
     try {
       final initialPatientSynced = await _patientSyncService.sync(token);
       final initialTaskSynced = await _taskSyncService.sync(token);
+      final initialFamilySynced = await _familySyncService.syncPendingFamilies(token);
 
       if (initialPatientSynced && mounted) {
         ref.read(patientListProvider.notifier).loadPatients(token);
       }
       if (initialTaskSynced && mounted) {
         ref.read(taskListProvider.notifier).loadTasks(token);
+      }
+      if (initialFamilySynced > 0 && mounted) {
+        ref.read(familyListProvider.notifier).loadFamilies(token);
       }
     } catch (e) {
       // Sync attempt failed, but data may have loaded from cache
@@ -871,8 +886,14 @@ class _HomePageState extends ConsumerState<HomePage> {
           return Center(child: Text(context.l10n.tr('home.noPatientsFound')));
         }
 
+        // ✅ SORT BY RECENCY: Most recently updated/created first
         final recentPatients = [...state.patients]
-          ..sort((a, b) => (b.id ?? -1).compareTo(a.id ?? -1));
+          ..sort((a, b) {
+            // Use updatedAt for sorting (most recent first)
+            final aTime = a.updatedAt ?? (a.id ?? -1);
+            final bTime = b.updatedAt ?? (b.id ?? -1);
+            return bTime.compareTo(aTime); // Descending: newest first
+          });
         final visiblePatients = recentPatients.take(5).toList();
 
         return ListView.separated(
