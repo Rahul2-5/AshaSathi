@@ -115,8 +115,8 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    const Color(0xFF0BAEB4).withOpacity(0.2),
-                    const Color(0xFF0BAEB4).withOpacity(0.05),
+                    const Color(0xFF0BAEB4).withValues(alpha: 0.2),
+                    const Color(0xFF0BAEB4).withValues(alpha: 0.05),
                   ],
                 ),
               ),
@@ -165,7 +165,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   }
 
   Widget _buildPatientImage() {
-    final path = _patient.photoPath;
+    final path = _patient.photoPath?.trim();
     final token = ref.read(loginProvider).token;
     final headers = (token != null && token.isNotEmpty)
         ? <String, String>{'Authorization': 'Bearer $token'}
@@ -182,13 +182,18 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       return Image.file(File(path), fit: BoxFit.cover);
     }
 
-    if (normalizedPath.startsWith('/uploads/') ||
-        normalizedPath.contains('/uploads/')) {
+    if (normalizedPath.startsWith('uploads/') ||
+        normalizedPath.contains('/uploads/') ||
+        normalizedPath.contains('uploads/')) {
+      final uploadIndex = normalizedPath.indexOf('uploads/');
+      final uploadPath =
+          uploadIndex >= 0 ? '/${normalizedPath.substring(uploadIndex)}' : normalizedPath;
+
       return Image.network(
-        "$baseUrl$normalizedPath",
+        "$baseUrl$uploadPath",
         fit: BoxFit.cover,
         headers: headers,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        errorBuilder: (_, error, stackTrace) => const Icon(Icons.broken_image),
       );
     }
 
@@ -197,7 +202,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         path,
         fit: BoxFit.cover,
         headers: headers,
-        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+        errorBuilder: (_, error, stackTrace) => const Icon(Icons.broken_image),
       );
     }
 
@@ -387,7 +392,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         color: isDark ? const Color(0xFF1A232C) : Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
             blurRadius: 12,
             offset: const Offset(0, 2),
           ),
@@ -662,7 +667,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: borderColor.withOpacity(0.15),
+                      color: borderColor.withValues(alpha: 0.15),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -1148,7 +1153,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               }
             },
             style: TextButton.styleFrom(
-              backgroundColor: Colors.red.shade600.withOpacity(0.1),
+              backgroundColor: Colors.red.shade600.withValues(alpha: 0.1),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             ),
             child: Text(

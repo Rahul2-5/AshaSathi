@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/add_patient_models.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
 import 'package:intl/intl.dart';
@@ -18,15 +19,17 @@ class Step2PatientDetails extends ConsumerWidget {
     final state = ref.watch(addPatientFormProvider);
     final currentPatient = ref.watch(currentPatientProvider);
     final familyInfo = state.familyInfo;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Title
-        const Text(
-          'Patient Details',
+        Text(
+          context.l10n.tr('patient.details'),
           style: TextStyle(
-            color: Colors.white,
+            color: theme.colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -40,9 +43,11 @@ class Step2PatientDetails extends ConsumerWidget {
         // Patient form card
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1f2937),
+            color: isDark
+                ? const Color(0xFF1f2937)
+                : theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade800),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -54,7 +59,7 @@ class Step2PatientDetails extends ConsumerWidget {
               // Patient name
               _buildTextInput(
                 context,
-                label: 'Patient Name *',
+                label: context.l10n.tr('patient.patientNameRequired'),
                 value: currentPatient.patientName,
                 onChanged: (value) {
                   ref.read(addPatientFormProvider.notifier).updatePatient(
@@ -70,7 +75,7 @@ class Step2PatientDetails extends ConsumerWidget {
                   Expanded(
                     child: _buildTextInput(
                       context,
-                      label: 'Age',
+                      label: context.l10n.tr('patient.age'),
                       value: currentPatient.age,
                       keyboardType: TextInputType.number,
                       maxLength: 3,
@@ -96,7 +101,7 @@ class Step2PatientDetails extends ConsumerWidget {
               // Date of birth
               _buildDateInput(
                 context,
-                label: 'Date of Birth',
+                label: context.l10n.tr('patient.dateOfBirth'),
                 value: currentPatient.dateOfBirth,
                 onChanged: (value) {
                   ref.read(addPatientFormProvider.notifier).updatePatient(
@@ -118,7 +123,7 @@ class Step2PatientDetails extends ConsumerWidget {
               // Caste
               _buildTextInput(
                 context,
-                label: 'Caste',
+                label: context.l10n.tr('patient.caste'),
                 value: currentPatient.caste,
                 onChanged: (value) {
                   ref.read(addPatientFormProvider.notifier).updatePatient(
@@ -135,7 +140,7 @@ class Step2PatientDetails extends ConsumerWidget {
               // Phone number
               _buildTextInput(
                 context,
-                label: 'Phone Number',
+                label: context.l10n.tr('auth.phoneNumber'),
                 value: currentPatient.phoneNumber,
                 keyboardType: TextInputType.number,
                 maxLength: 10,
@@ -162,14 +167,19 @@ class Step2PatientDetails extends ConsumerWidget {
                           showDialog(
                             context: context,
                             builder: (context) => AlertDialog(
-                              title: const Text('Remove Member?'),
+                              title: Text(context.l10n.tr('patient.removeMemberTitle')),
                               content: Text(
-                                'Remove ${currentPatient.patientName.isEmpty ? 'this member' : currentPatient.patientName}?',
+                                currentPatient.patientName.isEmpty
+                                    ? context.l10n.tr('patient.removeMemberPromptDefault')
+                                    : context.l10n.tr(
+                                        'patient.removeMemberPromptNamed',
+                                        args: {'name': currentPatient.patientName},
+                                      ),
                               ),
                               actions: [
                                 TextButton(
                                   onPressed: () => Navigator.pop(context),
-                                  child: const Text('Cancel'),
+                                  child: Text(context.l10n.tr('common.cancel')),
                                 ),
                                 ElevatedButton(
                                   onPressed: () {
@@ -182,14 +192,14 @@ class Step2PatientDetails extends ConsumerWidget {
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: Colors.red,
                                   ),
-                                  child: const Text('Remove'),
+                                  child: Text(context.l10n.tr('patient.remove')),
                                 ),
                               ],
                             ),
                           );
                         },
                         icon: const Icon(Icons.delete_outline),
-                        label: const Text('Remove This Member'),
+                        label: Text(context.l10n.tr('patient.removeThisMember')),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           foregroundColor: Colors.red.shade400,
@@ -209,6 +219,8 @@ class Step2PatientDetails extends ConsumerWidget {
 
   Widget _buildPatientTabs(BuildContext context, WidgetRef ref, AddPatientFormState state) {
     final maxMembers = int.tryParse(state.familyInfo.numberOfMembers) ?? 1;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -227,15 +239,24 @@ class Step2PatientDetails extends ConsumerWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isActive
                         ? const Color(0xFF14b8a6)
-                        : const Color(0xFF1f2937),
-                    foregroundColor: isActive ? Colors.white : Colors.grey,
+                        : (isDark
+                            ? const Color(0xFF1f2937)
+                            : theme.colorScheme.surfaceContainerHighest),
+                    foregroundColor: isActive
+                        ? Colors.white
+                        : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     side: BorderSide(
                       color: isActive
                           ? const Color(0xFF14b8a6)
-                          : Colors.grey.shade700,
+                          : theme.colorScheme.outlineVariant,
                     ),
                   ),
-                  child: Text('Member ${index + 1}'),
+                  child: Text(
+                    context.l10n.tr(
+                      'patient.memberWithIndex',
+                      args: {'index': (index + 1).toString()},
+                    ),
+                  ),
                 ),
               );
             },
@@ -243,8 +264,8 @@ class Step2PatientDetails extends ConsumerWidget {
           const SizedBox(width: 8),
           Text(
             '${state.patients.length}/$maxMembers',
-            style: const TextStyle(
-              color: Colors.white70,
+            style: TextStyle(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -259,6 +280,7 @@ class Step2PatientDetails extends ConsumerWidget {
     WidgetRef ref,
     PatientDataModel patient,
   ) {
+    final theme = Theme.of(context);
     final photoPath = patient.photoPath;
     final hasPhoto =
         photoPath != null && photoPath.isNotEmpty && File(photoPath).existsSync();
@@ -273,13 +295,14 @@ class Step2PatientDetails extends ConsumerWidget {
               children: [
                 CircleAvatar(
                   radius: 42,
-                  backgroundColor: const Color(0xFF334155),
+                  backgroundColor: theme.colorScheme.surfaceContainer,
                   backgroundImage: hasPhoto ? FileImage(File(photoPath)) : null,
                   child: !hasPhoto
-                      ? const Icon(
+                      ? Icon(
                           Icons.person,
                           size: 42,
-                          color: Colors.white54,
+                          color:
+                              theme.colorScheme.onSurface.withValues(alpha: 0.55),
                         )
                       : null,
                 ),
@@ -302,7 +325,9 @@ class Step2PatientDetails extends ConsumerWidget {
           TextButton(
             onPressed: () => _showImageSourceSheet(context, ref),
             child: Text(
-              hasPhoto ? 'Change Photo' : 'Add Photo',
+              hasPhoto
+                  ? context.l10n.tr('patient.changePhoto')
+                  : context.l10n.tr('patient.addPhoto'),
               style: const TextStyle(
                 color: Color(0xFF14b8a6),
                 fontWeight: FontWeight.w600,
@@ -316,8 +341,8 @@ class Step2PatientDetails extends ConsumerWidget {
                   photoPath: '',
                 );
               },
-              child: const Text(
-                'Remove Photo',
+              child: Text(
+                context.l10n.tr('patient.removePhoto'),
                 style: TextStyle(color: Colors.redAccent),
               ),
             ),
@@ -339,7 +364,7 @@ class Step2PatientDetails extends ConsumerWidget {
             children: [
               ListTile(
                 leading: const Icon(Icons.camera_alt),
-                title: const Text('Take Photo'),
+                title: Text(context.l10n.tr('patient.takePhoto')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
                   await _pickAndSaveImage(ref, ImageSource.camera);
@@ -347,7 +372,7 @@ class Step2PatientDetails extends ConsumerWidget {
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library),
-                title: const Text('Choose from Gallery'),
+                title: Text(context.l10n.tr('patient.chooseFromGallery')),
                 onTap: () async {
                   Navigator.pop(sheetContext);
                   await _pickAndSaveImage(ref, ImageSource.gallery);
@@ -399,13 +424,16 @@ class Step2PatientDetails extends ConsumerWidget {
     int? maxLength,
     int maxLines = 1,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
             fontSize: 13,
           ),
         ),
@@ -419,15 +447,17 @@ class Step2PatientDetails extends ConsumerWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF0f1419),
+            fillColor: isDark
+                ? const Color(0xFF0f1419)
+                : theme.colorScheme.surface,
             counterText: '',
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade700),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey.shade700),
+              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
@@ -450,13 +480,16 @@ class Step2PatientDetails extends ConsumerWidget {
     required Function(String) onChanged,
     bool allowFutureDates = false,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
             fontSize: 13,
           ),
         ),
@@ -486,22 +519,24 @@ class Step2PatientDetails extends ConsumerWidget {
           child: TextField(
             controller: TextEditingController(text: value),
             enabled: false,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
               filled: true,
-              fillColor: const Color(0xFF0f1419),
-              suffixIcon: const Icon(
+              fillColor: isDark
+                  ? const Color(0xFF0f1419)
+                  : theme.colorScheme.surface,
+              suffixIcon: Icon(
                 Icons.calendar_today,
-                color: Colors.grey,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                 size: 18,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.grey.shade700),
+                borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: Colors.grey.shade700),
+                borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
               ),
               contentPadding: const EdgeInsets.all(10),
             ),
@@ -516,21 +551,26 @@ class Step2PatientDetails extends ConsumerWidget {
     WidgetRef ref,
     PatientDataModel patient,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Gender',
+        Text(
+          context.l10n.tr('patient.gender'),
           style: TextStyle(
-            color: Colors.white70,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
             fontSize: 13,
           ),
         ),
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF0f1419),
-            border: Border.all(color: Colors.grey.shade700),
+            color: isDark
+                ? const Color(0xFF0f1419)
+                : theme.colorScheme.surface,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
             borderRadius: BorderRadius.circular(10),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -538,14 +578,20 @@ class Step2PatientDetails extends ConsumerWidget {
             value: patient.gender,
             isExpanded: true,
             underline: SizedBox(),
-            dropdownColor: const Color(0xFF1f2937),
+            dropdownColor: isDark
+                ? const Color(0xFF1f2937)
+                : theme.colorScheme.surface,
             items: const ['Female', 'Male', 'Other']
                 .map(
                   (gender) => DropdownMenuItem(
                     value: gender,
                     child: Text(
-                      gender,
-                      style: const TextStyle(color: Colors.white),
+                      gender == 'Female'
+                          ? context.l10n.tr('patient.female')
+                          : gender == 'Male'
+                              ? context.l10n.tr('patient.male')
+                              : context.l10n.tr('patient.other'),
+                      style: TextStyle(color: theme.colorScheme.onSurface),
                     ),
                   ),
                 )
@@ -557,7 +603,7 @@ class Step2PatientDetails extends ConsumerWidget {
                 );
               }
             },
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: theme.colorScheme.onSurface),
           ),
         ),
       ],
@@ -569,10 +615,12 @@ class Step2PatientDetails extends ConsumerWidget {
     WidgetRef ref,
     PatientDataModel patient,
   ) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFec4899).withValues(alpha: 0.1),
+        color: theme.colorScheme.secondaryContainer.withValues(alpha: 0.45),
         border: Border.all(color: const Color(0xFFec4899).withValues(alpha: 0.3)),
         borderRadius: BorderRadius.circular(10),
       ),
@@ -611,11 +659,11 @@ class Step2PatientDetails extends ConsumerWidget {
                       : null,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Is Pregnant?',
+                    context.l10n.tr('patient.isPregnant'),
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onSurface,
                       fontSize: 14,
                     ),
                   ),
@@ -627,14 +675,11 @@ class Step2PatientDetails extends ConsumerWidget {
             Column(
               children: [
                 const SizedBox(height: 12),
-                _buildPregnancyMonthCounter(
-                  ref,
-                  patient,
-                ),
+                _buildPregnancyMonthCounter(context, ref, patient),
                 const SizedBox(height: 12),
                 _buildDateInput(
                   context,
-                  label: 'Expected Delivery Date',
+                  label: context.l10n.tr('patient.expectedDeliveryDate'),
                   value: patient.expectedDeliveryDate,
                   allowFutureDates: true,
                   onChanged: (value) {
@@ -650,7 +695,13 @@ class Step2PatientDetails extends ConsumerWidget {
     );
   }
 
-  Widget _buildPregnancyMonthCounter(WidgetRef ref, PatientDataModel patient) {
+  Widget _buildPregnancyMonthCounter(
+    BuildContext context,
+    WidgetRef ref,
+    PatientDataModel patient,
+  ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final currentMonths = int.tryParse(patient.monthsOfPregnancy) ?? 1;
     final safeMonths = currentMonths.clamp(1, 9);
 
@@ -666,10 +717,10 @@ class Step2PatientDetails extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Months of Pregnancy',
+        Text(
+          context.l10n.tr('patient.monthsOfPregnancy'),
           style: TextStyle(
-            color: Colors.white70,
+            color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
             fontSize: 13,
           ),
         ),
@@ -677,9 +728,11 @@ class Step2PatientDetails extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFF0f1419),
+            color: isDark
+                ? const Color(0xFF0f1419)
+                : theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade700),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           child: Row(
             children: [
@@ -690,10 +743,13 @@ class Step2PatientDetails extends ConsumerWidget {
               ),
               Expanded(
                 child: Text(
-                  '$safeMonths month${safeMonths == 1 ? '' : 's'}',
+                  context.l10n.tr(
+                    'patient.monthsCount',
+                    args: {'count': safeMonths.toString()},
+                  ),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
@@ -725,6 +781,8 @@ class Step2PatientDetails extends ConsumerWidget {
     PatientDataModel patient,
     FamilyInfo familyInfo,
   ) {
+    final theme = Theme.of(context);
+
     return Column(
       children: [
         GestureDetector(
@@ -736,7 +794,7 @@ class Step2PatientDetails extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade700),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
               borderRadius: BorderRadius.circular(10),
               color: patient.sameAsFamilyAddress
                   ? const Color(0xFF14b8a6).withValues(alpha: 0.1)
@@ -751,7 +809,7 @@ class Step2PatientDetails extends ConsumerWidget {
                     border: Border.all(
                       color: patient.sameAsFamilyAddress
                           ? const Color(0xFF14b8a6)
-                          : Colors.grey.shade600,
+                        : theme.colorScheme.outline,
                     ),
                     borderRadius: BorderRadius.circular(3),
                     color: patient.sameAsFamilyAddress
@@ -767,10 +825,13 @@ class Step2PatientDetails extends ConsumerWidget {
                       : null,
                 ),
                 const SizedBox(width: 10),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    'Same as family address',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    context.l10n.tr('patient.sameAsFamilyAddress'),
+                    style: TextStyle(
+                      color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ],
@@ -783,7 +844,7 @@ class Step2PatientDetails extends ConsumerWidget {
               const SizedBox(height: 12),
               _buildTextInput(
                 context,
-                label: 'Patient Address',
+                label: context.l10n.tr('patient.patientAddress'),
                 value: patient.address,
                 maxLines: 3,
                 onChanged: (value) {
@@ -853,6 +914,8 @@ class _SyncedTextFieldState extends State<_SyncedTextField> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return TextField(
       controller: _controller,
       focusNode: _focusNode,
@@ -862,7 +925,7 @@ class _SyncedTextFieldState extends State<_SyncedTextField> {
       maxLines: widget.maxLines,
       minLines: widget.maxLines == 1 ? 1 : null,
       onChanged: widget.onChanged,
-      style: const TextStyle(color: Colors.white),
+      style: TextStyle(color: theme.colorScheme.onSurface),
       decoration: widget.decoration,
     );
   }

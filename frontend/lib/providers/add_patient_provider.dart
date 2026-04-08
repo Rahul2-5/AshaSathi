@@ -12,6 +12,9 @@ final addPatientFormProvider =
   (ref) => AddPatientNotifier(),
 );
 
+final lastRegisteredFamilyProvider =
+    StateProvider<RegisteredFamilySnapshot?>((ref) => null);
+
 /// Computed: Current patient
 final currentPatientProvider = Provider<PatientDataModel>((ref) {
   final state = ref.watch(addPatientFormProvider);
@@ -49,10 +52,31 @@ final canProceedToNextStepProvider = Provider<bool>((ref) {
 /// ============================================
 /// STATE NOTIFIER
 /// ============================================
+class RegisteredFamilySnapshot {
+  final FamilyInfo familyInfo;
+  final List<PatientDataModel> members;
+
+  const RegisteredFamilySnapshot({
+    required this.familyInfo,
+    required this.members,
+  });
+}
+
 class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
   final PatientService _patientService = PatientService();
 
   AddPatientNotifier() : super(AddPatientFormState.initial());
+
+  String? _calculateDobFromAge(String rawAge) {
+    final parsedAge = int.tryParse(rawAge.trim());
+    if (parsedAge == null || parsedAge < 0 || parsedAge > 130) {
+      return null;
+    }
+
+    final birthYear = DateTime.now().year - parsedAge;
+    final yearText = birthYear.toString().padLeft(4, '0');
+    return '$yearText-01-01';
+  }
 
   int _targetMemberCount() {
     final parsed = int.tryParse(state.familyInfo.numberOfMembers);
@@ -214,6 +238,12 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
   }) {
     final currentIndex = state.currentPatientIndex;
     final currentPatient = state.patients[currentIndex];
+    final hasExplicitDobInput = dateOfBirth != null;
+    final autoDobFromAge =
+      (age != null && !hasExplicitDobInput) ? _calculateDobFromAge(age) : null;
+    final resolvedDob = hasExplicitDobInput
+      ? dateOfBirth
+      : autoDobFromAge ?? currentPatient.dateOfBirth;
     
     // Reset pregnancy if gender changed to non-Female
     bool? newIsPregnant = isPregnant;
@@ -233,7 +263,7 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
     final updated = currentPatient.copyWith(
       patientName: patientName ?? currentPatient.patientName,
       age: age ?? currentPatient.age,
-      dateOfBirth: dateOfBirth ?? currentPatient.dateOfBirth,
+      dateOfBirth: resolvedDob,
       gender: gender ?? currentPatient.gender,
       caste: caste ?? currentPatient.caste,
       address: address ?? currentPatient.address,
@@ -426,6 +456,7 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
                   p.isPregnant ? int.parse(p.monthsOfPregnancy) : null,
               'expectedDeliveryDate':
                   p.isPregnant ? p.expectedDeliveryDate : null,
+              'photoPath': p.photoPath,
               'diseases': p.diseases,
               'declinedHealthInfo': p.declinedHealthInfo,
               'notes': p.notes,
@@ -440,6 +471,11 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
       );
       
       if (success) {
+        _lastRegisteredFamily = RegisteredFamilySnapshot(
+          familyInfo: state.familyInfo,
+          members: resolvedPatients,
+        );
+
         // Reset form
         state = AddPatientFormState.initial();
         return true;
@@ -465,5 +501,11 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
 
   void reset() {
     state = AddPatientFormState.initial();
+  }
+
+  RegisteredFamilySnapshot? _lastRegisteredFamily;
+
+  RegisteredFamilySnapshot? consumeLastRegisteredFamily() {
+    return _lastRegisteredFamily;
   }
 }

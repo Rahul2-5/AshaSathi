@@ -7,8 +7,10 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import '../patient/family_model.dart';
 import '../patient/patient_model.dart';
 import '../offline/connectivity_service.dart';
+import '../offline/family_cache_service.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/patient_offline_entity.dart';
 
@@ -17,6 +19,7 @@ class PatientService {
 
   final ConnectivityService _connectivity = ConnectivityService();
   final PatientOfflineDao _offlineDao = PatientOfflineDao();
+  final FamilyCacheService _familyCache = FamilyCacheService();
 
   Future<List<Patient>> getPatients(String token) async {
     final isOnline = await _connectivity.isOnline();
@@ -291,6 +294,91 @@ class PatientService {
       return false;
     } catch (e, stackTrace) {
       debugPrint('Error during family registration: $e\n$stackTrace');
+      return false;
+    }
+  }
+
+  Future<List<FamilyRecord>> getFamilies(String token) async {
+    final isOnline = await _connectivity.isOnline();
+
+    if (!isOnline) {
+      final cachedFamilies = await _familyCache.loadFamilies();
+      if (cachedFamilies.isNotEmpty) {
+        debugPrint('Offline mode: returning ${cachedFamilies.length} cached families');
+        return cachedFamilies;
+      }
+    }
+
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        final cachedFamilies = await _familyCache.loadFamilies();
+        if (cachedFamilies.isNotEmpty) {
+          debugPrint(
+            'Backend fetch failed (${response.statusCode}), returning cached families',
+          );
+          return cachedFamilies;
+        }
+        throw Exception('Failed to load families: ${response.statusCode}');
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        return <FamilyRecord>[];
+      }
+
+      final families = decoded
+          .whereType<Map<String, dynamic>>()
+          .map(FamilyRecord.fromJson)
+          .toList();
+
+      await _familyCache.saveFamilies(families);
+      return families;
+    } catch (e, stackTrace) {
+      debugPrint('Error fetching families: $e\n$stackTrace');
+      final cachedFamilies = await _familyCache.loadFamilies();
+      if (cachedFamilies.isNotEmpty) {
+        debugPrint('Returning cached families after fetch error');
+        return cachedFamilies;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> deleteFamily({
+    required int familyId,
+    required String token,
+  }) async {
+    try {
+      final isOnline = await _connectivity.isOnline();
+      if (!isOnline) {
+        await _familyCache.removeFamilyById(familyId);
+        debugPrint('Offline family delete applied to cache for familyId=$familyId');
+        return true;
+      }
+
+      final response = await http.delete(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families/$familyId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      final success = response.statusCode == 200 || response.statusCode == 204;
+      if (success) {
+        await _familyCache.removeFamilyById(familyId);
+      }
+      return success;
+    } catch (e, stackTrace) {
+      debugPrint('Error deleting family: $e\n$stackTrace');
       return false;
     }
   }

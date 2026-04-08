@@ -43,35 +43,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   void initState() {
     super.initState();
 
-    final token = ref.read(loginProvider).token!;
-
-    // Initial load
-    ref.read(taskListProvider.notifier).loadTasks(token);
-    ref.read(patientListProvider.notifier).loadPatients(token);
-
-    // Sync service
+    // Sync service - lightweight setup
     _patientSyncService = PatientSyncService();
     _taskSyncService = TaskSyncService();
     _connectivityService = ConnectivityService();
     _refreshConnectivityStatus();
     _patientSyncService.refreshSyncStatus();
 
-    // Try an initial sync once on startup (useful after regaining connectivity)
-    (() async {
-      final initialPatientSynced = await _patientSyncService.sync(token);
-      final initialTaskSynced = await _taskSyncService.sync(token);
-
-      if (initialPatientSynced && mounted) {
-        ref.read(patientListProvider.notifier).loadPatients(token);
-      }
-      if (initialTaskSynced && mounted) {
-        ref.read(taskListProvider.notifier).loadTasks(token);
-      }
-    })();
-
-    // Auto-sync when network comes back
+    // Auto-sync when network comes back (setup listener only)
     _connectivitySub = Connectivity().onConnectivityChanged.listen((_) async {
       await _refreshConnectivityStatus();
+      final token = await ref.read(loginProvider.notifier).getValidToken();
+      if (token == null || !mounted) return;
 
       // Try both patient and task sync when network state changes
       final patientSynced = await _patientSyncService.sync(token);
@@ -85,6 +68,36 @@ class _HomePageState extends ConsumerState<HomePage> {
         ref.read(taskListProvider.notifier).loadTasks(token);
       }
     });
+
+    // Load data with valid token after frame build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPatientAndTaskData();
+    });
+  }
+
+  Future<void> _loadPatientAndTaskData() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (token == null || !mounted) return;
+
+    // Initial load
+    ref.read(taskListProvider.notifier).loadTasks(token);
+    ref.read(patientListProvider.notifier).loadPatients(token);
+
+    // Try an initial sync once on startup (useful after regaining connectivity)
+    try {
+      final initialPatientSynced = await _patientSyncService.sync(token);
+      final initialTaskSynced = await _taskSyncService.sync(token);
+
+      if (initialPatientSynced && mounted) {
+        ref.read(patientListProvider.notifier).loadPatients(token);
+      }
+      if (initialTaskSynced && mounted) {
+        ref.read(taskListProvider.notifier).loadTasks(token);
+      }
+    } catch (e) {
+      // Sync attempt failed, but data may have loaded from cache
+      debugPrint('Initial sync error: $e');
+    }
   }
 
   Future<void> _refreshConnectivityStatus() async {
@@ -300,8 +313,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             if (!mounted) return;
 
             if (result == true) {
-              final token = ref.read(loginProvider).token!;
-              ref.read(taskListProvider.notifier).loadTasks(token);
+              final token = await ref.read(loginProvider.notifier).getValidToken();
+              if (token != null && mounted) {
+                ref.read(taskListProvider.notifier).loadTasks(token);
+              }
             }
           },
           child: Container(
@@ -330,6 +345,7 @@ class _HomePageState extends ConsumerState<HomePage> {
       builder: (context, snapshot, _) {
         final queueCount = snapshot.totalQueueCount;
         final hasConflicts = snapshot.conflictCount > 0;
+        final hasRetryableItems = queueCount > 0 || snapshot.retryQueueCount > 0;
 
         return Container(
           width: double.infinity,
@@ -405,7 +421,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  if (queueCount > 0)
+                  if (hasRetryableItems)
                     Expanded(
                       child: OutlinedButton.icon(
                         onPressed: snapshot.isSyncing
@@ -413,6 +429,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : () async {
                                 final token = ref.read(loginProvider).token;
                                 if (token == null) return;
+                                await _patientSyncService.refreshSyncStatus();
                                 final synced = await _patientSyncService.sync(token);
                                 if (!mounted) return;
                                 if (synced) {
@@ -423,7 +440,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         label: Text(context.l10n.tr('sync.retryNow')),
                       ),
                     ),
-                  if (queueCount > 0 && hasConflicts) const SizedBox(width: 8),
+                  if (hasRetryableItems && hasConflicts) const SizedBox(width: 8),
                   if (hasConflicts)
                     Expanded(
                       child: ElevatedButton.icon(
@@ -665,8 +682,10 @@ class _HomePageState extends ConsumerState<HomePage> {
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = ref.read(loginProvider).token!;
-          ref.read(patientListProvider.notifier).loadPatients(token);
+          final token = await ref.read(loginProvider.notifier).getValidToken();
+          if (token != null && mounted) {
+            ref.read(patientListProvider.notifier).loadPatients(token);
+          }
         }
       },
 

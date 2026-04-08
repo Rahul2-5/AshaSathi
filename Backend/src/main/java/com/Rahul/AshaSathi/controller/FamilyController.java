@@ -2,7 +2,7 @@ package com.Rahul.AshaSathi.controller;
 
 import com.Rahul.AshaSathi.dto.FamilyRegistrationRequest;
 import com.Rahul.AshaSathi.dto.FamilyRegistrationResponse;
-import com.Rahul.AshaSathi.entity.Family;
+import com.Rahul.AshaSathi.dto.FamilyDetailsResponseDTO;
 import com.Rahul.AshaSathi.service.FamilyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * ============================================
@@ -80,6 +82,17 @@ public class FamilyController {
                     ));
         }
     }
+
+    /**
+     * GET /api/families
+     * Retrieve all families
+     */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
+    public ResponseEntity<List<FamilyDetailsResponseDTO>> getFamilies() {
+        List<FamilyDetailsResponseDTO> families = familyService.getAllFamilies();
+        return ResponseEntity.ok(families);
+    }
     
     /**
      * GET /api/families/{id}
@@ -87,12 +100,31 @@ public class FamilyController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
-    public ResponseEntity<Family> getFamily(@PathVariable Long id) {
+    public ResponseEntity<FamilyDetailsResponseDTO> getFamily(@PathVariable Long id) {
         try {
-            Family family = familyService.getFamilyById(id);
+            FamilyDetailsResponseDTO family = familyService.getFamilyDetailsById(id);
             return ResponseEntity.ok(family);
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * DELETE /api/families/{id}
+     * Delete a family by ID
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
+    public ResponseEntity<String> deleteFamily(@PathVariable Long id) {
+        try {
+            familyService.deleteFamilyById(id);
+            return ResponseEntity.ok("Family deleted successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to delete family {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete family");
         }
     }
     

@@ -1,24 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/add_patient_models.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
 
 class Step3MedicalInfo extends ConsumerWidget {
   const Step3MedicalInfo({super.key});
-
-  // Disease list to display
-  static const List<String> diseases = [
-    'BP',
-    'Elephantiasis',
-    'Diabetes',
-    'Heart Disease',
-    'Asthma',
-    'Thyroid',
-    'Arthritis',
-    'Kidney',
-    'Liver',
-    'Cancer',
-  ];
 
   static const List<String> diseaseKeys = [
     'bp',
@@ -37,15 +24,21 @@ class Step3MedicalInfo extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addPatientFormProvider);
     final currentPatient = ref.watch(currentPatientProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final warningContainer =
+        isDark ? const Color(0xFF7C2D12).withValues(alpha: 0.35) : const Color(0xFFFFEDD5);
+    final warningBorder = isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
+    final warningText = isDark ? const Color(0xFFFED7AA) : const Color(0xFF9A3412);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Title
-        const Text(
-          'Medical Information',
+        Text(
+          context.l10n.tr('patient.medicalInformation'),
           style: TextStyle(
-            color: Colors.white,
+            color: theme.colorScheme.onSurface,
             fontSize: 20,
             fontWeight: FontWeight.w600,
           ),
@@ -59,9 +52,11 @@ class Step3MedicalInfo extends ConsumerWidget {
         // Medical info card
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF1f2937),
+            color: isDark
+                ? const Color(0xFF1f2937)
+                : theme.colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade800),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
           ),
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -77,23 +72,23 @@ class Step3MedicalInfo extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.orange.shade900.withValues(alpha: 0.3),
-                    border: Border.all(color: Colors.orange.shade700),
+                    color: warningContainer,
+                    border: Border.all(color: warningBorder),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         Icons.info_outline,
-                        color: Colors.orange.shade300,
+                        color: warningText,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Patient has declined to share medical information',
+                          context.l10n.tr('patient.privacyDeclinedBanner'),
                           style: TextStyle(
-                            color: Colors.orange.shade300,
+                            color: warningText,
                             fontSize: 13,
                           ),
                         ),
@@ -103,10 +98,10 @@ class Step3MedicalInfo extends ConsumerWidget {
                 ),
 
               // Disease selection title
-              const Text(
-                'Select Health Conditions',
+              Text(
+                context.l10n.tr('patient.selectHealthConditions'),
                 style: TextStyle(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -128,10 +123,10 @@ class Step3MedicalInfo extends ConsumerWidget {
                       crossAxisSpacing: 10,
                       childAspectRatio: 3.5,
                     ),
-                    itemCount: diseases.length,
+                    itemCount: diseaseKeys.length,
                     itemBuilder: (context, index) {
                       final diseaseKey = diseaseKeys[index];
-                      final diseaseName = diseases[index];
+                      final diseaseName = context.l10n.tr('patient.condition.$diseaseKey');
                       final isSelected =
                           currentPatient.diseases[diseaseKey] ?? false;
 
@@ -145,11 +140,13 @@ class Step3MedicalInfo extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? const Color(0xFF14b8a6)
-                                : const Color(0xFF0f1419),
+                                : (isDark
+                                    ? const Color(0xFF0f1419)
+                                    : theme.colorScheme.surface),
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF14b8a6)
-                                  : Colors.grey.shade700,
+                                  : theme.colorScheme.outlineVariant,
                               width: 2,
                             ),
                             borderRadius: BorderRadius.circular(10),
@@ -183,7 +180,8 @@ class Step3MedicalInfo extends ConsumerWidget {
                                   style: TextStyle(
                                     color: isSelected
                                         ? Colors.white
-                                        : Colors.white70,
+                                        : theme.colorScheme.onSurface
+                                            .withValues(alpha: 0.75),
                                     fontSize: 12,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -200,36 +198,39 @@ class Step3MedicalInfo extends ConsumerWidget {
               const SizedBox(height: 20),
 
               // Notes
-              const Text(
-                'Additional Notes',
+              Text(
+                context.l10n.tr('patient.additionalNotes'),
                 style: TextStyle(
-                  color: Colors.white,
+                  color: theme.colorScheme.onSurface,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 8),
-              TextField(
-                controller: TextEditingController(text: currentPatient.notes),
+              _SyncedTextField(
+                value: currentPatient.notes,
                 maxLines: 4,
                 onChanged: (value) {
                   ref
                       .read(addPatientFormProvider.notifier)
                       .updateNotes(value);
                 },
-                style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   filled: true,
-                  fillColor: const Color(0xFF0f1419),
-                  hintText: 'Add any additional notes about the patient...',
-                  hintStyle: TextStyle(color: Colors.grey.shade600),
+                  fillColor: isDark
+                      ? const Color(0xFF0f1419)
+                      : theme.colorScheme.surface,
+                  hintText: context.l10n.tr('patient.additionalNotesHint'),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade700),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.grey.shade700),
+                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -248,36 +249,53 @@ class Step3MedicalInfo extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade900.withValues(alpha: 0.2),
-                  border: Border.all(color: Colors.blue.shade700),
+                  color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+                  border: Border.all(color: theme.colorScheme.primary),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Summary',
+                    Text(
+                      context.l10n.tr('patient.summary'),
                       style: TextStyle(
-                        color: Colors.white,
+                        color: theme.colorScheme.onPrimaryContainer,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Total patients: ${state.patients.length}',
-                      style: TextStyle(color: Colors.blue.shade300, fontSize: 13),
+                      context.l10n.tr(
+                        'patient.totalPatients',
+                        args: {'count': state.patients.length.toString()},
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
-                      'Conditions selected: ${currentPatient.diseases.values.where((v) => v).length}',
-                      style: TextStyle(color: Colors.blue.shade300, fontSize: 13),
+                      context.l10n.tr(
+                        'patient.conditionsSelected',
+                        args: {
+                          'count': currentPatient.diseases.values
+                              .where((v) => v)
+                              .length
+                              .toString(),
+                        },
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onPrimaryContainer,
+                        fontSize: 13,
+                      ),
                     ),
                     if (currentPatient.declinedHealthInfo)
                       Padding(
                         padding: const EdgeInsets.only(top: 4),
                         child: Text(
-                          'Privacy: Patient declined to share health info',
+                          context.l10n.tr('patient.privacyDeclinedSummary'),
                           style: TextStyle(
-                            color: Colors.orange.shade300,
+                            color: warningText,
                             fontSize: 13,
                           ),
                         ),
@@ -293,6 +311,9 @@ class Step3MedicalInfo extends ConsumerWidget {
   }
 
   Widget _buildPatientTabs(BuildContext context, WidgetRef ref, AddPatientFormState state) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -310,16 +331,23 @@ class Step3MedicalInfo extends ConsumerWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: isActive
                       ? const Color(0xFF14b8a6)
-                      : const Color(0xFF1f2937),
-                  foregroundColor: isActive ? Colors.white : Colors.grey,
+                      : (isDark
+                          ? const Color(0xFF1f2937)
+                          : theme.colorScheme.surfaceContainerHighest),
+                  foregroundColor: isActive
+                      ? Colors.white
+                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
                   side: BorderSide(
                     color: isActive
                         ? const Color(0xFF14b8a6)
-                        : Colors.grey.shade700,
+                        : theme.colorScheme.outlineVariant,
                   ),
                 ),
                 child: Text(patient.patientName.isEmpty
-                    ? 'Member ${index + 1}'
+                    ? context.l10n.tr(
+                        'patient.memberWithIndex',
+                        args: {'index': (index + 1).toString()},
+                      )
                     : patient.patientName),
               ),
             );
@@ -334,6 +362,13 @@ class Step3MedicalInfo extends ConsumerWidget {
     WidgetRef ref,
     PatientDataModel patient,
   ) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final warningContainer =
+        isDark ? const Color(0xFF7C2D12).withValues(alpha: 0.2) : const Color(0xFFFFEDD5);
+    final warningBorder = isDark ? const Color(0xFFFB923C) : const Color(0xFFEA580C);
+    final warningText = isDark ? const Color(0xFFFED7AA) : const Color(0xFF9A3412);
+
     return GestureDetector(
       onTap: () {
         ref.read(addPatientFormProvider.notifier).togglePrivacy();
@@ -343,12 +378,12 @@ class Step3MedicalInfo extends ConsumerWidget {
         decoration: BoxDecoration(
           border: Border.all(
             color: patient.declinedHealthInfo
-                ? Colors.orange.shade700
-                : Colors.grey.shade700,
+                ? warningBorder
+                : theme.colorScheme.outlineVariant,
           ),
           borderRadius: BorderRadius.circular(10),
           color: patient.declinedHealthInfo
-              ? Colors.orange.shade900.withValues(alpha: 0.1)
+              ? warningContainer
               : Colors.transparent,
         ),
         child: Row(
@@ -359,12 +394,12 @@ class Step3MedicalInfo extends ConsumerWidget {
               decoration: BoxDecoration(
                 border: Border.all(
                   color: patient.declinedHealthInfo
-                      ? Colors.orange.shade700
-                      : Colors.grey.shade600,
+                      ? warningBorder
+                      : theme.colorScheme.outline,
                 ),
                 borderRadius: BorderRadius.circular(4),
                 color: patient.declinedHealthInfo
-                    ? Colors.orange.shade700
+                    ? warningBorder
                     : Colors.transparent,
               ),
               child: patient.declinedHealthInfo
@@ -376,11 +411,13 @@ class Step3MedicalInfo extends ConsumerWidget {
                   : null,
             ),
             const SizedBox(width: 12),
-            const Expanded(
+            Expanded(
               child: Text(
-                'Patient prefers not to share medical information',
+                context.l10n.tr('patient.privacyDeclined'),
                 style: TextStyle(
-                  color: Colors.white,
+                  color: patient.declinedHealthInfo
+                      ? warningText
+                      : theme.colorScheme.onSurface,
                   fontSize: 14,
                 ),
               ),
@@ -388,6 +425,66 @@ class Step3MedicalInfo extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _SyncedTextField extends StatefulWidget {
+  const _SyncedTextField({
+    required this.value,
+    required this.onChanged,
+    required this.decoration,
+    required this.maxLines,
+  });
+
+  final String value;
+  final ValueChanged<String> onChanged;
+  final InputDecoration decoration;
+  final int maxLines;
+
+  @override
+  State<_SyncedTextField> createState() => _SyncedTextFieldState();
+}
+
+class _SyncedTextFieldState extends State<_SyncedTextField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SyncedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focusNode.hasFocus && widget.value != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: widget.value,
+        selection: TextSelection.collapsed(offset: widget.value.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      maxLines: widget.maxLines,
+      onChanged: widget.onChanged,
+      style: TextStyle(color: theme.colorScheme.onSurface),
+      decoration: widget.decoration,
     );
   }
 }

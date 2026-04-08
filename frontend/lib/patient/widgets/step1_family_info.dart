@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
 
 class Step1FamilyInfo extends ConsumerWidget {
@@ -10,6 +11,8 @@ class Step1FamilyInfo extends ConsumerWidget {
     final state = ref.watch(addPatientFormProvider);
     final familyInfo = state.familyInfo;
     final errors = state.validationErrors;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -17,10 +20,10 @@ class Step1FamilyInfo extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Title
-          const Text(
-            'Family Information',
+          Text(
+            context.l10n.tr('patient.familyInformation'),
             style: TextStyle(
-              color: Colors.white,
+              color: theme.colorScheme.onSurface,
               fontSize: 20,
               fontWeight: FontWeight.w600,
             ),
@@ -30,16 +33,19 @@ class Step1FamilyInfo extends ConsumerWidget {
           // Card container
           Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF1f2937),
+              color: isDark
+                  ? const Color(0xFF1f2937)
+                  : theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade800),
+              border: Border.all(color: theme.colorScheme.outlineVariant),
             ),
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
                 // Head of Family
                 _buildFormField(
-                  label: 'Head of Family *',
+                  label: context.l10n.tr('patient.headOfFamilyRequired'),
+                  hintText: context.l10n.tr('patient.enterHeadOfFamily'),
                   value: familyInfo.headOfFamily,
                   errorText: errors['headOfFamily'],
                   onChanged: (value) {
@@ -62,7 +68,8 @@ class Step1FamilyInfo extends ConsumerWidget {
 
                 // Family Address
                 _buildFormField(
-                  label: 'Family Address *',
+                  label: context.l10n.tr('patient.familyAddressRequired'),
+                  hintText: context.l10n.tr('patient.enterFamilyAddress'),
                   value: familyInfo.familyAddress,
                   errorText: errors['familyAddress'],
                   maxLines: 3,
@@ -77,7 +84,7 @@ class Step1FamilyInfo extends ConsumerWidget {
 
                 // Same Address for All checkbox
                 _buildCheckboxField(
-                  label: 'Use this address for all family members',
+                  label: context.l10n.tr('patient.useAddressForAllFamilyMembers'),
                   value: familyInfo.sameAddressForAll,
                   onChanged: (value) {
                     ref.read(addPatientFormProvider.notifier).updateFamilyInfo(
@@ -92,7 +99,8 @@ class Step1FamilyInfo extends ConsumerWidget {
 
           const SizedBox(height: 24),
           _buildHelpText(
-            'Enter the family head\'s name and the total number of family members to register. The family address will be used by default for all members unless specified otherwise.',
+            context,
+            context.l10n.tr('patient.familyInfoHelpText'),
           ),
         ],
       ),
@@ -101,6 +109,7 @@ class Step1FamilyInfo extends ConsumerWidget {
 
   Widget _buildFormField({
     required String label,
+    required String hintText,
     required String value,
     required Function(String) onChanged,
     String? errorText,
@@ -108,40 +117,50 @@ class Step1FamilyInfo extends ConsumerWidget {
     int maxLines = 1,
     required BuildContext context,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final inputBg = isDark
+        ? const Color(0xFF0f1419)
+        : theme.colorScheme.surface;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: theme.colorScheme.onSurface,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: TextEditingController(text: value),
+        _SyncedTextField(
+          value: value,
           keyboardType: keyboardType,
           maxLines: maxLines,
-          minLines: maxLines == 1 ? 1 : null,
           onChanged: onChanged,
-          style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             filled: true,
-            fillColor: const Color(0xFF0f1419),
-            hintText: 'Enter $label',
-            hintStyle: TextStyle(color: Colors.grey.shade600),
+            fillColor: inputBg,
+            hintText: hintText,
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null ? Colors.red : Colors.grey.shade700,
+                color: errorText != null
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.outlineVariant,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: errorText != null ? Colors.red : Colors.grey.shade700,
+                color: errorText != null
+                    ? theme.colorScheme.error
+                    : theme.colorScheme.outlineVariant,
               ),
             ),
             focusedBorder: OutlineInputBorder(
@@ -165,16 +184,18 @@ class Step1FamilyInfo extends ConsumerWidget {
     required Function(bool?) onChanged,
     required BuildContext context,
   }) {
+    final theme = Theme.of(context);
+
     return GestureDetector(
       onTap: () => onChanged(!value),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade700),
+          border: Border.all(color: theme.colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(12),
           color: value
               ? const Color(0xFF14b8a6).withValues(alpha: 0.1)
-              : transparent,
+              : Colors.transparent,
         ),
         child: Row(
           children: [
@@ -183,7 +204,9 @@ class Step1FamilyInfo extends ConsumerWidget {
               height: 20,
               decoration: BoxDecoration(
                 border: Border.all(
-                  color: value ? const Color(0xFF14b8a6) : Colors.grey.shade600,
+                  color: value
+                      ? const Color(0xFF14b8a6)
+                      : theme.colorScheme.outline,
                 ),
                 borderRadius: BorderRadius.circular(4),
                 color: value ? const Color(0xFF14b8a6) : Colors.transparent,
@@ -195,8 +218,8 @@ class Step1FamilyInfo extends ConsumerWidget {
             const SizedBox(width: 12),
             Text(
               label,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: theme.colorScheme.onSurface,
                 fontSize: 14,
               ),
             ),
@@ -212,6 +235,12 @@ class Step1FamilyInfo extends ConsumerWidget {
     required int value,
     String? errorText,
   }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final inputBg = isDark
+        ? const Color(0xFF0f1419)
+        : theme.colorScheme.surface;
+
     final safeValue = value < 1 ? 1 : value;
 
     void updateCount(int next) {
@@ -224,10 +253,10 @@ class Step1FamilyInfo extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Number of Members',
+        Text(
+          context.l10n.tr('patient.numberOfMembers'),
           style: TextStyle(
-            color: Colors.white,
+            color: theme.colorScheme.onSurface,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -236,10 +265,12 @@ class Step1FamilyInfo extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFF0f1419),
+            color: inputBg,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: errorText != null ? Colors.red : Colors.grey.shade700,
+              color: errorText != null
+                  ? theme.colorScheme.error
+                  : theme.colorScheme.outlineVariant,
             ),
           ),
           child: Row(
@@ -253,8 +284,8 @@ class Step1FamilyInfo extends ConsumerWidget {
                 child: Text(
                   safeValue.toString(),
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
@@ -273,25 +304,27 @@ class Step1FamilyInfo extends ConsumerWidget {
             padding: const EdgeInsets.only(top: 6, left: 12),
             child: Text(
               errorText,
-              style: const TextStyle(color: Colors.red, fontSize: 12),
+              style: TextStyle(color: theme.colorScheme.error, fontSize: 12),
             ),
           ),
       ],
     );
   }
 
-  Widget _buildHelpText(String text) {
+  Widget _buildHelpText(BuildContext context, String text) {
+    final theme = Theme.of(context);
+
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.blue.shade900.withValues(alpha: 0.2),
-        border: Border.all(color: Colors.blue.shade700),
+        color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
+        border: Border.all(color: theme.colorScheme.primary),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: Colors.blue.shade300,
+          color: theme.colorScheme.onPrimaryContainer,
           fontSize: 13,
         ),
       ),
@@ -299,4 +332,66 @@ class Step1FamilyInfo extends ConsumerWidget {
   }
 }
 
-const transparent = Colors.transparent;
+class _SyncedTextField extends StatefulWidget {
+  const _SyncedTextField({
+    required this.value,
+    required this.onChanged,
+    required this.decoration,
+    required this.keyboardType,
+    required this.maxLines,
+  });
+
+  final String value;
+  final ValueChanged<String> onChanged;
+  final InputDecoration decoration;
+  final TextInputType keyboardType;
+  final int maxLines;
+
+  @override
+  State<_SyncedTextField> createState() => _SyncedTextFieldState();
+}
+
+class _SyncedTextFieldState extends State<_SyncedTextField> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.value);
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void didUpdateWidget(covariant _SyncedTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_focusNode.hasFocus && widget.value != _controller.text) {
+      _controller.value = TextEditingValue(
+        text: widget.value,
+        selection: TextSelection.collapsed(offset: widget.value.length),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      keyboardType: widget.keyboardType,
+      maxLines: widget.maxLines,
+      minLines: widget.maxLines == 1 ? 1 : null,
+      onChanged: widget.onChanged,
+      style: TextStyle(color: theme.colorScheme.onSurface),
+      decoration: widget.decoration,
+    );
+  }
+}

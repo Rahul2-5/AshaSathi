@@ -17,8 +17,15 @@ class _PhcDashboardPageState extends ConsumerState<PhcDashboardPage> {
   void initState() {
     super.initState();
 
-    // Load patients data if not already loaded
-    final token = ref.read(loginProvider).token!;
+    // Load patients data with valid token
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPatientData();
+    });
+  }
+
+  Future<void> _loadPatientData() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (token == null || !mounted) return;
     ref.read(patientListProvider.notifier).loadPatients(token);
   }
 

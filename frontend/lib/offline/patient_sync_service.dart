@@ -272,15 +272,16 @@ class PatientSyncService {
       }
 
       // 🔹 DELETE SYNC
-      await _syncDeleted(token);
+      final allDeletedSynced = await _syncDeleted(token);
+      final allSynced = allPendingSynced && allDeletedSynced;
 
-      if (allPendingSynced) {
+      if (allSynced) {
         await _saveLastSyncMillis(DateTime.now().millisecondsSinceEpoch);
         syncRevision.value = syncRevision.value + 1;
       }
 
       await refreshSyncStatus();
-      return allPendingSynced;
+      return allSynced;
     } catch (e) {
       syncStatus.value = syncStatus.value.copyWith(
         lastError: e.toString(),
@@ -696,8 +697,9 @@ class PatientSyncService {
     await prefs.setInt(_lastSyncMillisKey, millis);
   }
 
-  Future<void> _syncDeleted(String token) async {
+  Future<bool> _syncDeleted(String token) async {
     final deleted = await _dao.getDeleted();
+    var allDeletedSynced = true;
 
     for (final patient in deleted) {
       if (patient.serverId == null) {
@@ -716,6 +718,7 @@ class PatientSyncService {
         if (res.statusCode == 200 || res.statusCode == 204) {
           await _dao.hardDeleteByUuid(patient.uuid);
         } else {
+          allDeletedSynced = false;
           if (patient.localId != null) {
             await _dao.markRetryFailure(
               localId: patient.localId!,
@@ -724,6 +727,7 @@ class PatientSyncService {
           }
         }
       } catch (e) {
+        allDeletedSynced = false;
         if (patient.localId != null) {
           await _dao.markRetryFailure(
             localId: patient.localId!,
@@ -732,6 +736,8 @@ class PatientSyncService {
         }
       }
     }
+
+    return allDeletedSynced;
   }
 }
 
