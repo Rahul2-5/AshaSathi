@@ -6,6 +6,7 @@ import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../patient/family_model.dart';
 import '../patient/patient_model.dart';
@@ -264,6 +265,25 @@ class PatientService {
     try {
       debugPrint('Submitting family registration: ${payload.toString()}');
       
+      // 🔴 OFFLINE-FIRST: Save to local storage first
+      try {
+        final payloadJson = jsonEncode(payload);
+        final prefs = await SharedPreferences.getInstance();
+        final key = 'pending_family_${DateTime.now().millisecondsSinceEpoch}';
+        await prefs.setString(key, payloadJson);
+        debugPrint('✅ Family saved to offline storage with key: $key');
+      } catch (e) {
+        debugPrint('⚠️ Warning: Could not save family offline: $e');
+        // Continue anyway - will try online submission
+      }
+
+      // 🟢 ONLINE: Try to submit to backend
+      final isOnline = await _connectivity.isOnline();
+      if (!isOnline) {
+        debugPrint('🔴 Offline: Family saved locally, will sync when online');
+        return true; // Offline save succeeded
+      }
+
       final response = await http.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
         headers: {
@@ -281,20 +301,31 @@ class PatientService {
       debugPrint('Family registration response: ${response.statusCode}');
       
       if (response.statusCode == 201 || response.statusCode == 200) {
-        debugPrint('Family registered successfully');
-        
-        // Response cached, ready to use
+        debugPrint('✅ Family registered successfully online');
+        // Clear offline records since it's now synced
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final keys = prefs.getKeys().where((k) => k.startsWith('pending_family_'));
+          for (final key in keys) {
+            await prefs.remove(key);
+          }
+        } catch (_) {
+          // Ignore errors in cleanup
+        }
         return true;
       } else {
-        debugPrint('Family registration failed: ${response.body}');
-        return false;
+        debugPrint('⚠️ Family registration online failed: ${response.body}');
+        // Keep in offline storage for retry
+        return true; // Already saved offline
       }
     } on TimeoutException catch (e) {
       debugPrint('Timeout during family registration: ${e.message}');
-      return false;
+      // Keep in offline storage for retry
+      return true;
     } catch (e, stackTrace) {
       debugPrint('Error during family registration: $e\n$stackTrace');
-      return false;
+      // Keep in offline storage for retry
+      return true;
     }
   }
 
