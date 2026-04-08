@@ -576,6 +576,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           await _taskSyncService.resetAllData();
                           await _patientSyncService.refreshSyncStatus();
                           if (!mounted) return;
+                          // ignore: use_build_context_synchronously
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
