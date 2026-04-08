@@ -189,4 +189,10 @@ class TaskOfflineDao {
 
     return result.map(TaskOfflineEntity.fromMap).toList();
   }
+
+  /// Clear all offline task data
+  Future<void> clearAllData() async {
+    final db = await _db.database;
+    await db.delete(AppDatabaseOffline.taskTable);
+  }
 }

@@ -508,6 +508,85 @@ class _HomePageState extends ConsumerState<HomePage> {
                         label: Text(context.l10n.tr('sync.resolveConflicts')),
                       ),
                     ),
+                  const SizedBox(width: 8),
+                  PopupMenuButton<String>(
+                    icon: Icon(
+                      Icons.more_vert,
+                      color: isDark
+                          ? const Color(0xFF9EABB7)
+                          : const Color(0xFF6C7580),
+                    ),
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem<String>(
+                        value: 'reset',
+                        child: const Row(
+                          children: [
+                            Icon(Icons.delete_sweep, size: 18),
+                            SizedBox(width: 8),
+                            Text('Reset all data'),
+                          ],
+                        ),
+                      ),
+                    ],
+                    onSelected: (value) async {
+                      if (value == 'reset') {
+                        final didConfirm = await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) => AlertDialog(
+                            backgroundColor: isDark
+                                ? const Color(0xFF1A232C)
+                                : Colors.white,
+                            title: Text(
+                              'Reset all offline data?',
+                              style: TextStyle(
+                                color: isDark
+                                    ? const Color(0xFFE6EDF3)
+                                    : const Color(0xFF1F252B),
+                              ),
+                            ),
+                            content: Text(
+                              'This will delete all offline queue items, conflicts, and sync status. You cannot undo this.',
+                              style: TextStyle(
+                                color: isDark
+                                    ? const Color(0xFF9EABB7)
+                                    : const Color(0xFF6C7580),
+                              ),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, false),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () =>
+                                    Navigator.pop(dialogContext, true),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red,
+                                ),
+                                child: const Text('Delete All'),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (didConfirm == true) {
+                          if (!mounted) return;
+                          await _patientSyncService.resetAllData();
+                          await _taskSyncService.resetAllData();
+                          await _patientSyncService.refreshSyncStatus();
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'All offline data cleared. Sync status reset.'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                  ),
                 ],
               ),
             ],

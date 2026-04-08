@@ -100,4 +100,10 @@ class TaskSyncService {
 
     return true;
   }
+
+  /// Reset sync: clears all offline task data
+  Future<void> resetAllData() async {
+    await _dao.clearAllData();
+    debugPrint("[TaskSync] All offline task data cleared");
+  }
 }

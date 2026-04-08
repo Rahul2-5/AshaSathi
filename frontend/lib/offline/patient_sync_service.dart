@@ -86,6 +86,16 @@ class PatientSyncService {
     );
   }
 
+  /// Reset sync: clears all offline data and resets sync status
+  Future<void> resetAllData() async {
+    await _dao.clearAllData();
+    syncStatus.value = PatientSyncStatusSnapshot.empty;
+    syncRevision.value = 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastSyncMillisKey);
+    debugPrint("[PatientSync] All offline data cleared and sync status reset");
+  }
+
   Future<bool> sync(String token) async {
     if (_syncing) return false;
     _syncing = true;

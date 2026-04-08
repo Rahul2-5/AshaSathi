@@ -447,5 +447,11 @@ class PatientOfflineDao {
       whereArgs: [localId],
     );
   }
+
+  /// Clear all offline patient data
+  Future<void> clearAllData() async {
+    final db = await _db.database;
+    await db.delete('patients');
+  }
 }
 

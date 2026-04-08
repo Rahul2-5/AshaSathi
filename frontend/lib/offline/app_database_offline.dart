@@ -183,4 +183,11 @@ class AppDatabaseOffline {
     if (exists) return;
     await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
   }
+
+  /// Clear all offline data from patients and tasks tables
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete(patientTable);
+    await db.delete(taskTable);
+  }
 }
