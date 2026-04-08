@@ -14,6 +14,12 @@ class PatientOfflineService {
     String? description,
     required String phoneNumber,
     String? photoPath,
+    String caste = '',
+    bool isPregnant = false,
+    int? monthsOfPregnancy,
+    String expectedDeliveryDate = '',
+    Map<String, bool> diseases = const {},
+    bool declinedHealthInfo = false,
   }) async {
     final patient = PatientOfflineEntity(
       name: name,
@@ -24,6 +30,12 @@ class PatientOfflineService {
       description: description?.trim() ?? '',
       phoneNumber: phoneNumber,
       photoPath: photoPath,
+      caste: caste,
+      isPregnant: isPregnant,
+      monthsOfPregnancy: monthsOfPregnancy,
+      expectedDeliveryDate: expectedDeliveryDate,
+      diseases: diseases,
+      declinedHealthInfo: declinedHealthInfo,
       syncStatus: SyncStatusOffline.pending,
     );
 
