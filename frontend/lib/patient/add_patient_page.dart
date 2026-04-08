@@ -224,6 +224,10 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
+                onChanged: (_) {
+                  // Explicitly trigger sync when age changes
+                  _syncDobFromAge();
+                },
                 validator: _validateAge,
                 decoration: _inputDecoration(context.l10n.tr('patient.age'))
                     .copyWith(
@@ -304,17 +308,18 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   // 📅 DATE OF BIRTH FIELD
   Widget _dobField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dobValue = _dobController.text.trim();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text(context.l10n.tr('patient.dateOfBirth'),
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
+          Text(context.l10n.tr('patient.dateOfBirth'),
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
           TextFormField(
             controller: _dobController,
@@ -322,8 +327,35 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
             onTap: _pickDateOfBirth,
             validator: _validateDob,
             decoration: _inputDecoration(context.l10n.tr('patient.selectDate'))
-                .copyWith(suffixIcon: const Icon(Icons.calendar_today)),
+                .copyWith(
+                  suffixIcon: const Icon(Icons.calendar_today),
+                  hintText: context.l10n.tr('patient.selectDate'),
+                ),
           ),
+          if (dobValue.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outlined,
+                      size: 14,
+                      color: isDark
+                          ? const Color(0xFF78849E)
+                          : const Color(0xFF9CA3AF)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Auto-calculated from age',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isDark
+                          ? const Color(0xFF78849E)
+                          : const Color(0xFF9CA3AF),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
