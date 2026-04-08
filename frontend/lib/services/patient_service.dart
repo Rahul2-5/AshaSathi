@@ -12,6 +12,7 @@ import '../patient/family_model.dart';
 import '../patient/patient_model.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/family_cache_service.dart';
+import '../offline/family_offline_service.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/patient_offline_entity.dart';
 
@@ -267,13 +268,23 @@ class PatientService {
     try {
       debugPrint('Submitting family registration: ${payload.toString()}');
       
-      // 🔴 OFFLINE-FIRST: Save to local storage first
+      // 🔴 OFFLINE-FIRST: Save to local storage using FamilyOfflineService
       try {
-        final payloadJson = jsonEncode(payload);
-        final prefs = await SharedPreferences.getInstance();
-        final key = 'pending_family_${DateTime.now().millisecondsSinceEpoch}';
-        await prefs.setString(key, payloadJson);
-        debugPrint('✅ Family saved to offline storage with key: $key');
+        final familyInfo = payload['familyInfo'] as Map<String, dynamic>?;
+        final patients = payload['patients'] as List<dynamic>?;
+        
+        if (familyInfo != null && patients != null) {
+          // Convert to proper format for FamilyOfflineService
+          final patientsMap = List<Map<String, dynamic>>.from(
+            patients.whereType<Map<String, dynamic>>()
+          );
+          
+          await FamilyOfflineService().saveFamilyOffline(
+            familyInfo: familyInfo,
+            patients: patientsMap,
+          );
+          debugPrint('✅ Family saved to offline storage via FamilyOfflineService');
+        }
       } catch (e) {
         debugPrint('⚠️ Warning: Could not save family offline: $e');
         // Continue anyway - will try online submission
@@ -306,11 +317,7 @@ class PatientService {
         debugPrint('✅ Family registered successfully online');
         // Clear offline records since it's now synced
         try {
-          final prefs = await SharedPreferences.getInstance();
-          final keys = prefs.getKeys().where((k) => k.startsWith('pending_family_'));
-          for (final key in keys) {
-            await prefs.remove(key);
-          }
+          await FamilyOfflineService().clearPending();
         } catch (_) {
           // Ignore errors in cleanup
         }
