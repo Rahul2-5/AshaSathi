@@ -332,14 +332,66 @@ class PatientService {
   Future<List<FamilyRecord>> getFamilies(String token) async {
     final isOnline = await _connectivity.isOnline();
 
-    if (!isOnline) {
-      final cachedFamilies = await _familyCache.loadFamilies();
-      if (cachedFamilies.isNotEmpty) {
-        debugPrint('Offline mode: returning ${cachedFamilies.length} cached families');
-        return cachedFamilies;
+    // 🔴 STEP 1: Load pending offline families (always available)
+    List<FamilyRecord> pendingOfflineFamilies = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString('pending_family_registrations_v1');
+      if (json != null) {
+        final decoded = jsonDecode(json) as List<dynamic>;
+        pendingOfflineFamilies = decoded.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final data = entry.value as Map<String, dynamic>;
+          final familyInfo = data['familyInfo'] as Map<String, dynamic>;
+          final patientsList = (data['patients'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>()
+              .map((p) => FamilyMemberRecord(
+                id: null,
+                patientName: p['patientName'] ?? '',
+                age: p['age'] ?? 0,
+                dateOfBirth: p['dateOfBirth'] ?? '',
+                gender: p['gender'] ?? 'Female',
+                caste: p['caste'] ?? '',
+                address: p['address'] ?? '',
+                phoneNumber: p['phoneNumber'] ?? '',
+                isPregnant: p['isPregnant'] ?? false,
+                monthsOfPregnancy: p['monthsOfPregnancy'],
+                expectedDeliveryDate: p['expectedDeliveryDate'] ?? '',
+                photoPath: p['photoPath'],
+                diseases: {},
+                declinedHealthInfo: p['declinedHealthInfo'] ?? false,
+                notes: p['notes'] ?? '',
+              ))
+              .toList();
+
+          // Use negative ID to indicate pending offline family
+          return FamilyRecord(
+            id: -(idx + 1), // Negative ID marks as pending
+            headOfFamily: familyInfo['headOfFamily'] ?? '',
+            numberOfMembers: familyInfo['numberOfMembers'] ?? 0,
+            familyAddress: familyInfo['familyAddress'] ?? '',
+            patients: patientsList,
+          );
+        }).toList();
+        debugPrint(
+          '[FamilyService] Loaded ${pendingOfflineFamilies.length} pending offline families',
+        );
       }
+    } catch (e) {
+      debugPrint('[FamilyService] Error loading pending offline families: $e');
     }
 
+    // 🟡 STEP 2: Load cached families if offline
+    if (!isOnline) {
+      final cachedFamilies = await _familyCache.loadFamilies();
+      final combined = [...pendingOfflineFamilies, ...cachedFamilies];
+      debugPrint(
+        'Offline mode: returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+      );
+      return combined;
+    }
+
+    // 🟢 STEP 3: Try to load from backend
     try {
       final response = await http.get(
         Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
@@ -351,33 +403,43 @@ class PatientService {
 
       if (response.statusCode != 200) {
         final cachedFamilies = await _familyCache.loadFamilies();
-        if (cachedFamilies.isNotEmpty) {
+        final combined = [...pendingOfflineFamilies, ...cachedFamilies];
+        if (combined.isNotEmpty) {
           debugPrint(
-            'Backend fetch failed (${response.statusCode}), returning cached families',
+            'Backend fetch failed (${response.statusCode}), returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
           );
-          return cachedFamilies;
+          return combined;
         }
         throw Exception('Failed to load families: ${response.statusCode}');
       }
 
       final decoded = jsonDecode(response.body);
       if (decoded is! List) {
-        return <FamilyRecord>[];
+        return pendingOfflineFamilies; // At least return pending offline
       }
 
-      final families = decoded
+      final backendFamilies = decoded
           .whereType<Map<String, dynamic>>()
           .map(FamilyRecord.fromJson)
           .toList();
 
-      await _familyCache.saveFamilies(families);
-      return families;
+      await _familyCache.saveFamilies(backendFamilies);
+      
+      // 🔗 MERGE: Combine pending offline families with backend families
+      final combined = [...pendingOfflineFamilies, ...backendFamilies];
+      debugPrint(
+        '[FamilyService] Returning ${combined.length} families (${pendingOfflineFamilies.length} pending + ${backendFamilies.length} backend)',
+      );
+      return combined;
     } catch (e, stackTrace) {
       debugPrint('Error fetching families: $e\n$stackTrace');
       final cachedFamilies = await _familyCache.loadFamilies();
-      if (cachedFamilies.isNotEmpty) {
-        debugPrint('Returning cached families after fetch error');
-        return cachedFamilies;
+      final combined = [...pendingOfflineFamilies, ...cachedFamilies];
+      if (combined.isNotEmpty) {
+        debugPrint(
+          '[FamilyService] Returning ${combined.length} families after error (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+        );
+        return combined;
       }
       rethrow;
     }
