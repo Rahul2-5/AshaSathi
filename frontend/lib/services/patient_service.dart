@@ -27,11 +27,11 @@ class PatientService {
     final isOnline = await _connectivity.isOnline();
 
     // ===============================
-    //  1. LOAD OFFLINE PATIENTS (non-deleted only)
+    //  1. LOAD ONLY UNSYNCED OFFLINE PATIENTS (pending, not synced)
     // ===============================
-    final offlinePatients = await _offlineDao.getAll();
-    debugPrint("Loaded ${offlinePatients.length} offline patients");
-    final offlineModels = offlinePatients.map((p) {
+    final pendingPatients = await _offlineDao.getPending();
+    debugPrint("Loaded ${pendingPatients.length} pending offline patients");
+    final pendingModels = pendingPatients.map((p) {
       return Patient(
         id: p.serverId,
         uuid: p.uuid, // ✅ CRITICAL FIX: must use actual UUID
@@ -54,11 +54,11 @@ class PatientService {
     }).toList();
 
     // ===============================
-    // 🔴 2. OFFLINE → RETURN LOCAL
+    // 🔴 2. OFFLINE → RETURN PENDING LOCAL
     // ===============================
     if (!isOnline) {
-      debugPrint("Offline mode: returning ${offlineModels.length} locally synced patients");
-      return offlineModels;
+      debugPrint("Offline mode: returning ${pendingModels.length} pending unsynced patients");
+      return pendingModels;
     }
 
     // ===============================
@@ -73,8 +73,8 @@ class PatientService {
       );
 
       if (res.statusCode != 200) {
-        debugPrint("Backend fetch failed (${res.statusCode}), returning offline patients");
-        return offlineModels;
+        debugPrint("Backend fetch failed (${res.statusCode}), returning pending patients");
+        return pendingModels;
       }
 
       final List data = jsonDecode(res.body);
@@ -134,42 +134,28 @@ class PatientService {
         );
       }
 
-      final unsyncedLocal =
-          offlineModels.where((patient) => patient.id == null).toList();
-      if (unsyncedLocal.isEmpty) {
-        return onlineModels;
-      }
-
-      final onlineKeys = onlineModels.map(_patientKey).toSet();
+      // ===============================
+      // ✅ 4. MERGE: Backend patients + any remaining unsynced local
+      // ===============================
       final merged = <Patient>[...onlineModels];
+      final onlineUuids = onlineModels.map((p) => p.uuid).toSet();
 
-      for (final localPatient in unsyncedLocal) {
-        final key = _patientKey(localPatient);
-        if (!onlineKeys.contains(key)) {
+      // Add pending local patients that aren't already in the backend list
+      for (final localPatient in pendingModels) {
+        if (!onlineUuids.contains(localPatient.uuid)) {
           merged.insert(0, localPatient);
         }
       }
 
       debugPrint(
-        "Merged ${unsyncedLocal.length} unsynced local patients with backend list",
+        "Merged: ${onlineModels.length} backend + ${pendingModels.where((p) => !onlineUuids.contains(p.uuid)).length} pending unsynced local patients",
       );
 
-      // ===============================
-      // ✅ 4. RETURN BACKEND + UNSYNCED LOCAL
-      // ===============================
       return merged;
     } catch (e) {
       debugPrint("Error fetching from backend: $e");
-      return offlineModels;
+      return pendingModels;
     }
-  }
-
-  String _patientKey(Patient patient) {
-    final uuid = patient.uuid.trim();
-    if (uuid.isNotEmpty) {
-      return "uuid:$uuid";
-    }
-    return "id:${patient.id ?? -1}";
   }
 
   Future<String?> _cachePatientPhotoIfNeeded({
