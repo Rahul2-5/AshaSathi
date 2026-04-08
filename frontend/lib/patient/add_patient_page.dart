@@ -99,6 +99,11 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   void initState() {
     super.initState();
     debugPrint('[AddPatient] initState called');
+    // Add listener to age controller - this is more reliable than onChanged
+    _ageController.addListener(() {
+      debugPrint('[AddPatient] Age controller listener triggered: "${_ageController.text}"');
+      _syncDobFromAge();
+    });
   }
 
   @override
@@ -218,15 +223,6 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Debug: Show age value
-              if (ageValue.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    'DEBUG: Age input = "$ageValue"',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
-                  ),
-                ),
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
@@ -234,11 +230,6 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
-                onChanged: (value) {
-                  debugPrint(
-                      '[AddPatient] Age onChanged: newValue="$value", controller="${_ageController.text}"');
-                  _syncDobFromAge();
-                },
                 validator: _validateAge,
                 decoration: _inputDecoration(
                   ageValue.isNotEmpty ? 'Age: $ageValue' : context.l10n.tr('patient.age')
@@ -321,7 +312,6 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   Widget _dobField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dobValue = _dobController.text.trim();
-    debugPrint('[AddPatient] _dobField rebuild: dobValue="|$dobValue|"');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -334,15 +324,6 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                 fontWeight: FontWeight.w600,
               color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
           const SizedBox(height: 6),
-          // Debug display
-          if (dobValue.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                'DEBUG: Value in controller = $dobValue',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ),
           TextFormField(
             controller: _dobController,
             readOnly: true,
@@ -710,7 +691,6 @@ void _showImageSourceSheet() {
 
   @override
   void dispose() {
-    _ageController.removeListener(_syncDobFromAge);
     _nameController.dispose();
     _ageController.dispose();
     _dobController.dispose();
