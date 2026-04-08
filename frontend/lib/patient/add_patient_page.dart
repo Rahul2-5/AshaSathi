@@ -99,6 +99,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   void initState() {
     super.initState();
     _ageController.addListener(_syncDobFromAge);
+    debugPrint('[AddPatient] initState: Listener added to age controller');
   }
 
   @override
@@ -224,8 +225,8 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                   FilteringTextInputFormatter.digitsOnly,
                   LengthLimitingTextInputFormatter(3),
                 ],
-                onChanged: (_) {
-                  // Explicitly trigger sync when age changes
+                onChanged: (value) {
+                  debugPrint('[AddPatient] Age onChanged: "$value"');
                   _syncDobFromAge();
                 },
                 validator: _validateAge,
@@ -309,6 +310,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   Widget _dobField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final dobValue = _dobController.text.trim();
+    debugPrint('[AddPatient] _dobField build: dobValue="$dobValue"');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -461,11 +463,22 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   }
 
   void _syncDobFromAge() {
-    if (_isSyncingAgeDob) return;
+    debugPrint('[AddPatient] _syncDobFromAge called, _isSyncingAgeDob=$_isSyncingAgeDob');
+    
+    if (_isSyncingAgeDob) {
+      debugPrint('[AddPatient] Already syncing, returning');
+      return;
+    }
 
     final rawAge = _ageController.text.trim();
+    debugPrint('[AddPatient] rawAge: "$rawAge", length: ${rawAge.length}');
+    
     if (rawAge.isEmpty) {
-      if (_dobController.text.isEmpty) return;
+      debugPrint('[AddPatient] Age is empty, clearing DOB');
+      if (_dobController.text.isEmpty) {
+        debugPrint('[AddPatient] DOB already empty, returning');
+        return;
+      }
       _isSyncingAgeDob = true;
       _dobController.clear();
       _isSyncingAgeDob = false;
@@ -474,7 +487,12 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     }
 
     final age = int.tryParse(rawAge);
-    if (age == null || age < 1 || age > 130) return;
+    debugPrint('[AddPatient] Parsed age: $age');
+    
+    if (age == null || age < 1 || age > 130) {
+      debugPrint('[AddPatient] Invalid age: $age');
+      return;
+    }
 
     final now = DateTime.now();
     final targetYear = now.year - age;
@@ -484,13 +502,18 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     final formattedDob =
         "${estimatedDob.year}-${estimatedDob.month.toString().padLeft(2, '0')}-${estimatedDob.day.toString().padLeft(2, '0')}";
 
-    if (_dobController.text == formattedDob) return;
+    debugPrint('[AddPatient] Calculated DOB: $formattedDob, current: "${_dobController.text}"');
+    
+    if (_dobController.text == formattedDob) {
+      debugPrint('[AddPatient] DOB already matches, returning');
+      return;
+    }
 
     _isSyncingAgeDob = true;
     _dobController.text = formattedDob;
     _isSyncingAgeDob = false;
     
-    // Rebuild to show confirmation message
+    debugPrint('[AddPatient] DOB updated to: $formattedDob, calling setState');
     setState(() {});
     
     debugPrint('[AddPatient] Auto-synced DOB from age: $age years → $formattedDob');
