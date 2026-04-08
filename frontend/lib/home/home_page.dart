@@ -346,254 +346,487 @@ class _HomePageState extends ConsumerState<HomePage> {
         final queueCount = snapshot.totalQueueCount;
         final hasConflicts = snapshot.conflictCount > 0;
         final hasRetryableItems = queueCount > 0 || snapshot.retryQueueCount > 0;
+        final isSynced = queueCount == 0 && 
+                         snapshot.retryQueueCount == 0 && 
+                         snapshot.conflictCount == 0 &&
+                         !snapshot.isSyncing;
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A232C) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: hasConflicts
-                  ? const Color(0xFFE67E22)
-                  : (isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC)),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? isSynced
+                      ? [const Color(0xFF1A2F28), const Color(0xFF0F2218)]
+                      : hasConflicts
+                          ? [const Color(0xFF3D2817), const Color(0xFF2A1810)]
+                          : [const Color(0xFF1A232C), const Color(0xFF0F1419)]
+                  : isSynced
+                      ? [const Color(0xFFF0FFFE), const Color(0xFFE8FDFB)]
+                      : hasConflicts
+                          ? [const Color(0xFFFFF5F0), const Color(0xFFFFEADD)]
+                          : [Colors.white, const Color(0xFFFAFBFC)],
             ),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: isSynced
+                  ? const Color(0xFF14B8A6).withValues(alpha: 0.3)
+                  : hasConflicts
+                      ? const Color(0xFFE67E22).withValues(alpha: 0.3)
+                      : (isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC)),
+              width: 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isSynced
+                    ? const Color(0xFF14B8A6).withValues(alpha: 0.08)
+                    : hasConflicts
+                        ? const Color(0xFFE67E22).withValues(alpha: 0.08)
+                        : Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header row with title and status indicator
               Row(
                 children: [
-                  Icon(
-                    snapshot.isSyncing ? Icons.sync : Icons.sync_alt,
-                    color: snapshot.isSyncing
-                        ? const Color(0xFF0EA5E9)
-                        : (hasConflicts
-                            ? const Color(0xFFE67E22)
-                            : const Color(0xFF14A7A0)),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      snapshot.isSyncing
-                          ? context.l10n.tr('sync.syncingNow')
-                          : context.l10n.tr('sync.statusTitle'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? const Color(0xFFE6EDF3)
-                            : const Color(0xFF1F252B),
+                  if (snapshot.isSyncing)
+                    RotationTransition(
+                      turns: AlwaysStoppedAnimation(
+                          DateTime.now().millisecondsSinceEpoch / 1500 % 1),
+                      child: Icon(
+                        Icons.sync,
+                        color: const Color(0xFF0EA5E9),
+                        size: 20,
                       ),
+                    )
+                  else
+                    Icon(
+                      isSynced ? Icons.check_circle : Icons.sync_alt,
+                      color: isSynced
+                          ? const Color(0xFF14B8A6)
+                          : hasConflicts
+                              ? const Color(0xFFE67E22)
+                              : (isDark
+                                  ? const Color(0xFF9EABB7)
+                                  : const Color(0xFF6C7580)),
+                      size: 20,
+                    ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          snapshot.isSyncing
+                              ? 'Syncing in progress...'
+                              : isSynced
+                                  ? 'All synced!'
+                                  : hasConflicts
+                                      ? 'Conflicts detected'
+                                      : 'Ready to sync',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: -0.3,
+                            color: isDark
+                                ? const Color(0xFFE6EDF3)
+                                : const Color(0xFF1F252B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          snapshot.isSyncing
+                              ? 'Uploading changes...'
+                              : isSynced
+                                  ? 'No pending changes'
+                                  : '$queueCount pending • ${snapshot.retryQueueCount} failed',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? const Color(0xFF9EABB7)
+                                : const Color(0xFF6C7580),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (hasRetryableItems || hasConflicts)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: hasConflicts
+                            ? const Color(0xFFE67E22).withValues(alpha: 0.15)
+                            : const Color(0xFFEAB308).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        hasConflicts ? '⚠️  Needs action' : '⚡ Retry needed',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: hasConflicts
+                              ? const Color(0xFFE67E22)
+                              : const Color(0xFFEAB308),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.tr(
-                  'sync.statusSummary',
-                  args: {
-                    'queue': queueCount.toString(),
-                    'retry': snapshot.retryQueueCount.toString(),
-                    'conflicts': snapshot.conflictCount.toString(),
-                  },
-                ),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark
-                      ? const Color(0xFF9EABB7)
-                      : const Color(0xFF6C7580),
-                ),
-              ),
-              if ((snapshot.lastError ?? '').trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  snapshot.lastError!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFDC2626),
-                  ),
+
+              // Status legend if not synced
+              if (!isSynced) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.hourglass_empty_rounded,
+                        label: 'Pending',
+                        value: queueCount,
+                        color: const Color(0xFF0EA5E9),
+                        isDark: isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.error_outline_rounded,
+                        label: 'Failed',
+                        value: snapshot.retryQueueCount,
+                        color: const Color(0xFFEF4444),
+                        isDark: isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.merge_type_rounded,
+                        label: 'Conflicts',
+                        value: snapshot.conflictCount,
+                        color: const Color(0xFFE67E22),
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
                 ),
               ],
-              if (snapshot.retryQueueCount > 0) ...[
-                const SizedBox(height: 8),
+
+              // Error message if present
+              if ((snapshot.lastError ?? '').trim().isNotEmpty) ...[
+                const SizedBox(height: 10),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isDark
-                        ? const Color(0xFF493029)
-                        : const Color(0xFFFFE8DE),
+                        ? const Color(0xFF3E1F1F)
+                        : const Color(0xFFFEE2E2),
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                  child: Row(
                     children: [
-                      Text(
-                        '⚠️  ${snapshot.retryQueueCount} item(s) failed to sync',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isDark
-                              ? const Color(0xFFFFB38F)
-                              : const Color(0xFFB74417),
-                        ),
+                      const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFDC2626),
+                        size: 16,
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Tap Retry to try syncing again.',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isDark
-                              ? const Color(0xFFD4A5A5)
-                              : const Color(0xFF9A5A4A),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          snapshot.lastError!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (hasRetryableItems)
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: snapshot.isSyncing
-                            ? null
-                            : () async {
-                                final token = await ref
-                                    .read(loginProvider.notifier)
-                                    .getValidToken();
-                                if (token == null) return;
-                                await _patientSyncService.refreshSyncStatus();
-                                final synced = await _patientSyncService.sync(token);
-                                if (!mounted) return;
-                                if (synced) {
-                                  ref.read(patientListProvider.notifier).loadPatients(token);
-                                }
-                              },
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: Text(context.l10n.tr('sync.retryNow')),
-                      ),
-                    ),
-                  if (hasRetryableItems && hasConflicts) const SizedBox(width: 8),
-                  if (hasConflicts)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE67E22),
-                          foregroundColor: Colors.white,
-                        ),
-                        onPressed: () async {
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PatientSyncConflictsPage(),
+
+              // Action buttons
+              if (hasRetryableItems || hasConflicts) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (hasRetryableItems)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
                             ),
-                          );
-                          if (!mounted) return;
-                          final token = await ref
-                              .read(loginProvider.notifier)
-                              .getValidToken();
-                          if (token != null) {
-                            ref.read(patientListProvider.notifier).loadPatients(token);
-                          }
-                          await _patientSyncService.refreshSyncStatus();
-                        },
-                        icon: const Icon(Icons.merge_type, size: 16),
-                        label: Text(context.l10n.tr('sync.resolveConflicts')),
-                      ),
-                    ),
-                  const SizedBox(width: 8),
-                  PopupMenuButton<String>(
-                    icon: Icon(
-                      Icons.more_vert,
-                      color: isDark
-                          ? const Color(0xFF9EABB7)
-                          : const Color(0xFF6C7580),
-                    ),
-                    itemBuilder: (BuildContext context) => [
-                      PopupMenuItem<String>(
-                        value: 'reset',
-                        child: const Row(
-                          children: [
-                            Icon(Icons.delete_sweep, size: 18),
-                            SizedBox(width: 8),
-                            Text('Reset all data'),
-                          ],
+                            backgroundColor: const Color(0xFF0EA5E9),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: snapshot.isSyncing
+                              ? null
+                              : () async {
+                                  final token = await ref
+                                      .read(loginProvider.notifier)
+                                      .getValidToken();
+                                  if (token == null) return;
+                                  await _patientSyncService.refreshSyncStatus();
+                                  final synced =
+                                      await _patientSyncService.sync(token);
+                                  if (!mounted) return;
+                                  if (synced) {
+                                    ref
+                                        .read(
+                                            patientListProvider.notifier)
+                                        .loadPatients(token);
+                                  }
+                                },
+                          icon: snapshot.isSyncing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.refresh, size: 16),
+                          label: Text(
+                            snapshot.isSyncing ? 'Syncing...' : 'Retry Now',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'reset') {
-                        final didConfirm = await showDialog<bool>(
-                          context: context,
-                          builder: (dialogContext) => AlertDialog(
-                            backgroundColor: isDark
-                                ? const Color(0xFF1A232C)
-                                : Colors.white,
-                            title: Text(
-                              'Reset all offline data?',
-                              style: TextStyle(
-                                color: isDark
-                                    ? const Color(0xFFE6EDF3)
-                                    : const Color(0xFF1F252B),
-                              ),
+                    if (hasRetryableItems && hasConflicts)
+                      const SizedBox(width: 8),
+                    if (hasConflicts)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 10,
                             ),
-                            content: Text(
-                              'This will delete all offline queue items, conflicts, and sync status. You cannot undo this.',
-                              style: TextStyle(
-                                color: isDark
-                                    ? const Color(0xFF9EABB7)
-                                    : const Color(0xFF6C7580),
-                              ),
+                            backgroundColor: const Color(0xFFE67E22),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            actions: [
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(dialogContext, false),
-                                child: const Text('Cancel'),
+                          ),
+                          onPressed: () async {
+                            // ignore: use_build_context_synchronously
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PatientSyncConflictsPage(),
                               ),
-                              TextButton(
-                                onPressed: () =>
-                                    Navigator.pop(dialogContext, true),
-                                style: TextButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                ),
-                                child: const Text('Delete All'),
-                              ),
+                            );
+                            if (!mounted) return;
+                            final token = await ref
+                                .read(loginProvider.notifier)
+                                .getValidToken();
+                            if (token != null) {
+                              ref
+                                  .read(
+                                      patientListProvider.notifier)
+                                  .loadPatients(token);
+                            }
+                            await _patientSyncService.refreshSyncStatus();
+                          },
+                          icon: const Icon(Icons.merge_type, size: 16),
+                          label: const Text(
+                            'Resolve',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: isDark
+                            ? const Color(0xFF9EABB7)
+                            : const Color(0xFF6C7580),
+                      ),
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'reset',
+                          child: const Row(
+                            children: [
+                              Icon(Icons.delete_sweep, size: 18),
+                              SizedBox(width: 8),
+                              Text('Clear all data'),
                             ],
                           ),
-                        );
-
-                        if (didConfirm == true) {
-                          if (!mounted) return;
-                          await _patientSyncService.resetAllData();
-                          await _taskSyncService.resetAllData();
-                          await _patientSyncService.refreshSyncStatus();
-                          if (!mounted) return;
-                          // ignore: use_build_context_synchronously
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                        ),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'reset') {
+                          final didConfirm =
+                              await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) =>
+                                AlertDialog(
+                              backgroundColor: isDark
+                                  ? const Color(0xFF1A232C)
+                                  : Colors.white,
+                              title: Text(
+                                'Clear all sync data?',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(
+                                          0xFFE6EDF3)
+                                      : const Color(0xFF1F252B),
+                                ),
+                              ),
                               content: Text(
-                                  'All offline data cleared. Sync status reset.'),
-                              behavior: SnackBarBehavior.floating,
+                                'This will delete all offline queue items, conflicts, and sync history. This action cannot be undone.',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(
+                                          0xFF9EABB7)
+                                      : const Color(0xFF6C7580),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(
+                                        dialogContext,
+                                        false,
+                                      ),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(
+                                        dialogContext,
+                                        true,
+                                      ),
+                                  style:
+                                      TextButton.styleFrom(
+                                    foregroundColor:
+                                        Colors.red,
+                                  ),
+                                  child: const Text(
+                                    'Clear',
+                                  ),
+                                ),
+                              ],
                             ),
                           );
+
+                          if (didConfirm == true) {
+                            if (!mounted) return;
+                            await _patientSyncService
+                                .resetAllData();
+                            await _taskSyncService
+                                .resetAllData();
+                            await _patientSyncService
+                                .refreshSyncStatus();
+                            if (!mounted) return;
+                            // ignore: use_build_context_synchronously
+                            ScaffoldMessenger.of(
+                              // ignore: use_build_context_synchronously
+                              context,
+                            ).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Sync data cleared successfully.',
+                                ),
+                                behavior:
+                                    SnackBarBehavior.floating,
+                                duration:
+                                    Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         }
-                      }
-                    },
-                  ),
-                ],
-              ),
+                      },
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         );
       },
+    );
+  }
+
+  Widget _statBadge({
+    required IconData icon,
+    required String label,
+    required int value,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(
+            icon,
+            color: color,
+            size: 18,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isDark
+                  ? const Color(0xFF9EABB7)
+                  : const Color(0xFF6C7580),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
