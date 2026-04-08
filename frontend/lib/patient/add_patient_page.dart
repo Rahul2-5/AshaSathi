@@ -204,73 +204,78 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   // 📊 AGE FIELD - Auto-syncs Date of Birth
   Widget _ageField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final ageValue = _ageController.text.trim();
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.l10n.tr('patient.age'),
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Column(
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _ageController,
+      builder: (context, ageValue, child) {
+        final age = ageValue.text.trim();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TextFormField(
-                controller: _ageController,
-                keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(3),
-                ],
-                validator: _validateAge,
-                decoration: _inputDecoration(
-                  ageValue.isNotEmpty ? 'Age: $ageValue' : context.l10n.tr('patient.age')
-                ).copyWith(
-                  suffixIcon: ageValue.isNotEmpty
-                      ? Icon(Icons.check_circle,
-                          color: isDark
-                              ? const Color(0xFF66CFC7)
-                              : const Color(0xFF00A6A6),
-                          size: 20)
-                      : null,
+              Text(
+                context.l10n.tr('patient.age'),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280),
                 ),
               ),
-              if (ageValue.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outlined,
-                          size: 14,
-                          color: isDark
-                              ? const Color(0xFF78849E)
-                              : const Color(0xFF9CA3AF)),
-                      const SizedBox(width: 6),
-                      Text(
-                        'Date of Birth will auto-calculate',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark
-                              ? const Color(0xFF78849E)
-                              : const Color(0xFF9CA3AF),
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
+              const SizedBox(height: 6),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _ageController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                      LengthLimitingTextInputFormatter(3),
                     ],
+                    validator: _validateAge,
+                    decoration: _inputDecoration(
+                      age.isNotEmpty ? 'Age: $age' : context.l10n.tr('patient.age')
+                    ).copyWith(
+                      suffixIcon: age.isNotEmpty
+                          ? Icon(Icons.check_circle,
+                              color: isDark
+                                  ? const Color(0xFF66CFC7)
+                                  : const Color(0xFF00A6A6),
+                              size: 20)
+                          : null,
+                    ),
                   ),
-                ),
+                  if (age.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.info_outlined,
+                              size: 14,
+                              color: isDark
+                                  ? const Color(0xFF78849E)
+                                  : const Color(0xFF9CA3AF)),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Date of Birth will auto-calculate',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? const Color(0xFF78849E)
+                                  : const Color(0xFF9CA3AF),
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -311,57 +316,62 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   // 📅 DATE OF BIRTH FIELD
   Widget _dobField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dobValue = _dobController.text.trim();
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(context.l10n.tr('patient.dateOfBirth'),
-            style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
-          const SizedBox(height: 6),
-          TextFormField(
-            controller: _dobController,
-            readOnly: true,
-            onTap: _pickDateOfBirth,
-            validator: _validateDob,
-            decoration: _inputDecoration(dobValue.isEmpty
-                ? context.l10n.tr('patient.selectDate')
-                : dobValue)
-                .copyWith(
-                  suffixIcon: const Icon(Icons.calendar_today),
-                ),
-          ),
-          if (dobValue.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.info_outlined,
-                      size: 14,
-                      color: isDark
-                          ? const Color(0xFF78849E)
-                          : const Color(0xFF9CA3AF)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Auto-calculated from age',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isDark
-                          ? const Color(0xFF78849E)
-                          : const Color(0xFF9CA3AF),
-                      fontStyle: FontStyle.italic,
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: _dobController,
+      builder: (context, dobValue, child) {
+        final dob = dobValue.text.trim();
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(context.l10n.tr('patient.dateOfBirth'),
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _dobController,
+                readOnly: true,
+                onTap: _pickDateOfBirth,
+                validator: _validateDob,
+                decoration: _inputDecoration(dob.isEmpty
+                    ? context.l10n.tr('patient.selectDate')
+                    : dob)
+                    .copyWith(
+                      suffixIcon: const Icon(Icons.calendar_today),
                     ),
-                  ),
-                ],
               ),
-            ),
-        ],
-      ),
+              if (dob.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outlined,
+                          size: 14,
+                          color: isDark
+                              ? const Color(0xFF78849E)
+                              : const Color(0xFF9CA3AF)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Auto-calculated from age',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? const Color(0xFF78849E)
+                              : const Color(0xFF9CA3AF),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 

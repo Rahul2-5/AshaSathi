@@ -38,6 +38,12 @@ class PatientService {
         description: p.description,
         phoneNumber: p.phoneNumber,
         photoPath: p.photoPath,
+        caste: p.caste,
+        isPregnant: p.isPregnant,
+        monthsOfPregnancy: p.monthsOfPregnancy,
+        expectedDeliveryDate: p.expectedDeliveryDate,
+        declinedHealthInfo: p.declinedHealthInfo,
+        diseases: p.diseases,
       );
     }).toList();
 
@@ -87,6 +93,12 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: cachedPhotoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            declinedHealthInfo: patient.declinedHealthInfo,
+            diseases: patient.diseases,
           ),
         );
       }
@@ -105,6 +117,12 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: patient.photoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            declinedHealthInfo: patient.declinedHealthInfo,
+            diseases: patient.diseases,
           ),
         );
       }

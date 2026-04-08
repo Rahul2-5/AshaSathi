@@ -51,27 +51,44 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
           context.l10n.tr('patient.details'),
           style: TextStyle(
             color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
+            fontSize: 18,
+            letterSpacing: 0.3,
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_rounded),
-            tooltip: 'Edit Patient',
-            onPressed: _showEditPatientDialog,
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: IconButton(
+              icon: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  color: isDark ? const Color(0xFF2A3642) : Colors.grey.shade100,
+                ),
+                child: Icon(
+                  Icons.edit_rounded,
+                  size: 20,
+                  color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+                ),
+              ),
+              tooltip: 'Edit Patient',
+              onPressed: _showEditPatientDialog,
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _profileSection(context),
-            const SizedBox(height: 24),
+            const SizedBox(height: 32),
             _infoCard(context),
-            const SizedBox(height: 28),
+            const SizedBox(height: 32),
             _deleteButton(context),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -85,32 +102,62 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
     return Column(
       children: [
-        CircleAvatar(
-          radius: 55,
-          backgroundColor:
-              isDark ? const Color(0xFF2A3642) : Colors.grey.shade200,
-          child: ClipOval(
-            child: SizedBox(
-              width: 110,
-              height: 110,
-              child: _buildPatientImage(),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            // Background gradient circle
+            Container(
+              width: 130,
+              height: 130,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    const Color(0xFF0BAEB4).withOpacity(0.2),
+                    const Color(0xFF0BAEB4).withOpacity(0.05),
+                  ],
+                ),
+              ),
             ),
-          ),
+            // Avatar
+            CircleAvatar(
+              radius: 55,
+              backgroundColor: isDark ? const Color(0xFF2A3642) : Colors.grey.shade200,
+              child: ClipOval(
+                child: SizedBox(
+                  width: 110,
+                  height: 110,
+                  child: _buildPatientImage(),
+                ),
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 16),
         Text(
           _patient.name,
           style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
             color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF111418),
           ),
         ),
-        const SizedBox(height: 6),
-        Text(
-          _localizedGender(context, _patient.gender),
-          style: TextStyle(
-            color: isDark ? const Color(0xFF9EABB7) : Colors.grey,
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: isDark ? const Color(0xFF1A4D3E) : const Color(0xFFD1F2EF),
+          ),
+          child: Text(
+            _localizedGender(context, _patient.gender),
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFF4EEFD4) : const Color(0xFF047857),
+            ),
           ),
         ),
       ],
@@ -119,6 +166,10 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
   Widget _buildPatientImage() {
     final path = _patient.photoPath;
+    final token = ref.read(loginProvider).token;
+    final headers = (token != null && token.isNotEmpty)
+        ? <String, String>{'Authorization': 'Bearer $token'}
+        : null;
 
     if (path == null || path.isEmpty) {
       return const Icon(Icons.person, size: 50, color: Colors.grey);
@@ -133,7 +184,21 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
     if (normalizedPath.startsWith('/uploads/') ||
         normalizedPath.contains('/uploads/')) {
-      return Image.network("$baseUrl$normalizedPath", fit: BoxFit.cover);
+      return Image.network(
+        "$baseUrl$normalizedPath",
+        fit: BoxFit.cover,
+        headers: headers,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+      );
+    }
+
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        headers: headers,
+        errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+      );
     }
 
     return const Icon(Icons.broken_image);
@@ -142,73 +207,333 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   // ================= INFO =================
 
   Widget _infoCard(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeDiseases = _activeDiseaseLabels(_patient.diseases);
 
-    return Card(
-      elevation: 0,
-      color: isDark ? const Color(0xFF1A232C) : Colors.white,
-      shape: RoundedRectangleBorder(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // DEMOGRAPHICS SECTION
+        _sectionCard(
+          context,
+          title: '👤 Demographics',
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _infoField(
+                      context,
+                      label: context.l10n.tr('patient.age'),
+                      value: context.l10n.tr('patient.ageYears', args: {'age': _patient.age.toString()}),
+                      icon: Icons.cake_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _infoField(
+                      context,
+                      label: context.l10n.tr('patient.dateOfBirth'),
+                      value: _patient.dateOfBirth,
+                      icon: Icons.calendar_today_outlined,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _infoField(
+                      context,
+                      label: 'Caste',
+                      value: _patient.caste.trim().isEmpty ? '-' : _patient.caste,
+                      icon: Icons.people_outline,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _infoField(
+                      context,
+                      label: context.l10n.tr('patient.gender'),
+                      value: _localizedGender(context, _patient.gender),
+                      icon: Icons.wc_outlined,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // CONTACT SECTION
+        _sectionCard(
+          context,
+          title: '📞 Contact Information',
+          child: Column(
+            children: [
+              _infoField(
+                context,
+                label: context.l10n.tr('patient.phone'),
+                value: _patient.phoneNumber,
+                icon: Icons.phone_outlined,
+              ),
+              const SizedBox(height: 12),
+              _infoField(
+                context,
+                label: context.l10n.tr('patient.address'),
+                value: _patient.address,
+                icon: Icons.location_on_outlined,
+                maxLines: 2,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // HEALTH SECTION
+        _sectionCard(
+          context,
+          title: '⚕️ Health Information',
+          child: Column(
+            children: [
+              if (_patient.gender == 'Female')
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statusBadgeField(
+                        context,
+                        label: 'Pregnancy',
+                        value: _patient.isPregnant
+                            ? 'Yes${_patient.monthsOfPregnancy != null ? ' (${_patient.monthsOfPregnancy} months)' : ''}'
+                            : 'No',
+                        isActive: _patient.isPregnant,
+                        icon: Icons.favorite_outlined,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _statusBadgeField(
+                        context,
+                        label: 'Health Info',
+                        value: _patient.declinedHealthInfo ? 'Declined' : 'Shared',
+                        isActive: !_patient.declinedHealthInfo,
+                        icon: Icons.check_circle_outline,
+                      ),
+                    ),
+                  ],
+                ),
+              if (!(_patient.gender == 'Female'))
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statusBadgeField(
+                        context,
+                        label: 'Health Info',
+                        value: _patient.declinedHealthInfo ? 'Declined' : 'Shared',
+                        isActive: !_patient.declinedHealthInfo,
+                        icon: Icons.check_circle_outline,
+                      ),
+                    ),
+                  ],
+                ),
+              if (_patient.expectedDeliveryDate.trim().isNotEmpty && _patient.gender == 'Female') ...[
+                const SizedBox(height: 12),
+                _infoField(
+                  context,
+                  label: 'Expected Delivery',
+                  value: _patient.expectedDeliveryDate,
+                  icon: Icons.event_outlined,
+                ),
+              ],
+              const SizedBox(height: 12),
+              _medicalConditionsDisplay(
+                context,
+                conditions: activeDiseases,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // NOTES SECTION
+        if (_patient.description.trim().isNotEmpty)
+          _sectionCard(
+            context,
+            title: '📝 Notes',
+            child: _infoField(
+              context,
+              label: 'Description / Notes',
+              value: _patient.description,
+              icon: Icons.description_outlined,
+              maxLines: 4,
+              showLabel: false,
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _sectionCard(
+    BuildContext context, {
+    required String title,
+    required Widget child,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Container(
+      decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
+        color: isDark ? const Color(0xFF1A232C) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _infoRow(
-              context,
-              context.l10n.tr('patient.age'),
-              context.l10n.tr('patient.ageYears', args: {'age': _patient.age.toString()}),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+                letterSpacing: 0.3,
+              ),
             ),
-            _divider(),
-            _infoRow(context, context.l10n.tr('patient.dateOfBirth'), _patient.dateOfBirth),
-            _divider(),
-            _infoRow(context, context.l10n.tr('patient.phone'), _patient.phoneNumber),
-            _divider(),
-            _infoRow(context, context.l10n.tr('patient.address'), _patient.address),
-            _divider(),
-            _infoRow(
-              context,
-              'Caste',
-              _patient.caste.trim().isEmpty ? '-' : _patient.caste,
-            ),
-            _divider(),
-            _infoRow(
-              context,
-              'Pregnancy',
-              _patient.isPregnant
-                  ? 'Yes${_patient.monthsOfPregnancy != null ? ' (${_patient.monthsOfPregnancy} months)' : ''}'
-                  : 'No',
-            ),
-            if (_patient.expectedDeliveryDate.trim().isNotEmpty) ...[
-              _divider(),
-              _infoRow(context, 'Expected Delivery', _patient.expectedDeliveryDate),
-            ],
-            _divider(),
-            _infoRow(
-              context,
-              'Health Info',
-              _patient.declinedHealthInfo ? 'Declined' : 'Shared',
-            ),
-            _divider(),
-            _infoRow(
-              context,
-              'Medical Conditions',
-              activeDiseases.isEmpty ? 'None recorded' : activeDiseases.join(', '),
-              maxLines: 3,
-            ),
-            _divider(),
-            _infoRow(
-              context,
-              'Description / Notes',
-              _patient.description.trim().isEmpty
-                  ? 'No notes added'
-                  : _patient.description,
-              maxLines: 3,
-            ),
+            const SizedBox(height: 12),
+            child,
           ],
         ),
       ),
+    );
+  }
+
+  Widget _infoField(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required IconData icon,
+    int maxLines = 1,
+    bool showLabel = true,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showLabel)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(
+              children: [
+                Icon(icon, size: 16, color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: isDark ? const Color(0xFF0D1419) : const Color(0xFFF9FAFB),
+            border: Border.all(
+              color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E7EB),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            value,
+            maxLines: maxLines,
+            overflow: maxLines == 1 ? TextOverflow.ellipsis : TextOverflow.fade,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF111418),
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _statusBadgeField(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required bool isActive,
+    required IconData icon,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                    letterSpacing: 0.2,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            color: isActive
+                ? (isDark ? const Color(0xFF1A4D3E) : const Color(0xFFD1F2EF))
+                : (isDark ? const Color(0xFF4D1A1A) : const Color(0xFFFEE2E2)),
+            border: Border.all(
+              color: isActive
+                  ? (isDark ? const Color(0xFF0BAEB4) : const Color(0xFF0BAEB4))
+                  : (isDark ? const Color(0xFFDC2626) : const Color(0xFFFCA5A5)),
+              width: 1,
+            ),
+          ),
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: isActive
+                  ? (isDark ? const Color(0xFF4EEFD4) : const Color(0xFF047857))
+                  : (isDark ? const Color(0xFFFEA6A6) : const Color(0xFFDC2626)),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -219,47 +544,145 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         .toList();
   }
 
-  Widget _infoRow(
-    BuildContext context,
-    String label,
-    String value, {
-    int maxLines = 1,
+  Widget _medicalConditionsDisplay(
+    BuildContext context, {
+    required List<String> conditions,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        crossAxisAlignment:
-            maxLines > 1 ? CrossAxisAlignment.start : CrossAxisAlignment.center,
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(label,
+    // Color palette for different conditions
+    final conditionColors = {
+      'Diabetes': {'bg': 0xFFDCF2FF, 'border': 0xFF4B9EFF, 'text': 0xFF0D47A1},
+      'Hypertension': {'bg': 0xFFFFDCDC, 'border': 0xFFFF6B6B, 'text': 0xFFAD0000},
+      'HeartDisease': {'bg': 0xFFFFDCDC, 'border': 0xFFF44336, 'text': 0xFFAD0000},
+      'Asthma': {'bg': 0xFFE0F2D8, 'border': 0xFF52C41A, 'text': 0xFF254000},
+      'Arthritis': {'bg': 0xFFFFEED2, 'border': 0xFFFFB84D, 'text': 0xFF663C00},
+      'Kidney': {'bg': 0xFFFFDDC7, 'border': 0xFFFF7A45, 'text': 0xFFA23800},
+      'Liver': {'bg': 0xFFE8D8FF, 'border': 0xFFB37FEB, 'text': 0xFF540099},
+      'Anemia': {'bg': 0xFFFDDCFF, 'border': 0xFFEB2F96, 'text': 0xFF88003F},
+      'Thyroid': {'bg': 0xFFDDEDFF, 'border': 0xFF1890FF, 'text': 0xFF001A5C},
+      'Cancer': {'bg': 0xFFFFD4D0, 'border': 0xFFF5222D, 'text': 0xFF5C0A0A},
+      'TB': {'bg': 0xFFDEE8D8, 'border': 0xFF95DE64, 'text': 0xFF274000},
+      'Elephantiasis': {'bg': 0xFFD8E4E8, 'border': 0xFF13C2C2, 'text': 0xFF003C3C},
+    };
+
+    // Dark mode adjustments
+    final darkConditionColors = {
+      'Diabetes': {'bg': 0xFF1A3A4D, 'border': 0xFF177DFF, 'text': 0xFF91D5FF},
+      'Hypertension': {'bg': 0xFF4D1A1A, 'border': 0xFFFF7875, 'text': 0xFFFFB1B1},
+      'HeartDisease': {'bg': 0xFF4D1A1A, 'border': 0xFFFF7875, 'text': 0xFFFFB1B1},
+      'Asthma': {'bg': 0xFF1A3A2A, 'border': 0xFF95DE64, 'text': 0xFFC6E48B},
+      'Arthritis': {'bg': 0xFF4D3A1A, 'border': 0xFFFFD591, 'text': 0xFFFFDD91},
+      'Kidney': {'bg': 0xFF4D2A1A, 'border': 0xFFFFB373, 'text': 0xFFFFD591},
+      'Liver': {'bg': 0xFF3A1A4D, 'border': 0xFFD3ADF7, 'text': 0xFFF9F0FF},
+      'Anemia': {'bg': 0xFF4D1A3A, 'border': 0xFFF759AB, 'text': 0xFFFFAED6},
+      'Thyroid': {'bg': 0xFF1A2A4D, 'border': 0xFF85A5FF, 'text': 0xFFB3D9FF},
+      'Cancer': {'bg': 0xFF4D1A1A, 'border': 0xFFFF4D4F, 'text': 0xFFFFA8A8},
+      'TB': {'bg': 0xFF1A3A1A, 'border': 0xFFB7EB8F, 'text': 0xFFDFEFD8},
+      'Elephantiasis': {'bg': 0xFF1A3A3A, 'border': 0xFF36CFC7, 'text': 0xFFB5EAE0},
+    };
+
+    final colors = isDark ? darkConditionColors : conditionColors;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Row(
+            children: [
+              Icon(
+                Icons.local_hospital_outlined,
+                size: 16,
+                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Medical Conditions',
                 style: TextStyle(
-                    color: isDark
-                        ? const Color(0xFFA6B3BF)
-                        : const Color(0xFF6B7280),
-                    fontWeight: FontWeight.w600)),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                  letterSpacing: 0.2,
+                ),
+              ),
+            ],
           ),
-          Expanded(
-            flex: 5,
-            child: Text(value,
-                maxLines: maxLines,
-                overflow: maxLines == 1 ? TextOverflow.ellipsis : TextOverflow.fade,
-                style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? const Color(0xFFD5E1EB)
-                      : const Color(0xFF111418),
-                )),
+        ),
+        if (conditions.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              color: isDark ? const Color(0xFF0D1419) : const Color(0xFFF9FAFB),
+              border: Border.all(
+                color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E7EB),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 18,
+                  color: isDark ? const Color(0xFF4EEFD4) : const Color(0xFF22C55E),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'No medical conditions recorded',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: isDark ? const Color(0xFF9FB0BE) : const Color(0xFF6B7280),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: conditions.map((condition) {
+              final colorSet = colors[condition] ?? colors.values.first;
+              final bgColor = Color(colorSet['bg'] ?? 0xFFDCF2FF);
+              final borderColor = Color(colorSet['border'] ?? 0xFF4B9EFF);
+              final textColor = Color(colorSet['text'] ?? 0xFF0D47A1);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20),
+                  color: bgColor,
+                  border: Border.all(
+                    color: borderColor,
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: borderColor.withOpacity(0.15),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  condition,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: textColor,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              );
+            }).toList(),
           ),
-        ],
-      ),
+      ],
     );
   }
-
-  Widget _divider() => Divider(color: Colors.grey.shade300);
 
   String _localizedGender(BuildContext context, String raw) {
     final g = raw.trim().toLowerCase();
@@ -653,28 +1076,65 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(14),
         ),
+        elevation: 2,
       ),
-      icon: const Icon(Icons.delete, color: Colors.white),
+      icon: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
       label: Text(
         context.l10n.tr('patient.delete'),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
       ),
       onPressed: () => _confirmDelete(context),
     );
   }
 
   void _confirmDelete(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(context.l10n.tr('patient.delete')),
+        backgroundColor: isDark ? const Color(0xFF1B232C) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                context.l10n.tr('patient.delete'),
+                style: TextStyle(
+                  color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
         content: Text(
           context.l10n.tr('patient.deleteConfirm'),
+          style: TextStyle(
+            color: isDark ? const Color(0xFFD5E1EB) : Colors.black87,
+            fontSize: 15,
+            height: 1.5,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text(context.l10n.tr('common.cancel')),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: Text(
+              context.l10n.tr('common.cancel'),
+              style: TextStyle(
+                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () async {
@@ -687,8 +1147,17 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 Navigator.pop(context, true);
               }
             },
-            child: Text(context.l10n.tr('common.delete'),
-                style: TextStyle(color: Colors.red)),
+            style: TextButton.styleFrom(
+              backgroundColor: Colors.red.shade600.withOpacity(0.1),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            ),
+            child: Text(
+              context.l10n.tr('common.delete'),
+              style: TextStyle(
+                color: Colors.red.shade600,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
