@@ -137,8 +137,21 @@ class PatientService {
       // ===============================
       // ✅ 4. MERGE: Backend patients + any remaining unsynced local
       // ===============================
-      final merged = <Patient>[...onlineModels];
-      final onlineUuids = onlineModels.map((p) => p.uuid).toSet();
+      // ✅ DEDUP: Remove duplicate patients by UUID from backend response
+      final deduplicatedOnline = <String, Patient>{};
+      for (final patient in onlineModels) {
+        if (!deduplicatedOnline.containsKey(patient.uuid)) {
+          deduplicatedOnline[patient.uuid] = patient;
+        } else {
+          debugPrint(
+            'Skipped duplicate patient UUID ${patient.uuid}: ${patient.name}',
+          );
+        }
+      }
+      final uniqueOnlineModels = deduplicatedOnline.values.toList();
+
+      final merged = <Patient>[...uniqueOnlineModels];
+      final onlineUuids = uniqueOnlineModels.map((p) => p.uuid).toSet();
 
       // Add pending local patients that aren't already in the backend list
       for (final localPatient in pendingModels) {
@@ -148,7 +161,7 @@ class PatientService {
       }
 
       debugPrint(
-        "Merged: ${onlineModels.length} backend + ${pendingModels.where((p) => !onlineUuids.contains(p.uuid)).length} pending unsynced local patients",
+        "Merged: ${uniqueOnlineModels.length} backend + ${pendingModels.where((p) => !onlineUuids.contains(p.uuid)).length} pending unsynced local patients",
       );
 
       return merged;
@@ -396,10 +409,26 @@ class PatientService {
 
       if (response.statusCode != 200) {
         final cachedFamilies = await _familyCache.loadFamilies();
-        final combined = [...pendingOfflineFamilies, ...cachedFamilies];
+        
+        // ✅ DEDUP: Remove duplicates before combining pending + cached
+        final deduped = <String, FamilyRecord>{};
+        for (final family in pendingOfflineFamilies) {
+          final key = '${family.headOfFamily}::${family.familyAddress}';
+          if (!deduped.containsKey(key)) {
+            deduped[key] = family;
+          }
+        }
+        for (final family in cachedFamilies) {
+          final key = '${family.headOfFamily}::${family.familyAddress}';
+          if (!deduped.containsKey(key)) {
+            deduped[key] = family;
+          }
+        }
+        
+        final combined = deduped.values.toList();
         if (combined.isNotEmpty) {
           debugPrint(
-            'Backend fetch failed (${response.statusCode}), returning ${combined.length} families',
+            'Backend fetch failed (${response.statusCode}), returning ${combined.length} deduplicated families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
           );
           return combined;
         }
@@ -411,17 +440,30 @@ class PatientService {
         return pendingOfflineFamilies; // At least return pending offline
       }
 
-      final backendFamilies = decoded
+      final rawBackendFamilies = decoded
           .whereType<Map<String, dynamic>>()
           .map(FamilyRecord.fromJson)
           .toList();
+
+      // ✅ DEDUP: Remove duplicate families by ID from backend response
+      final deduplicatedBackend = <int, FamilyRecord>{};
+      for (final family in rawBackendFamilies) {
+        if (!deduplicatedBackend.containsKey(family.id)) {
+          deduplicatedBackend[family.id] = family;
+        } else {
+          debugPrint(
+            '[FamilyService] Skipped duplicate family ID ${family.id}: ${family.headOfFamily}',
+          );
+        }
+      }
+      final backendFamilies = deduplicatedBackend.values.toList();
 
       await _familyCache.saveFamilies(backendFamilies);
       
       // 🔗 MERGE: Backend families + any remaining pending that haven't synced
       final merged = <FamilyRecord>[...backendFamilies];
       
-      // Create set of backend family identifiers (head name + address)
+      // Create set of backend family identifiers (head name + address for pending dedup)
       final backendFamilyKeys = backendFamilies
           .map((f) => '${f.headOfFamily}::${f.familyAddress}')
           .toSet();
@@ -438,23 +480,39 @@ class PatientService {
         '[FamilyService] Returning ${merged.length} merged families (${backendFamilies.length} backend + ${pendingOfflineFamilies.where((p) => !backendFamilyKeys.contains('${p.headOfFamily}::${p.familyAddress}')).length} pending)',
       );
       
-      // Clear pending since they've been synced
-      if (pendingOfflineFamilies.isEmpty) {
-        try {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.remove('pending_family_registrations_v1');
-          debugPrint('[FamilyService] Cleared pending families after sync');
-        } catch (_) {}
+      // ✅ FIXED: Clear pending families AFTER successful sync (not just when empty)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('pending_family_registrations_v1');
+        debugPrint('[FamilyService] Cleared pending families after successful sync');
+      } catch (e) {
+        debugPrint('[FamilyService] Failed to clear pending families: $e');
       }
       
       return merged;
     } catch (e, stackTrace) {
       debugPrint('Error fetching families: $e\n$stackTrace');
       final cachedFamilies = await _familyCache.loadFamilies();
-      final combined = [...pendingOfflineFamilies, ...cachedFamilies];
+      
+      // ✅ DEDUP: Remove duplicates before combining pending + cached on error
+      final deduped = <String, FamilyRecord>{};
+      for (final family in pendingOfflineFamilies) {
+        final key = '${family.headOfFamily}::${family.familyAddress}';
+        if (!deduped.containsKey(key)) {
+          deduped[key] = family;
+        }
+      }
+      for (final family in cachedFamilies) {
+        final key = '${family.headOfFamily}::${family.familyAddress}';
+        if (!deduped.containsKey(key)) {
+          deduped[key] = family;
+        }
+      }
+      
+      final combined = deduped.values.toList();
       if (combined.isNotEmpty) {
         debugPrint(
-          '[FamilyService] Returning ${combined.length} families after error',
+          '[FamilyService] Returning ${combined.length} deduplicated families after error',
         );
         return combined;
       }
