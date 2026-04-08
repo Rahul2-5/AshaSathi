@@ -5,6 +5,9 @@ import 'package:frontend/patient/add_patient_models.dart';
 import 'package:frontend/navigation/main_navigation.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
 import 'package:frontend/providers/login_provider.dart';
+import 'package:frontend/providers/family_provider.dart';
+import 'package:frontend/offline/family_sync_service.dart';
+import 'package:frontend/offline/connectivity_service.dart';
 import 'widgets/step1_family_info.dart';
 import 'widgets/step2_patient_details.dart';
 import 'widgets/step3_medical_info.dart';
@@ -307,6 +310,21 @@ class AddPatientPageNew extends ConsumerWidget {
         Navigator.pop(context); // Close loading dialog
 
         if (success) {
+          // 🔄 If online, try to sync pending families (those registered offline)
+          final isOnline = await ConnectivityService().isOnline();
+          if (isOnline) {
+            try {
+              await FamilySyncService().syncPendingFamilies(token);
+              debugPrint('[AddPatient] Family sync triggered after registration');
+            } catch (e) {
+              debugPrint('[AddPatient] Family sync error: $e');
+              // Continue anyway - families are saved locally
+            }
+          }
+
+          // 📋 Reload family list to show newly registered families
+          await ref.read(familyListProvider.notifier).loadFamilies(token);
+
           final snapshot = ref
               .read(addPatientFormProvider.notifier)
               .consumeLastRegisteredFamily();
