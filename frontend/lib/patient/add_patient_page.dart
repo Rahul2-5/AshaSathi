@@ -10,6 +10,7 @@ import '../providers/patient_provider.dart';
 import 'package:frontend/patient/patient_success_page.dart';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../offline/patient_offline_service.dart';
@@ -178,9 +179,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
               _nameController,
               validator: _validateName,
             ),
-            _inputField(context.l10n.tr('patient.age'), _ageController,
-              keyboard: TextInputType.number,
-              validator: _validateAge),
+            _ageField(),
           _dobField(), 
           _genderDropdown(),
             _inputField(
@@ -192,6 +191,77 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
             _inputField(context.l10n.tr('auth.phoneNumber'), _phoneController,
               keyboard: TextInputType.phone,
               validator: _validatePhone),
+        ],
+      ),
+    );
+  }
+
+  // 📊 AGE FIELD - Auto-syncs Date of Birth
+  Widget _ageField() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.l10n.tr('patient.age'),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextFormField(
+                controller: _ageController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(3),
+                ],
+                validator: _validateAge,
+                decoration: _inputDecoration(context.l10n.tr('patient.age'))
+                    .copyWith(
+                  suffixIcon: _ageController.text.isNotEmpty
+                      ? Icon(Icons.check_circle,
+                          color: isDark
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6),
+                          size: 20)
+                      : null,
+                ),
+              ),
+              if (_dobController.text.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outlined,
+                          size: 14,
+                          color: isDark
+                              ? const Color(0xFF78849E)
+                              : const Color(0xFF9CA3AF)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Date of Birth auto-calculated from age',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? const Color(0xFF78849E)
+                              : const Color(0xFF9CA3AF),
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -367,6 +437,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       _isSyncingAgeDob = true;
       _dobController.clear();
       _isSyncingAgeDob = false;
+      setState(() {});
       return;
     }
 
@@ -386,6 +457,11 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     _isSyncingAgeDob = true;
     _dobController.text = formattedDob;
     _isSyncingAgeDob = false;
+    
+    // Rebuild to show confirmation message
+    setState(() {});
+    
+    debugPrint('[AddPatient] Auto-synced DOB from age: $age years → $formattedDob');
   }
 
   void _syncAgeFromDob(DateTime dob) {
