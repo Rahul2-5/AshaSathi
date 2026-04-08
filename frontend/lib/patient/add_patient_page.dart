@@ -199,6 +199,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   // 📊 AGE FIELD - Auto-syncs Date of Birth
   Widget _ageField() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ageValue = _ageController.text.trim();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -217,6 +218,15 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Debug: Show age value
+              if (ageValue.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    'DEBUG: Age input = "$ageValue"',
+                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                  ),
+                ),
               TextFormField(
                 controller: _ageController,
                 keyboardType: TextInputType.number,
@@ -225,13 +235,15 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                   LengthLimitingTextInputFormatter(3),
                 ],
                 onChanged: (value) {
-                  debugPrint('[AddPatient] Age onChanged: "$value"');
+                  debugPrint(
+                      '[AddPatient] Age onChanged: newValue="$value", controller="${_ageController.text}"');
                   _syncDobFromAge();
                 },
                 validator: _validateAge,
-                decoration: _inputDecoration(context.l10n.tr('patient.age'))
-                    .copyWith(
-                  suffixIcon: _ageController.text.isNotEmpty
+                decoration: _inputDecoration(
+                  ageValue.isNotEmpty ? 'Age: $ageValue' : context.l10n.tr('patient.age')
+                ).copyWith(
+                  suffixIcon: ageValue.isNotEmpty
                       ? Icon(Icons.check_circle,
                           color: isDark
                               ? const Color(0xFF66CFC7)
@@ -240,7 +252,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                       : null,
                 ),
               ),
-              if (_dobController.text.isNotEmpty)
+              if (ageValue.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
@@ -252,7 +264,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                               : const Color(0xFF9CA3AF)),
                       const SizedBox(width: 6),
                       Text(
-                        'Date of Birth auto-calculated from age',
+                        'Date of Birth will auto-calculate',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark
