@@ -2,17 +2,23 @@ package com.Rahul.AshaSathi.Services;
 
 import com.Rahul.AshaSathi.DTO.FamilyRegistrationRequest;
 import com.Rahul.AshaSathi.DTO.FamilyRegistrationResponse;
+import com.Rahul.AshaSathi.DTO.FamilyDetailsResponseDTO;
+import com.Rahul.AshaSathi.DTO.FamilyPatientResponseDTO;
 import com.Rahul.AshaSathi.Entity.Family;
 import com.Rahul.AshaSathi.Entity.FamilyPatient;
 import com.Rahul.AshaSathi.Entity.Patient;
 import com.Rahul.AshaSathi.Repository.FamilyPatientRepository;
 import com.Rahul.AshaSathi.Repository.FamilyRepository;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -106,5 +112,82 @@ public class FamilyService {
     public Family getFamilyById(Long familyId) {
         return familyRepository.findById(familyId)
                 .orElseThrow(() -> new RuntimeException("Family not found with id: " + familyId));
+    }
+
+    @Transactional(readOnly = true)
+    public List<FamilyDetailsResponseDTO> getAllFamilies() {
+        return familyRepository.findAllByOrderByIdDesc()
+                .stream()
+                .map(this::mapFamilyToDetails)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public FamilyDetailsResponseDTO getFamilyDetailsById(Long familyId) {
+        Family family = familyRepository.findById(familyId)
+                .orElseThrow(() -> new RuntimeException("Family not found with id: " + familyId));
+
+        return mapFamilyToDetails(family);
+    }
+
+    @Transactional
+    public void deleteFamilyById(Long familyId) {
+        if (!familyRepository.existsById(familyId)) {
+            throw new RuntimeException("Family not found with id: " + familyId);
+        }
+
+        patientRepository.deleteByFamilyId(familyId);
+        mainPatientRepository.deleteByClientTempIdStartingWith("family-" + familyId + "-");
+        familyRepository.deleteById(familyId);
+        log.info("Deleted family {} and linked patients", familyId);
+    }
+
+    private FamilyDetailsResponseDTO mapFamilyToDetails(Family family) {
+        List<FamilyPatientResponseDTO> patients = patientRepository
+                .findByFamilyIdOrderByIdAsc(family.getId())
+                .stream()
+                .map(this::mapPatientToResponse)
+                .toList();
+
+        return FamilyDetailsResponseDTO.builder()
+                .id(family.getId())
+                .headOfFamily(family.getHeadOfFamily())
+                .numberOfMembers(family.getNumberOfMembers())
+                .familyAddress(family.getFamilyAddress())
+                .patients(patients)
+                .build();
+    }
+
+    private FamilyPatientResponseDTO mapPatientToResponse(FamilyPatient patient) {
+        return FamilyPatientResponseDTO.builder()
+                .id(patient.getId())
+                .patientName(patient.getPatientName())
+                .age(patient.getAge())
+                .dateOfBirth(patient.getDateOfBirth())
+                .gender(patient.getGender())
+                .caste(patient.getCaste())
+                .address(patient.getAddress())
+                .phoneNumber(patient.getPhoneNumber())
+                .isPregnant(patient.getIsPregnant())
+                .monthsOfPregnancy(patient.getMonthsOfPregnancy())
+                .expectedDeliveryDate(patient.getExpectedDeliveryDate())
+                .photoPath(patient.getPhotoPath())
+                .diseases(parseDiseasesMap(patient.getDiseases()))
+                .declinedHealthInfo(patient.getDeclinedHealthInfo())
+                .notes(patient.getNotes())
+                .build();
+    }
+
+    private Map<String, Boolean> parseDiseasesMap(String diseasesJson) {
+        if (diseasesJson == null || diseasesJson.isBlank()) {
+            return Map.of();
+        }
+
+        try {
+            return objectMapper.readValue(diseasesJson, new TypeReference<Map<String, Boolean>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse diseases JSON for family patient: {}", e.getMessage());
+            return Map.of();
+        }
     }
 }

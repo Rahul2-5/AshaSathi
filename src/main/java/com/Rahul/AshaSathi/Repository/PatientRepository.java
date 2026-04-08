@@ -7,4 +7,6 @@ import java.util.List;
 
 public interface PatientRepository extends JpaRepository<Patient, Long> {
     List<Patient> findTop5ByOrderByUpdatedAtDesc();
+
+    void deleteByClientTempIdStartingWith(String prefix);
 }

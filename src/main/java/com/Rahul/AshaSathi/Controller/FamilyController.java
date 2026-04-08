@@ -2,7 +2,7 @@ package com.Rahul.AshaSathi.Controller;
 
 import com.Rahul.AshaSathi.DTO.FamilyRegistrationRequest;
 import com.Rahul.AshaSathi.DTO.FamilyRegistrationResponse;
-import com.Rahul.AshaSathi.Entity.Family;
+import com.Rahul.AshaSathi.DTO.FamilyDetailsResponseDTO;
 import com.Rahul.AshaSathi.Services.FamilyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +10,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/families")
@@ -46,11 +48,32 @@ public class FamilyController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
-    public ResponseEntity<Family> getFamily(@PathVariable Long id) {
+    public ResponseEntity<FamilyDetailsResponseDTO> getFamily(@PathVariable Long id) {
         try {
-            return ResponseEntity.ok(familyService.getFamilyById(id));
+            return ResponseEntity.ok(familyService.getFamilyDetailsById(id));
         } catch (RuntimeException e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
+    public ResponseEntity<List<FamilyDetailsResponseDTO>> getFamilies() {
+        return ResponseEntity.ok(familyService.getAllFamilies());
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'ASHA')")
+    public ResponseEntity<String> deleteFamily(@PathVariable Long id) {
+        try {
+            familyService.deleteFamilyById(id);
+            return ResponseEntity.ok("Family deleted successfully");
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            log.error("Failed to delete family {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to delete family");
         }
     }
 

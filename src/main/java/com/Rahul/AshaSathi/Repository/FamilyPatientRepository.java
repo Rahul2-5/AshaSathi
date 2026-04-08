@@ -9,4 +9,8 @@ import java.util.List;
 @Repository
 public interface FamilyPatientRepository extends JpaRepository<FamilyPatient, Long> {
     List<FamilyPatient> findByFamilyId(Long familyId);
+
+    List<FamilyPatient> findByFamilyIdOrderByIdAsc(Long familyId);
+
+    void deleteByFamilyId(Long familyId);
 }
