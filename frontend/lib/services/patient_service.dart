@@ -1,13 +1,18 @@
 import 'dart:io';
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../patient/family_model.dart';
 import '../patient/patient_model.dart';
 import '../offline/connectivity_service.dart';
+import '../offline/family_cache_service.dart';
+import '../offline/family_offline_service.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/patient_offline_entity.dart';
 
@@ -16,16 +21,17 @@ class PatientService {
 
   final ConnectivityService _connectivity = ConnectivityService();
   final PatientOfflineDao _offlineDao = PatientOfflineDao();
+  final FamilyCacheService _familyCache = FamilyCacheService();
 
   Future<List<Patient>> getPatients(String token) async {
     final isOnline = await _connectivity.isOnline();
 
     // ===============================
-    //  1. LOAD OFFLINE PATIENTS (non-deleted only)
+    //  1. LOAD ONLY UNSYNCED OFFLINE PATIENTS (pending, not synced)
     // ===============================
-    final offlinePatients = await _offlineDao.getAll();
-    debugPrint("Loaded ${offlinePatients.length} offline patients");
-    final offlineModels = offlinePatients.map((p) {
+    final pendingPatients = await _offlineDao.getPending();
+    debugPrint("Loaded ${pendingPatients.length} pending offline patients");
+    final pendingModels = pendingPatients.map((p) {
       return Patient(
         id: p.serverId,
         uuid: p.uuid, // ✅ CRITICAL FIX: must use actual UUID
@@ -37,15 +43,22 @@ class PatientService {
         description: p.description,
         phoneNumber: p.phoneNumber,
         photoPath: p.photoPath,
+        caste: p.caste,
+        isPregnant: p.isPregnant,
+        monthsOfPregnancy: p.monthsOfPregnancy,
+        expectedDeliveryDate: p.expectedDeliveryDate,
+        declinedHealthInfo: p.declinedHealthInfo,
+        diseases: p.diseases,
+        updatedAt: p.updatedAt, // ✅ Include timestamp for sorting recent patients
       );
     }).toList();
 
     // ===============================
-    // 🔴 2. OFFLINE → RETURN LOCAL
+    // 🔴 2. OFFLINE → RETURN PENDING LOCAL
     // ===============================
     if (!isOnline) {
-      debugPrint("Offline mode: returning ${offlineModels.length} locally synced patients");
-      return offlineModels;
+      debugPrint("Offline mode: returning ${pendingModels.length} pending unsynced patients");
+      return pendingModels;
     }
 
     // ===============================
@@ -60,8 +73,8 @@ class PatientService {
       );
 
       if (res.statusCode != 200) {
-        debugPrint("Backend fetch failed (${res.statusCode}), returning offline patients");
-        return offlineModels;
+        debugPrint("Backend fetch failed (${res.statusCode}), returning pending patients");
+        return pendingModels;
       }
 
       final List data = jsonDecode(res.body);
@@ -86,6 +99,13 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: cachedPhotoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            declinedHealthInfo: patient.declinedHealthInfo,
+            diseases: patient.diseases,
+            updatedAt: patient.updatedAt,
           ),
         );
       }
@@ -104,46 +124,51 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: patient.photoPath,
+            caste: patient.caste,
+            isPregnant: patient.isPregnant,
+            monthsOfPregnancy: patient.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate,
+            declinedHealthInfo: patient.declinedHealthInfo,
+            diseases: patient.diseases,
           ),
         );
       }
 
-      final unsyncedLocal =
-          offlineModels.where((patient) => patient.id == null).toList();
-      if (unsyncedLocal.isEmpty) {
-        return onlineModels;
+      // ===============================
+      // ✅ 4. MERGE: Backend patients + any remaining unsynced local
+      // ===============================
+      // ✅ DEDUP: Remove duplicate patients by UUID from backend response
+      final deduplicatedOnline = <String, Patient>{};
+      for (final patient in onlineModels) {
+        if (!deduplicatedOnline.containsKey(patient.uuid)) {
+          deduplicatedOnline[patient.uuid] = patient;
+        } else {
+          debugPrint(
+            'Skipped duplicate patient UUID ${patient.uuid}: ${patient.name}',
+          );
+        }
       }
+      final uniqueOnlineModels = deduplicatedOnline.values.toList();
 
-      final onlineKeys = onlineModels.map(_patientKey).toSet();
-      final merged = <Patient>[...onlineModels];
+      final merged = <Patient>[...uniqueOnlineModels];
+      final onlineUuids = uniqueOnlineModels.map((p) => p.uuid).toSet();
 
-      for (final localPatient in unsyncedLocal) {
-        final key = _patientKey(localPatient);
-        if (!onlineKeys.contains(key)) {
+      // Add pending local patients that aren't already in the backend list
+      for (final localPatient in pendingModels) {
+        if (!onlineUuids.contains(localPatient.uuid)) {
           merged.insert(0, localPatient);
         }
       }
 
       debugPrint(
-        "Merged ${unsyncedLocal.length} unsynced local patients with backend list",
+        "Merged: ${uniqueOnlineModels.length} backend + ${pendingModels.where((p) => !onlineUuids.contains(p.uuid)).length} pending unsynced local patients",
       );
 
-      // ===============================
-      // ✅ 4. RETURN BACKEND + UNSYNCED LOCAL
-      // ===============================
       return merged;
     } catch (e) {
       debugPrint("Error fetching from backend: $e");
-      return offlineModels;
+      return pendingModels;
     }
-  }
-
-  String _patientKey(Patient patient) {
-    final uuid = patient.uuid.trim();
-    if (uuid.isNotEmpty) {
-      return "uuid:$uuid";
-    }
-    return "id:${patient.id ?? -1}";
   }
 
   Future<String?> _cachePatientPhotoIfNeeded({
@@ -230,5 +255,354 @@ class PatientService {
     }
 
     return '${AppConfig.apiBaseUrl}/$normalized';
+  }
+
+  /// ============================================
+  /// FAMILY REGISTRATION
+  /// ============================================
+  Future<bool> submitFamilyRegistration(
+    Map<String, dynamic> payload,
+    String token,
+  ) async {
+    try {
+      debugPrint('Submitting family registration: ${payload.toString()}');
+      
+      // 🔴 OFFLINE-FIRST: Save to local storage using FamilyOfflineService
+      try {
+        final familyInfo = payload['familyInfo'] as Map<String, dynamic>?;
+        final patients = payload['patients'] as List<dynamic>?;
+        
+        if (familyInfo != null && patients != null) {
+          // Convert to proper format for FamilyOfflineService
+          final patientsMap = List<Map<String, dynamic>>.from(
+            patients.whereType<Map<String, dynamic>>()
+          );
+          
+          await FamilyOfflineService().saveFamilyOffline(
+            familyInfo: familyInfo,
+            patients: patientsMap,
+          );
+          debugPrint('✅ Family saved to offline storage via FamilyOfflineService');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Warning: Could not save family offline: $e');
+        // Continue anyway - will try online submission
+      }
+
+      // 🟢 ONLINE: Try to submit to backend
+      final isOnline = await _connectivity.isOnline();
+      if (!isOnline) {
+        debugPrint('🔴 Offline: Family saved locally, will sync when online');
+        return true; // Offline save succeeded
+      }
+
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw TimeoutException('Family registration request timed out');
+        },
+      );
+
+      debugPrint('Family registration response: ${response.statusCode}');
+      
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        debugPrint('✅ Family registered successfully online');
+        // Clear offline records since it's now synced
+        try {
+          await FamilyOfflineService().clearPending();
+        } catch (_) {
+          // Ignore errors in cleanup
+        }
+        return true;
+      } else {
+        debugPrint('⚠️ Family registration online failed: ${response.body}');
+        // Keep in offline storage for retry
+        return true; // Already saved offline
+      }
+    } on TimeoutException catch (e) {
+      debugPrint('Timeout during family registration: ${e.message}');
+      // Keep in offline storage for retry
+      return true;
+    } catch (e, stackTrace) {
+      debugPrint('Error during family registration: $e\n$stackTrace');
+      // Keep in offline storage for retry
+      return true;
+    }
+  }
+
+  Future<List<FamilyRecord>> getFamilies(String token) async {
+    final isOnline = await _connectivity.isOnline();
+
+    // 🔴 STEP 1: Load pending offline families (always available)
+    List<FamilyRecord> pendingOfflineFamilies = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final json = prefs.getString('pending_family_registrations_v1');
+      if (json != null) {
+        final decoded = jsonDecode(json) as List<dynamic>;
+        pendingOfflineFamilies = decoded.asMap().entries.map((entry) {
+          final idx = entry.key;
+          final data = entry.value as Map<String, dynamic>;
+          final familyInfo = data['familyInfo'] as Map<String, dynamic>;
+          final patientsList = (data['patients'] as List<dynamic>? ?? [])
+              .cast<Map<String, dynamic>>()
+              .map((p) => FamilyMemberRecord(
+                id: null,
+                patientName: p['patientName'] ?? '',
+                age: p['age'] ?? 0,
+                dateOfBirth: p['dateOfBirth'] ?? '',
+                gender: p['gender'] ?? 'Female',
+                caste: p['caste'] ?? '',
+                address: p['address'] ?? '',
+                phoneNumber: p['phoneNumber'] ?? '',
+                isPregnant: p['isPregnant'] ?? false,
+                monthsOfPregnancy: p['monthsOfPregnancy'],
+                expectedDeliveryDate: p['expectedDeliveryDate'] ?? '',
+                photoPath: p['photoPath'],
+                diseases: {},
+                declinedHealthInfo: p['declinedHealthInfo'] ?? false,
+                notes: p['notes'] ?? '',
+              ))
+              .toList();
+
+          // Use negative ID to indicate pending offline family
+          return FamilyRecord(
+            id: -(idx + 1), // Negative ID marks as pending
+            headOfFamily: familyInfo['headOfFamily'] ?? '',
+            numberOfMembers: familyInfo['numberOfMembers'] ?? 0,
+            familyAddress: familyInfo['familyAddress'] ?? '',
+            patients: patientsList,
+          );
+        }).toList();
+        debugPrint(
+          '[FamilyService] Loaded ${pendingOfflineFamilies.length} pending offline families',
+        );
+      }
+    } catch (e) {
+      debugPrint('[FamilyService] Error loading pending offline families: $e');
+    }
+
+    // 🟡 STEP 2: Offline → RETURN CACHED + PENDING FAMILIES
+    if (!isOnline) {
+      // Load previously synced families from cache
+      final cachedFamilies = await _familyCache.loadFamilies();
+      
+      // Deduplicate: pending families take priority, but add unique cached ones
+      final dedupedMap = <String, FamilyRecord>{};
+      
+      // Add cached families first
+      for (final cachedFamily in cachedFamilies) {
+        final key = '${cachedFamily.headOfFamily}::${cachedFamily.familyAddress}';
+        dedupedMap[key] = cachedFamily;
+      }
+      
+      // Override with pending families (they're newer/local-only)
+      for (final pendingFamily in pendingOfflineFamilies) {
+        final key = '${pendingFamily.headOfFamily}::${pendingFamily.familyAddress}';
+        dedupedMap[key] = pendingFamily;
+      }
+      
+      final combined = dedupedMap.values.toList();
+      debugPrint(
+        'Offline mode: returning ${combined.length} families (${cachedFamilies.length} cached + ${pendingOfflineFamilies.length} pending)',
+      );
+      return combined;
+    }
+
+    // 🟢 STEP 3: ONLINE → Try to load from backend
+    try {
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        final cachedFamilies = await _familyCache.loadFamilies();
+        
+        // ✅ DEDUP: Remove duplicates before combining pending + cached
+        final deduped = <String, FamilyRecord>{};
+        for (final family in pendingOfflineFamilies) {
+          final key = '${family.headOfFamily}::${family.familyAddress}';
+          if (!deduped.containsKey(key)) {
+            deduped[key] = family;
+          }
+        }
+        for (final family in cachedFamilies) {
+          final key = '${family.headOfFamily}::${family.familyAddress}';
+          if (!deduped.containsKey(key)) {
+            deduped[key] = family;
+          }
+        }
+        
+        final combined = deduped.values.toList();
+        if (combined.isNotEmpty) {
+          debugPrint(
+            'Backend fetch failed (${response.statusCode}), returning ${combined.length} deduplicated families (${pendingOfflineFamilies.length} pending + ${cachedFamilies.length} cached)',
+          );
+          return combined;
+        }
+        throw Exception('Failed to load families: ${response.statusCode}');
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! List) {
+        return pendingOfflineFamilies; // At least return pending offline
+      }
+
+      final rawBackendFamilies = decoded
+          .whereType<Map<String, dynamic>>()
+          .map(FamilyRecord.fromJson)
+          .toList();
+
+      // ✅ DEDUP: Remove duplicate families by ID from backend response
+      final deduplicatedBackend = <int, FamilyRecord>{};
+      for (final family in rawBackendFamilies) {
+        if (!deduplicatedBackend.containsKey(family.id)) {
+          deduplicatedBackend[family.id] = family;
+        } else {
+          debugPrint(
+            '[FamilyService] Skipped duplicate family ID ${family.id}: ${family.headOfFamily}',
+          );
+        }
+      }
+      final backendFamilies = deduplicatedBackend.values.toList();
+
+      await _familyCache.saveFamilies(backendFamilies);
+      
+      // 🔗 MERGE: Backend families + any remaining pending that haven't synced
+      final merged = <FamilyRecord>[...backendFamilies];
+      
+      // Create set of backend family identifiers (head name + address for pending dedup)
+      final backendFamilyKeys = backendFamilies
+          .map((f) => '${f.headOfFamily}::${f.familyAddress}')
+          .toSet();
+
+      // Add pending families that aren't already in backend
+      for (final pendingFamily in pendingOfflineFamilies) {
+        final key = '${pendingFamily.headOfFamily}::${pendingFamily.familyAddress}';
+        if (!backendFamilyKeys.contains(key)) {
+          merged.insert(0, pendingFamily);
+        }
+      }
+
+      debugPrint(
+        '[FamilyService] Returning ${merged.length} merged families (${backendFamilies.length} backend + ${pendingOfflineFamilies.where((p) => !backendFamilyKeys.contains('${p.headOfFamily}::${p.familyAddress}')).length} pending)',
+      );
+      
+      // ✅ FIXED: Clear pending families AFTER successful sync (not just when empty)
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('pending_family_registrations_v1');
+        debugPrint('[FamilyService] Cleared pending families after successful sync');
+      } catch (e) {
+        debugPrint('[FamilyService] Failed to clear pending families: $e');
+      }
+      
+      return merged;
+    } catch (e, stackTrace) {
+      debugPrint('Error fetching families: $e\n$stackTrace');
+      final cachedFamilies = await _familyCache.loadFamilies();
+      
+      // ✅ DEDUP: Remove duplicates before combining pending + cached on error
+      final deduped = <String, FamilyRecord>{};
+      for (final family in pendingOfflineFamilies) {
+        final key = '${family.headOfFamily}::${family.familyAddress}';
+        if (!deduped.containsKey(key)) {
+          deduped[key] = family;
+        }
+      }
+      for (final family in cachedFamilies) {
+        final key = '${family.headOfFamily}::${family.familyAddress}';
+        if (!deduped.containsKey(key)) {
+          deduped[key] = family;
+        }
+      }
+      
+      final combined = deduped.values.toList();
+      if (combined.isNotEmpty) {
+        debugPrint(
+          '[FamilyService] Returning ${combined.length} deduplicated families after error',
+        );
+        return combined;
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> deleteFamily({
+    required int familyId,
+    required String token,
+  }) async {
+    try {
+      final isOnline = await _connectivity.isOnline();
+      if (!isOnline) {
+        await _familyCache.removeFamilyById(familyId);
+        debugPrint('Offline family delete applied to cache for familyId=$familyId');
+        return true;
+      }
+
+      final response = await http.delete(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/families/$familyId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      final success = response.statusCode == 200 || response.statusCode == 204;
+      if (success) {
+        await _familyCache.removeFamilyById(familyId);
+      }
+      return success;
+    } catch (e, stackTrace) {
+      debugPrint('Error deleting family: $e\n$stackTrace');
+      return false;
+    }
+  }
+
+  // Delete patient by ID from backend
+  Future<Map<String, dynamic>> deletePatient({
+    required int patientId,
+    required String token,
+  }) async {
+    try {
+      final url = '${baseUrl.replaceAll('/patients', '').withoutTrailingSlash()}/patients/$patientId';
+      final response = await http.delete(
+        Uri.parse(url),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200 || response.statusCode == 204 || response.statusCode == 201) {
+        return {'success': true, 'message': 'Patient deleted successfully'};
+      } else {
+        return {'success': false, 'message': 'Failed to delete patient: ${response.statusCode}'};
+      }
+    } catch (e, stackTrace) {
+      debugPrint('Error deleting patient: $e\n$stackTrace');
+      return {'success': false, 'message': 'Error: $e'};
+    }
+  }
+}
+
+// Extension to handle trailing slashes
+extension on String {
+  String withoutTrailingSlash() {
+    if (endsWith('/')) {
+      return substring(0, length - 1);
+    }
+    return this;
   }
 }

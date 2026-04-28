@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class Patient {
   final int? id;          // server ID (nullable for offline-only)
   final String uuid;      // GLOBAL ID (critical)
@@ -8,12 +10,14 @@ class Patient {
   final String address;
   final String phoneNumber;
   final String description;
-  final String? photoPath;
   final String caste;
   final bool isPregnant;
   final int? monthsOfPregnancy;
-  final String? expectedDeliveryDate;
-  final List<String> medicalConditions; // Selected condition IDs
+  final String expectedDeliveryDate;
+  final bool declinedHealthInfo;
+  final Map<String, bool> diseases;
+  final String? photoPath;
+  final int? updatedAt;   // timestamp for sorting recent patients (millisecondsSinceEpoch)
 
   Patient({
     this.id,
@@ -25,13 +29,43 @@ class Patient {
     required this.address,
     required this.phoneNumber,
     this.description = '',
-    this.photoPath,
     this.caste = '',
     this.isPregnant = false,
     this.monthsOfPregnancy,
-    this.expectedDeliveryDate,
-    this.medicalConditions = const [],
+    this.expectedDeliveryDate = '',
+    this.declinedHealthInfo = false,
+    this.diseases = const {},
+    this.photoPath,
+    this.updatedAt,
   });
+
+  static Map<String, bool> _parseDiseases(dynamic value) {
+    if (value is Map) {
+      return value.map((key, dynamic entry) {
+        return MapEntry(key.toString(), entry == true);
+      });
+    }
+
+    if (value is String && value.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(value);
+        if (decoded is Map) {
+          return decoded.map((key, dynamic entry) {
+            return MapEntry(key.toString(), entry == true);
+          });
+        }
+      } catch (_) {}
+    }
+
+    return const {};
+  }
+
+  List<String> get activeDiseaseLabels {
+    return diseases.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
+  }
 
   // ================= BACKEND → UI =================
   factory Patient.fromJson(Map<String, dynamic> json) {
@@ -46,12 +80,18 @@ class Patient {
       address: json['address'],
       phoneNumber: json['phoneNumber'],
       description: (json['description'] ?? '').toString(),
+      caste: (json['caste'] ?? '').toString(),
+      isPregnant: json['isPregnant'] == true,
+      monthsOfPregnancy: json['monthsOfPregnancy'] is int
+          ? json['monthsOfPregnancy'] as int
+          : int.tryParse((json['monthsOfPregnancy'] ?? '').toString()),
+      expectedDeliveryDate: (json['expectedDeliveryDate'] ?? '').toString(),
+      declinedHealthInfo: json['declinedHealthInfo'] == true,
+      diseases: _parseDiseases(json['diseases']),
       photoPath: json['photoPath'],
-      caste: json['caste'] ?? '',
-      isPregnant: json['isPregnant'] ?? false,
-      monthsOfPregnancy: json['monthsOfPregnancy'],
-      expectedDeliveryDate: json['expectedDeliveryDate'],
-      medicalConditions: conditions,
+      updatedAt: json['updatedAt'] is int 
+          ? json['updatedAt'] 
+          : int.tryParse((json['updatedAt'] ?? '').toString()),
     );
   }
 
@@ -79,12 +119,16 @@ class Patient {
       address: map['address'],
       phoneNumber: map['phoneNumber'],
       description: (map['description'] ?? '').toString(),
+      caste: (map['caste'] ?? '').toString(),
+      isPregnant: map['isPregnant'] == true,
+      monthsOfPregnancy: map['monthsOfPregnancy'] is int
+          ? map['monthsOfPregnancy'] as int
+          : int.tryParse((map['monthsOfPregnancy'] ?? '').toString()),
+      expectedDeliveryDate: (map['expectedDeliveryDate'] ?? '').toString(),
+      declinedHealthInfo: map['declinedHealthInfo'] == true,
+      diseases: _parseDiseases(map['diseases']),
       photoPath: map['photoPath'],
-      caste: map['caste'] ?? '',
-      isPregnant: (map['isPregnant'] ?? 0) == 1,
-      monthsOfPregnancy: map['monthsOfPregnancy'],
-      expectedDeliveryDate: map['expectedDeliveryDate'],
-      medicalConditions: conditions,
+      updatedAt: map['updatedAt'] is int ? map['updatedAt'] : null,
     );
   }
 }

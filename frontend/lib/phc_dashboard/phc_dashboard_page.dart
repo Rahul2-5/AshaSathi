@@ -1,52 +1,68 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
+import '../utils/glass_widgets.dart';
 
-class PhcDashboardPage extends StatefulWidget {
+class PhcDashboardPage extends ConsumerStatefulWidget {
   const PhcDashboardPage({super.key});
 
   @override
-  State<PhcDashboardPage> createState() => _PhcDashboardPageState();
+  ConsumerState<PhcDashboardPage> createState() => _PhcDashboardPageState();
 }
 
-class _PhcDashboardPageState extends State<PhcDashboardPage> {
+class _PhcDashboardPageState extends ConsumerState<PhcDashboardPage> {
   @override
   void initState() {
     super.initState();
 
-    // Load patients data if not already loaded
-    final token = context.read<LoginCubit>().state.token!;
-    context.read<PatientCubit>().loadPatients(token);
+    // Load patients data with valid token
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPatientData();
+    });
+  }
+
+  Future<void> _loadPatientData() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (token == null || !mounted) return;
+    ref.read(patientListProvider.notifier).loadPatients(token);
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         final isInitialLoading = state.loading && state.patients.isEmpty;
 
         return Scaffold(
-          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeOutCubic,
-              child: isInitialLoading
-                  ? _buildSkeletonContent()
-                  : Column(
-                      key: const ValueKey('phc-content'),
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildKeyMetricsSection(state),
-                        const SizedBox(height: 28),
-                        _buildSummaryCards(state),
-                      ],
-                    ),
+          backgroundColor: Colors.transparent,
+          body: Builder(
+            builder: (context) => SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                16,
+                MediaQuery.of(context).padding.top + 16,
+                16,
+                100,
+              ),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                switchInCurve: Curves.easeOutCubic,
+                switchOutCurve: Curves.easeOutCubic,
+                child: isInitialLoading
+                    ? _buildSkeletonContent()
+                    : Column(
+                        key: const ValueKey('phc-content'),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildKeyMetricsSection(state),
+                          const SizedBox(height: 28),
+                          _buildSummaryCards(state),
+                        ],
+                      ),
+              ),
             ),
           ),
         );
@@ -56,7 +72,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
   //  KEY METRICS 
 
-  Widget _buildKeyMetricsSection(PatientState state) {
+  Widget _buildKeyMetricsSection(PatientListState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
@@ -91,17 +107,27 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : backgroundColor,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-          ),
-        ],
+      borderRadius: BorderRadius.circular(16),
+      blur: 14,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDark
+            ? [
+                backgroundColor.withValues(alpha: 0.15),
+                backgroundColor.withValues(alpha: 0.05),
+              ]
+            : [
+                backgroundColor.withValues(alpha: 0.70),
+                backgroundColor.withValues(alpha: 0.40),
+              ],
+      ),
+      border: Border.all(
+        color: isDark 
+            ? backgroundColor.withValues(alpha: 0.2)
+            : backgroundColor.withValues(alpha: 0.6),
       ),
       child: Row(
         children: [
@@ -143,7 +169,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
   // SUMMARY CARDS 
 
-  Widget _buildSummaryCards(PatientState state) {
+  Widget _buildSummaryCards(PatientListState state) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final maleCount = state.patients
         .where((p) => p.gender.toLowerCase() == 'male')
@@ -203,8 +229,8 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
 
   Widget _buildSkeletonContent() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+    final baseColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
+    final highlightColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02);
 
     return Shimmer.fromColors(
       key: const ValueKey('phc-skeleton'),
@@ -219,7 +245,7 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A232C) : const Color(0xFFE0F7F6),
+              color: baseColor,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Row(
@@ -255,12 +281,10 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   }
 
   Widget _skeletonSummaryCard(Color shimmerColor) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : Colors.white,
+        color: shimmerColor,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
@@ -301,17 +325,27 @@ class _PhcDashboardPageState extends State<PhcDashboardPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-          ),
-        ],
+      borderRadius: BorderRadius.circular(12),
+      blur: 14,
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: isDark
+            ? [
+                color.withValues(alpha: 0.15),
+                color.withValues(alpha: 0.05),
+              ]
+            : [
+                color.withValues(alpha: 0.20),
+                Colors.white.withValues(alpha: 0.40),
+              ],
+      ),
+      border: Border.all(
+        color: isDark 
+            ? color.withValues(alpha: 0.2)
+            : color.withValues(alpha: 0.4),
       ),
       child: Column(
         children: [

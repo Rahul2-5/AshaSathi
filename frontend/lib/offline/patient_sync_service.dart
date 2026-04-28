@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'connectivity_service.dart';
 import 'patient_offline_dao.dart';
@@ -84,6 +86,16 @@ class PatientSyncService {
       conflictCount: conflicts,
       retryQueueCount: retryQueue,
     );
+  }
+
+  /// Reset sync: clears all offline data and resets sync status
+  Future<void> resetAllData() async {
+    await _dao.clearAllData();
+    syncStatus.value = PatientSyncStatusSnapshot.empty;
+    syncRevision.value = 0;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_lastSyncMillisKey);
+    debugPrint("[PatientSync] All offline data cleared and sync status reset");
   }
 
   Future<bool> sync(String token) async {
@@ -246,7 +258,37 @@ class PatientSyncService {
             final streamed = await req.send();
             final respBody = await streamed.stream.bytesToString();
             debugPrint('[PatientSync] upload photo status=${streamed.statusCode} body=$respBody');
-            // backend updates patient.photoPath in DB
+            
+            // Update local DB with server photoPath after successful upload
+            if (streamed.statusCode == 200) {
+              final serverPhotoPath = "/uploads/patients/$serverId/profile.jpg";
+              await _dao.updatePhotoPathByLocalId(
+                localId: patient.localId!,
+                photoPath: serverPhotoPath,
+              );
+              debugPrint('[PatientSync] updated photoPath to $serverPhotoPath for local ${patient.localId}');
+
+              // Cache the original file to prevent it from vanishing if the backend resets (Heroku ephemeral storage)
+              try {
+                final docsDir = await getApplicationDocumentsDirectory();
+                final cacheDir = Directory(p.join(docsDir.path, 'patient_photo_cache'));
+                if (!cacheDir.existsSync()) {
+                  cacheDir.createSync(recursive: true);
+                }
+                final safeId = patient.uuid.trim().replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+                String extension = p.extension(serverPhotoPath);
+                if (extension.isEmpty) extension = '.jpg';
+                final cachePath = p.join(cacheDir.path, 'patient_$safeId$extension');
+                
+                final originalFile = File(localPhotoPath);
+                if (originalFile.existsSync() && originalFile.path != cachePath) {
+                  await originalFile.copy(cachePath);
+                  debugPrint('[PatientSync] Cached original photo to $cachePath to prevent loss');
+                }
+              } catch (e) {
+                debugPrint('[PatientSync] Failed to cache local photo: $e');
+              }
+            }
           } catch (e) {
             debugPrint('[PatientSync] photo upload failed for local ${patient.localId}: $e');
           }
@@ -263,15 +305,16 @@ class PatientSyncService {
       }
 
       // 🔹 DELETE SYNC
-      await _syncDeleted(token);
+      final allDeletedSynced = await _syncDeleted(token);
+      final allSynced = allPendingSynced && allDeletedSynced;
 
-      if (allPendingSynced) {
+      if (allSynced) {
         await _saveLastSyncMillis(DateTime.now().millisecondsSinceEpoch);
         syncRevision.value = syncRevision.value + 1;
       }
 
       await refreshSyncStatus();
-      return allPendingSynced;
+      return allSynced;
     } catch (e) {
       syncStatus.value = syncStatus.value.copyWith(
         lastError: e.toString(),
@@ -687,8 +730,9 @@ class PatientSyncService {
     await prefs.setInt(_lastSyncMillisKey, millis);
   }
 
-  Future<void> _syncDeleted(String token) async {
+  Future<bool> _syncDeleted(String token) async {
     final deleted = await _dao.getDeleted();
+    var allDeletedSynced = true;
 
     for (final patient in deleted) {
       if (patient.serverId == null) {
@@ -707,6 +751,7 @@ class PatientSyncService {
         if (res.statusCode == 200 || res.statusCode == 204) {
           await _dao.hardDeleteByUuid(patient.uuid);
         } else {
+          allDeletedSynced = false;
           if (patient.localId != null) {
             await _dao.markRetryFailure(
               localId: patient.localId!,
@@ -715,6 +760,7 @@ class PatientSyncService {
           }
         }
       } catch (e) {
+        allDeletedSynced = false;
         if (patient.localId != null) {
           await _dao.markRetryFailure(
             localId: patient.localId!,
@@ -723,6 +769,8 @@ class PatientSyncService {
         }
       }
     }
+
+    return allDeletedSynced;
   }
 }
 

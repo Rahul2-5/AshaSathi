@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
-import '../../auth/cubit/login_cubit.dart';
+import '../../providers/login_provider.dart';
 import '../../task/add_task_page.dart';
-import '../../task/task_cubit.dart';
+import '../../providers/task_provider.dart';
 import '../../task/task_model.dart';
 
-class TaskCard extends StatelessWidget {
+class TaskCard extends ConsumerWidget {
   final TaskModel task;
 
   const TaskCard({super.key, required this.task});
@@ -410,7 +410,7 @@ class TaskCard extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Material(
@@ -529,8 +529,8 @@ class TaskCard extends StatelessWidget {
               );
 
               if (edited == true && context.mounted) {
-                final token = context.read<LoginCubit>().state.token!;
-                await context.read<TaskCubit>().loadTasks(token);
+                final token = ref.read(loginProvider).token!;
+                await ref.read(taskListProvider.notifier).loadTasks(token);
               }
             },
             tooltip: context.l10n.tr('task.editTask'),
@@ -547,13 +547,12 @@ class TaskCard extends StatelessWidget {
               if (!context.mounted) return;
 
               if (confirm == true) {
-                final token =
-                    context.read<LoginCubit>().state.token!;
+                final token = ref.read(loginProvider).token!;
                 _showLoadingDialog(context);
 
                 try {
-                  final deleted = await context
-                      .read<TaskCubit>()
+                  final deleted = await ref
+                      .read(taskListProvider.notifier)
                       .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
 
                   if (!context.mounted) return;

@@ -2,6 +2,7 @@ package com.Rahul.AshaSathi.Controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -68,7 +69,10 @@ public class PatientController {
             return ResponseEntity.noContent().build();
         } catch (RuntimeException e) {
             System.err.println("Delete patient error: " + e.getMessage());
-            return ResponseEntity.notFound().build();
+            if (e.getMessage() != null && e.getMessage().contains("Patient not found")) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
     }
 

@@ -1,40 +1,45 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/localization/language_controller.dart';
+import 'package:frontend/utils/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
+import '../offline/family_sync_service.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_conflicts_page.dart';
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
-import '../task/task_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
+import '../providers/task_provider.dart';
+import '../providers/family_provider.dart';
 import '../task/add_task_page.dart';
 import 'widgets/task_card.dart';
 import '../patient/patient_detail_page.dart';
 import '../patient/patient_model.dart';
 import '../patient/patients_list_page.dart';
 
-class HomePage extends StatefulWidget {
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  ConsumerState<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
-  static const Color _accentTextColor = Color(0xFF56C7AA);
-
+class _HomePageState extends ConsumerState<HomePage> {
   late final PatientSyncService _patientSyncService;
   late final TaskSyncService _taskSyncService;
+  late final FamilySyncService _familySyncService;
   late final ConnectivityService _connectivityService;
   late final StreamSubscription _connectivitySub;
   bool _isOnline = false;
@@ -43,48 +48,75 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
 
-    final token = context.read<LoginCubit>().state.token!;
-
-    // Initial load
-    context.read<TaskCubit>().loadTasks(token);
-    context.read<PatientCubit>().loadPatients(token);
-
-    // Sync service
+    // Sync service - lightweight setup
     _patientSyncService = PatientSyncService();
     _taskSyncService = TaskSyncService();
+    _familySyncService = FamilySyncService();
     _connectivityService = ConnectivityService();
     _refreshConnectivityStatus();
     _patientSyncService.refreshSyncStatus();
 
-    // Try an initial sync once on startup (useful after regaining connectivity)
-    (() async {
-      final initialPatientSynced = await _patientSyncService.sync(token);
-      final initialTaskSynced = await _taskSyncService.sync(token);
-
-      if (initialPatientSynced && mounted) {
-        context.read<PatientCubit>().loadPatients(token);
-      }
-      if (initialTaskSynced && mounted) {
-        context.read<TaskCubit>().loadTasks(token);
-      }
-    })();
-
-    // Auto-sync when network comes back
+    // Auto-sync when network comes back (setup listener only)
     _connectivitySub = Connectivity().onConnectivityChanged.listen((_) async {
       await _refreshConnectivityStatus();
+      final token = await ref.read(loginProvider.notifier).getValidToken();
+      if (token == null || !mounted) return;
 
-      // Try both patient and task sync when network state changes
+      // Try patient, task, and family sync when network state changes
       final patientSynced = await _patientSyncService.sync(token);
       final taskSynced = await _taskSyncService.sync(token);
+      final familySynced = await _familySyncService.syncPendingFamilies(token);
 
       if (patientSynced && mounted) {
-        context.read<PatientCubit>().loadPatients(token);
+        ref.read(patientListProvider.notifier).loadPatients(token);
       }
 
       if (taskSynced && mounted) {
-        context.read<TaskCubit>().loadTasks(token);
+        ref.read(taskListProvider.notifier).loadTasks(token);
+      }
+
+      if (familySynced > 0 && mounted) {
+        // Trigger family list reload if families were synced
+        ref.read(familyListProvider.notifier).loadFamilies(token);
       }
     });
+
+    // Load data with valid token after frame build
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPatientAndTaskData();
+    });
+  }
+
+  Future<void> _loadPatientAndTaskData() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (token == null || !mounted) return;
+
+    // Initial load (always load to show cached data even if offline)
+    ref.read(taskListProvider.notifier).loadTasks(token);
+    ref.read(patientListProvider.notifier).loadPatients(token);
+    ref.read(familyListProvider.notifier).loadFamilies(token);
+
+    // Try an initial sync once on startup (useful after regaining connectivity)
+    try {
+      final initialPatientSynced = await _patientSyncService.sync(token);
+      final initialTaskSynced = await _taskSyncService.sync(token);
+      final initialFamilySynced = await _familySyncService.syncPendingFamilies(
+        token,
+      );
+
+      if (initialPatientSynced && mounted) {
+        ref.read(patientListProvider.notifier).loadPatients(token);
+      }
+      if (initialTaskSynced && mounted) {
+        ref.read(taskListProvider.notifier).loadTasks(token);
+      }
+      if (initialFamilySynced > 0 && mounted) {
+        ref.read(familyListProvider.notifier).loadFamilies(token);
+      }
+    } catch (e) {
+      // Sync attempt failed, but data may have loaded from cache
+      debugPrint('Initial sync error: $e');
+    }
   }
 
   Future<void> _refreshConnectivityStatus() async {
@@ -103,136 +135,398 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = context.l10n;
-    final titleColor = isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F);
-    final subtitleColor = isDark ? const Color(0xFF9AA7B3) : const Color(0xFF8D959E);
+    final titleColor = isDark
+        ? const Color(0xFFE8EEF3)
+        : const Color(0xFF171A1F);
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CustomScrollView(
-        slivers: [
-          // Header + welcome
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate(
-                [
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.w800,
-                        color: titleColor,
-                        height: 1.14,
-                      ),
-                      children: [
-                        TextSpan(text: l10n.tr('home.welcome')),
-                        TextSpan(
-                          text: l10n.tr('home.ashaWorker'),
-                          style: const TextStyle(color: _accentTextColor),
-                        ),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Gradient background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [
+                        Color(0xFF0B1120),
+                        Color(0xFF0E1A26),
+                        Color(0xFF0A1218),
+                      ]
+                    : const [
+                        Color(0xFFE8F8F5),
+                        Color(0xFFF0F4FF),
+                        Color(0xFFF7FBFF),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              ),
+            ),
+          ),
+          // Orb decorations
+          Positioned(
+            top: -80,
+            right: -60,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    kTeal.withValues(alpha: isDark ? 0.10 : 0.16),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            left: -80,
+            child: Container(
+              width: 300,
+              height: 300,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    kAccentCyan.withValues(alpha: isDark ? 0.06 : 0.10),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Content
+          CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 16,
+                  1,
+                  0,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildListDelegate([
+                    _welcomeHeader(),
+                    const SizedBox(height: 12),
+                    _overviewHero(),
+                    const SizedBox(height: 12),
+                    _syncStatusCard(),
+                    const SizedBox(height: 28),
+                    _tasksHeader(),
+                    const SizedBox(height: 12),
+                  ]),
+                ),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                sliver: _taskSliverList(),
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
+                sliver: SliverToBoxAdapter(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(
-                        Icons.monitor_heart_outlined,
-                        size: 16,
-                        color: Color(0xFF55C58D),
-                      ),
-                      const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          l10n.tr('home.dailyOverview'),
+                          l10n.tr('home.recentPatients'),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: subtitleColor,
-                            fontSize: 14,
-                            fontStyle: FontStyle.italic,
+                          style: GoogleFonts.outfit(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: titleColor,
                           ),
                         ),
                       ),
                       const SizedBox(width: 10),
-                      _connectivityBadge(),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PatientsListPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          l10n.tr('common.viewAll'),
+                          style: TextStyle(
+                            color: isDark ? kAccentCyan : kTeal,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _syncStatusCard(),
-                  const SizedBox(height: 28),
-                  _tasksHeader(),
-                  const SizedBox(height: 12),
-                ],
+                ),
               ),
-            ),
+              SliverToBoxAdapter(
+                child: SizedBox(height: 252, child: _recentPatientsList()),
+              ),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+                  child: _languageSettingsCard(),
+                ),
+              ),
+            ],
           ),
+        ],
+      ),
+    );
+  }
 
-          // Task list
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            sliver: _taskSliverList(),
+  Widget _welcomeHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final token = ref.read(loginProvider).token;
+
+    // Decode username from JWT payload
+    String username = 'Asha Worker';
+    if (token != null && token.isNotEmpty) {
+      try {
+        final parts = token.split('.');
+        if (parts.length == 3) {
+          var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+          switch (payload.length % 4) {
+            case 2:
+              payload += '==';
+              break;
+            case 3:
+              payload += '=';
+              break;
+          }
+          final decoded = utf8.decode(base64Url.decode(payload));
+          final map = jsonDecode(decoded) as Map<String, dynamic>;
+          final raw =
+              (map['username'] ?? map['name'] ?? map['email'] ?? '') as String;
+          if (raw.isNotEmpty) {
+            username = raw.contains('@') ? raw.split('@')[0] : raw;
+            username = username[0].toUpperCase() + username.substring(1);
+          }
+        }
+      } catch (_) {}
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(
+            children: [
+              TextSpan(
+                text: 'Welcome, ',
+                style: GoogleFonts.outfit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: isDark
+                      ? const Color(0xFFE8EEF3)
+                      : const Color(0xFF0E1822),
+                  height: 1.15,
+                ),
+              ),
+              TextSpan(
+                text: username,
+                style: GoogleFonts.outfit(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? kAccentCyan : kTeal,
+                  height: 1.15,
+                ),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          'Here\'s your daily health overview 🩺',
+          style: TextStyle(
+            color: isDark ? const Color(0xFFAFC4D2) : const Color(0xFF3A5060),
+            fontSize: 15,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 
-          // Recent patients title
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 14),
-            sliver: SliverToBoxAdapter(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _overviewHero() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final l10n = context.l10n;
+
+    return Consumer(
+      builder: (context, ref, _) {
+        final patientState = ref.watch(patientListProvider);
+        final taskState = ref.watch(taskListProvider);
+        final familyState = ref.watch(familyListProvider);
+
+        return GlassContainer(
+          padding: const EdgeInsets.all(20),
+          borderRadius: BorderRadius.circular(28),
+          blur: 18,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    kTeal.withValues(alpha: 0.15),
+                    kAccentCyan.withValues(alpha: 0.05),
+                  ]
+                : [
+                    kTeal.withValues(alpha: 0.15),
+                    Colors.white.withValues(alpha: 0.60),
+                  ],
+          ),
+          border: Border.all(
+            color: isDark
+                ? kTeal.withValues(alpha: 0.3)
+                : kTeal.withValues(alpha: 0.4),
+            width: 1.5,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
                   Expanded(
                     child: Text(
-                      l10n.tr('home.recentPatients'),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      l10n.tr('home.dailyOverview'),
                       style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: titleColor,
+                        color: isDark
+                            ? const Color(0xFFAFBBC6)
+                            : const Color(0xFF66707A),
+                        fontSize: 13,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
                   ),
+                  _connectivityBadge(),
+                ],
+              ),
+              const SizedBox(height: 18),
+              Row(
+                children: [
+                  Expanded(
+                    child: _overviewMetric(
+                      label: l10n.tr('home.recentPatients'),
+                      value: patientState.patients.length.toString(),
+                      icon: Icons.people_alt_outlined,
+                    ),
+                  ),
                   const SizedBox(width: 10),
-                  InkWell(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PatientsListPage(),
-                        ),
-                      );
-                    },
-                    child: Text(
-                      l10n.tr('common.viewAll'),
-                      style: TextStyle(
-                        color: _accentTextColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
+                  Expanded(
+                    child: _overviewMetric(
+                      label: l10n.tr('home.dailyTasks'),
+                      value: taskState.tasks.length.toString(),
+                      icon: Icons.assignment_outlined,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _overviewMetric(
+                      label: 'Families',
+                      value: familyState.families.length.toString(),
+                      icon: Icons.groups_2_outlined,
                     ),
                   ),
                 ],
               ),
-            ),
+            ],
           ),
+        );
+      },
+    );
+  }
 
-          // Recent patients list
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 252,
-              child: _recentPatientsList(),
-            ),
-          ),
+  Widget _overviewMetric({
+    required String label,
+    required String value,
+    required IconData icon,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              child: _languageSettingsCard(),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: isDark
+                  ? [
+                      Colors.white.withValues(alpha: 0.08),
+                      Colors.white.withValues(alpha: 0.04),
+                    ]
+                  : [
+                      Colors.white.withValues(alpha: 0.50),
+                      Colors.white.withValues(alpha: 0.30),
+                    ],
+            ),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.white.withValues(alpha: 0.40),
             ),
           ),
-        ],
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      kTeal.withValues(alpha: 0.20),
+                      kAccentCyan.withValues(alpha: 0.10),
+                    ],
+                  ),
+                ),
+                child: Icon(
+                  icon,
+                  size: 16,
+                  color: isDark ? kAccentCyan : kTeal,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                value,
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: isDark
+                      ? const Color(0xFFE8EEF3)
+                      : const Color(0xFF171A1F),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? const Color(0xFF9FB0BC)
+                      : const Color(0xFF6A7480),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -241,18 +535,22 @@ class _HomePageState extends State<HomePage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final color = _isOnline ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: isDark ? 0.18 : 0.12),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withValues(alpha: 0.45)),
+      borderRadius: BorderRadius.circular(20),
+      blur: 10,
+      gradient: LinearGradient(
+        colors: [
+          color.withValues(alpha: isDark ? 0.15 : 0.10),
+          color.withValues(alpha: isDark ? 0.08 : 0.06),
+        ],
       ),
+      border: Border.all(color: color.withValues(alpha: 0.40)),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            _isOnline ? Icons.wifi : Icons.wifi_off,
+            _isOnline ? Icons.wifi_rounded : Icons.wifi_off_rounded,
             size: 14,
             color: color,
           ),
@@ -281,7 +579,7 @@ class _HomePageState extends State<HomePage> {
             context.l10n.tr('home.dailyTasks'),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
+            style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w800,
               color: isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F),
@@ -300,22 +598,29 @@ class _HomePageState extends State<HomePage> {
             if (!mounted) return;
 
             if (result == true) {
-              final token = context.read<LoginCubit>().state.token!;
-              context.read<TaskCubit>().loadTasks(token);
+              final token = await ref
+                  .read(loginProvider.notifier)
+                  .getValidToken();
+              if (token != null && mounted) {
+                ref.read(taskListProvider.notifier).loadTasks(token);
+              }
             }
           },
           child: Container(
-            width: 36,
-            height: 36,
+            width: 38,
+            height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFDFF4EC),
               borderRadius: BorderRadius.circular(18),
+              gradient: const LinearGradient(colors: [kTeal, kAccentCyan]),
+              boxShadow: [
+                BoxShadow(
+                  color: kTeal.withValues(alpha: 0.35),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Icon(
-              Icons.add,
-              size: 20,
-              color: Color(0xFF54BD9E),
-            ),
+            child: const Icon(Icons.add, size: 20, color: Colors.white),
           ),
         ),
       ],
@@ -330,131 +635,401 @@ class _HomePageState extends State<HomePage> {
       builder: (context, snapshot, _) {
         final queueCount = snapshot.totalQueueCount;
         final hasConflicts = snapshot.conflictCount > 0;
+        final hasRetryableItems =
+            queueCount > 0 || snapshot.retryQueueCount > 0;
+        final isSynced =
+            queueCount == 0 &&
+            snapshot.retryQueueCount == 0 &&
+            snapshot.conflictCount == 0 &&
+            !snapshot.isSyncing;
 
-        return Container(
+        return GlassContainer(
           width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A232C) : Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: hasConflicts
-                  ? const Color(0xFFE67E22)
-                  : (isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC)),
-            ),
+          padding: const EdgeInsets.all(16),
+          borderRadius: BorderRadius.circular(16),
+          blur: 18,
+          gradient: LinearGradient(
+            colors: isDark
+                ? [
+                    Colors.white.withValues(alpha: 0.06),
+                    Colors.white.withValues(alpha: 0.03),
+                  ]
+                : [
+                    Colors.white.withValues(alpha: 0.55),
+                    Colors.white.withValues(alpha: 0.35),
+                  ],
+          ),
+          border: Border.all(
+            color: isSynced
+                ? const Color(0xFF14B8A6).withValues(alpha: 0.3)
+                : hasConflicts
+                ? const Color(0xFFE67E22).withValues(alpha: 0.3)
+                : (isDark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.white.withValues(alpha: 0.5)),
+            width: 1.5,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Header row with title and status indicator
               Row(
                 children: [
-                  Icon(
-                    snapshot.isSyncing ? Icons.sync : Icons.sync_alt,
-                    color: snapshot.isSyncing
-                        ? const Color(0xFF0EA5E9)
-                        : (hasConflicts
-                            ? const Color(0xFFE67E22)
-                            : const Color(0xFF14A7A0)),
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      snapshot.isSyncing
-                          ? context.l10n.tr('sync.syncingNow')
-                          : context.l10n.tr('sync.statusTitle'),
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? const Color(0xFFE6EDF3)
-                            : const Color(0xFF1F252B),
+                  if (snapshot.isSyncing)
+                    RotationTransition(
+                      turns: AlwaysStoppedAnimation(
+                        DateTime.now().millisecondsSinceEpoch / 1500 % 1,
                       ),
+                      child: Icon(
+                        Icons.sync,
+                        color: const Color(0xFF0EA5E9),
+                        size: 20,
+                      ),
+                    )
+                  else
+                    Icon(
+                      isSynced ? Icons.check_circle : Icons.sync_alt,
+                      color: isSynced
+                          ? const Color(0xFF14B8A6)
+                          : hasConflicts
+                          ? const Color(0xFFE67E22)
+                          : (isDark
+                                ? const Color(0xFF9EABB7)
+                                : const Color(0xFF6C7580)),
+                      size: 20,
+                    ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          snapshot.isSyncing
+                              ? 'Syncing in progress...'
+                              : isSynced
+                              ? 'All synced!'
+                              : hasConflicts
+                              ? 'Conflicts detected'
+                              : 'Ready to sync',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: -0.3,
+                            color: isDark
+                                ? const Color(0xFFE6EDF3)
+                                : const Color(0xFF1F252B),
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          snapshot.isSyncing
+                              ? 'Uploading changes...'
+                              : isSynced
+                              ? 'No pending changes'
+                              : '$queueCount pending • ${snapshot.retryQueueCount} failed',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                            color: isDark
+                                ? const Color(0xFF9EABB7)
+                                : const Color(0xFF6C7580),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  if (hasRetryableItems || hasConflicts)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: hasConflicts
+                            ? const Color(0xFFE67E22).withValues(alpha: 0.15)
+                            : const Color(0xFFEAB308).withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        hasConflicts ? '⚠️  Needs action' : '⚡ Retry needed',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: hasConflicts
+                              ? const Color(0xFFE67E22)
+                              : const Color(0xFFEAB308),
+                        ),
+                      ),
+                    ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.tr(
-                  'sync.statusSummary',
-                  args: {
-                    'queue': queueCount.toString(),
-                    'retry': snapshot.retryQueueCount.toString(),
-                    'conflicts': snapshot.conflictCount.toString(),
-                  },
+
+              // Status legend if not synced
+              if (!isSynced) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.hourglass_empty_rounded,
+                        label: 'Pending',
+                        value: queueCount,
+                        color: const Color(0xFF0EA5E9),
+                        isDark: isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.error_outline_rounded,
+                        label: 'Failed',
+                        value: snapshot.retryQueueCount,
+                        color: const Color(0xFFEF4444),
+                        isDark: isDark,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _statBadge(
+                        icon: Icons.merge_type_rounded,
+                        label: 'Conflicts',
+                        value: snapshot.conflictCount,
+                        color: const Color(0xFFE67E22),
+                        isDark: isDark,
+                      ),
+                    ),
+                  ],
                 ),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: isDark
-                      ? const Color(0xFF9EABB7)
-                      : const Color(0xFF6C7580),
-                ),
-              ),
+              ],
+
+              // Error message if present
               if ((snapshot.lastError ?? '').trim().isNotEmpty) ...[
-                const SizedBox(height: 6),
-                Text(
-                  snapshot.lastError!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFFDC2626),
+                const SizedBox(height: 10),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF3E1F1F)
+                        : const Color(0xFFFEE2E2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFDC2626).withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline,
+                        color: Color(0xFFDC2626),
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          snapshot.lastError!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFFDC2626),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  if (queueCount > 0)
-                    Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: snapshot.isSyncing
-                            ? null
-                            : () async {
-                                final loginCubit = context.read<LoginCubit>();
-                                final patientCubit = context.read<PatientCubit>();
-                                final token = loginCubit.state.token;
-                                if (token == null) return;
-                                final synced = await _patientSyncService.sync(token);
-                                if (!mounted) return;
-                                if (synced) {
-                                  patientCubit.loadPatients(token);
-                                }
-                              },
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: Text(context.l10n.tr('sync.retryNow')),
-                      ),
-                    ),
-                  if (queueCount > 0 && hasConflicts) const SizedBox(width: 8),
-                  if (hasConflicts)
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFE67E22),
-                          foregroundColor: Colors.white,
+
+              // Action buttons
+              if (hasRetryableItems || hasConflicts) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    if (hasRetryableItems)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            backgroundColor: const Color(0xFF0EA5E9),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: snapshot.isSyncing
+                              ? null
+                              : () async {
+                                  final token = await ref
+                                      .read(loginProvider.notifier)
+                                      .getValidToken();
+                                  if (token == null) return;
+                                  await _patientSyncService.refreshSyncStatus();
+                                  final synced = await _patientSyncService.sync(
+                                    token,
+                                  );
+                                  if (!mounted) return;
+                                  if (synced) {
+                                    ref
+                                        .read(patientListProvider.notifier)
+                                        .loadPatients(token);
+                                  }
+                                },
+                          icon: snapshot.isSyncing
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Icon(Icons.refresh, size: 16),
+                          label: Text(
+                            snapshot.isSyncing ? 'Syncing...' : 'Retry Now',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
                         ),
-                        onPressed: () async {
-                          final loginCubit = context.read<LoginCubit>();
-                          final patientCubit = context.read<PatientCubit>();
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const PatientSyncConflictsPage(),
+                      ),
+                    if (hasRetryableItems && hasConflicts)
+                      const SizedBox(width: 8),
+                    if (hasConflicts)
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            backgroundColor: const Color(0xFFE67E22),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () async {
+                            // ignore: use_build_context_synchronously
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const PatientSyncConflictsPage(),
+                              ),
+                            );
+                            if (!mounted) return;
+                            final token = await ref
+                                .read(loginProvider.notifier)
+                                .getValidToken();
+                            if (token != null) {
+                              ref
+                                  .read(patientListProvider.notifier)
+                                  .loadPatients(token);
+                            }
+                            await _patientSyncService.refreshSyncStatus();
+                          },
+                          icon: const Icon(Icons.merge_type, size: 16),
+                          label: const Text(
+                            'Resolve',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: isDark
+                            ? const Color(0xFF9EABB7)
+                            : const Color(0xFF6C7580),
+                      ),
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'reset',
+                          child: const Row(
+                            children: [
+                              Icon(Icons.delete_sweep, size: 18),
+                              SizedBox(width: 8),
+                              Text('Clear all data'),
+                            ],
+                          ),
+                        ),
+                      ],
+                      onSelected: (value) async {
+                        if (value == 'reset') {
+                          final didConfirm = await showDialog<bool>(
+                            context: context,
+                            builder: (dialogContext) => AlertDialog(
+                              backgroundColor: isDark
+                                  ? const Color(0xFF1A232C)
+                                  : Colors.white,
+                              title: Text(
+                                'Clear all sync data?',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFFE6EDF3)
+                                      : const Color(0xFF1F252B),
+                                ),
+                              ),
+                              content: Text(
+                                'This will delete all offline queue items, conflicts, and sync history. This action cannot be undone.',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFF9EABB7)
+                                      : const Color(0xFF6C7580),
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, false),
+                                  child: const Text('Cancel'),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(dialogContext, true),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.red,
+                                  ),
+                                  child: const Text('Clear'),
+                                ),
+                              ],
                             ),
                           );
-                          if (!mounted) return;
-                          final token = loginCubit.state.token;
-                          if (token != null) {
-                            patientCubit.loadPatients(token);
+
+                          if (didConfirm == true) {
+                            if (!mounted) return;
+                            await _patientSyncService.resetAllData();
+                            await _taskSyncService.resetAllData();
+                            await _patientSyncService.refreshSyncStatus();
+                            if (!mounted) return;
+                            // ignore: use_build_context_synchronously
+                            ScaffoldMessenger.of(
+                              // ignore: use_build_context_synchronously
+                              context,
+                            ).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Sync data cleared successfully.',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
                           }
-                          await _patientSyncService.refreshSyncStatus();
-                        },
-                        icon: const Icon(Icons.merge_type, size: 16),
-                        label: Text(context.l10n.tr('sync.resolveConflicts')),
-                      ),
+                        }
+                      },
                     ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ),
         );
@@ -462,9 +1037,50 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _statBadge({
+    required IconData icon,
+    required String label,
+    required int value,
+    required Color color,
+    required bool isDark,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: isDark ? 0.15 : 0.08),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 18),
+          const SizedBox(height: 4),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              fontSize: 16,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF6C7580),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _taskSliverList() {
-    return BlocBuilder<TaskCubit, TaskState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(taskListProvider);
         if (state.loading && state.tasks.isEmpty) {
           return _buildTaskSkeletonSliver();
         }
@@ -491,8 +1107,9 @@ class _HomePageState extends State<HomePage> {
   // ================= PATIENTS =================
 
   Widget _recentPatientsList() {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         if (state.loading && state.patients.isEmpty) {
           return _buildRecentPatientsSkeleton();
         }
@@ -501,8 +1118,14 @@ class _HomePageState extends State<HomePage> {
           return Center(child: Text(context.l10n.tr('home.noPatientsFound')));
         }
 
+        // ✅ SORT BY RECENCY: Most recently updated/created first
         final recentPatients = [...state.patients]
-          ..sort((a, b) => (b.id ?? -1).compareTo(a.id ?? -1));
+          ..sort((a, b) {
+            // Use updatedAt for sorting (most recent first)
+            final aTime = a.updatedAt ?? (a.id ?? -1);
+            final bTime = b.updatedAt ?? (b.id ?? -1);
+            return bTime.compareTo(aTime); // Descending: newest first
+          });
         final visiblePatients = recentPatients.take(5).toList();
 
         return ListView.separated(
@@ -520,8 +1143,12 @@ class _HomePageState extends State<HomePage> {
 
   SliverToBoxAdapter _buildTaskSkeletonSliver() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+    final baseColor = isDark
+        ? const Color(0xFF1A232C)
+        : const Color(0xFFE9EDF1);
+    final highlightColor = isDark
+        ? const Color(0xFF2A3642)
+        : const Color(0xFFF6F8FA);
 
     return SliverToBoxAdapter(
       child: Shimmer.fromColors(
@@ -537,7 +1164,9 @@ class _HomePageState extends State<HomePage> {
                 color: isDark ? const Color(0xFF1A232C) : Colors.white,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE9EDF0),
+                  color: isDark
+                      ? const Color(0xFF2A3642)
+                      : const Color(0xFFE9EDF0),
                 ),
               ),
               child: Row(
@@ -567,8 +1196,12 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildRecentPatientsSkeleton() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+    final baseColor = isDark
+        ? const Color(0xFF1A232C)
+        : const Color(0xFFE9EDF1);
+    final highlightColor = isDark
+        ? const Color(0xFF2A3642)
+        : const Color(0xFFF6F8FA);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -587,7 +1220,9 @@ class _HomePageState extends State<HomePage> {
               color: isDark ? const Color(0xFF1A232C) : Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC),
+                color: isDark
+                    ? const Color(0xFF2A3642)
+                    : const Color(0xFFE5E8EC),
               ),
             ),
             child: Column(
@@ -607,23 +1242,26 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _skeletonBox(double width, double height, Color color,
-      {bool circular = false}) {
+  Widget _skeletonBox(
+    double width,
+    double height,
+    Color color, {
+    bool circular = false,
+  }) {
     return Container(
       width: width,
       height: height,
       decoration: BoxDecoration(
         color: color,
-        borderRadius:
-            circular ? BorderRadius.circular(height / 2) : BorderRadius.circular(8),
+        borderRadius: circular
+            ? BorderRadius.circular(height / 2)
+            : BorderRadius.circular(8),
       ),
     );
   }
 
   Widget _patientCard(Patient patient) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final cardBg = isDark ? const Color(0xFF1A232C) : Colors.white;
-    final cardBorder = isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC);
 
     final String? photo = patient.photoPath;
     String? localPath;
@@ -634,16 +1272,18 @@ class _HomePageState extends State<HomePage> {
       final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
 
       // Server stores relative paths like "/uploads/patients/1/profile.jpg"
-          if (normalizedPhoto.startsWith('/uploads/') || normalizedPhoto.contains('/uploads/')) {
-            networkUrl = "${AppConfig.apiBaseUrl}$normalizedPhoto";
-          } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) || isWindowsAbsolutePath) {
+      if (normalizedPhoto.startsWith('/uploads/') ||
+          normalizedPhoto.contains('/uploads/')) {
+        networkUrl = "${AppConfig.apiBaseUrl}$normalizedPhoto";
+      } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) ||
+          isWindowsAbsolutePath) {
         // Assume absolute local file path on device
         localPath = photo;
       } else if (photo.startsWith('http')) {
         networkUrl = photo;
       } else {
         // Treat as relative server path
-            networkUrl = "${AppConfig.apiBaseUrl}/$normalizedPhoto";
+        networkUrl = "${AppConfig.apiBaseUrl}/$normalizedPhoto";
       }
     }
 
@@ -655,7 +1295,7 @@ class _HomePageState extends State<HomePage> {
       imageProvider = NetworkImage(networkUrl);
     }
 
-    return InkWell(
+    return GestureDetector(
       onTap: () async {
         final deleted = await Navigator.push(
           context,
@@ -667,35 +1307,30 @@ class _HomePageState extends State<HomePage> {
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = context.read<LoginCubit>().state.token!;
-          context.read<PatientCubit>().loadPatients(token);
+          final token = await ref.read(loginProvider.notifier).getValidToken();
+          if (token != null && mounted) {
+            ref.read(patientListProvider.notifier).loadPatients(token);
+          }
         }
       },
 
-      child: Container(
+      child: GlassContainer(
         width: 150,
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cardBorder),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
+        borderRadius: BorderRadius.circular(18),
+        blur: 12,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: const Color(0xFFE5EDF3),
+              backgroundColor: kTeal.withValues(alpha: isDark ? 0.15 : 0.12),
               backgroundImage: imageProvider,
               child: imageProvider == null
-                  ? const Icon(Icons.person, color: Color(0xFF80909A))
+                  ? Icon(
+                      Icons.person_rounded,
+                      color: isDark ? kAccentCyan : kTeal,
+                    )
                   : null,
             ),
             const SizedBox(height: 10),
@@ -707,7 +1342,9 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329),
+                color: isDark
+                    ? const Color(0xFFE6EDF3)
+                    : const Color(0xFF202329),
               ),
             ),
             const SizedBox(height: 4),
@@ -718,9 +1355,51 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.3,
-                color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF7B838C),
+                color: isDark
+                    ? const Color(0xFF9EABB7)
+                    : const Color(0xFF7B838C),
               ),
             ),
+            const SizedBox(height: 8),
+            Text(
+              [
+                if (patient.caste.trim().isNotEmpty) patient.caste.trim(),
+                if (patient.phoneNumber.trim().isNotEmpty)
+                  patient.phoneNumber.trim(),
+              ].join('  •  '),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? const Color(0xFF98A7B2)
+                    : const Color(0xFF70808C),
+              ),
+            ),
+            if (patient.isPregnant ||
+                patient.activeDiseaseLabels.isNotEmpty) ...[
+              const SizedBox(height: 6),
+              Text(
+                [
+                  if (patient.isPregnant)
+                    'Pregnant${patient.monthsOfPregnancy != null ? ' (${patient.monthsOfPregnancy} mo)' : ''}',
+                  if (patient.activeDiseaseLabels.isNotEmpty)
+                    patient.activeDiseaseLabels.take(2).join(', '),
+                ].join('  •  '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  height: 1.25,
+                  color: isDark
+                      ? const Color(0xFFB2C0CC)
+                      : const Color(0xFF63707D),
+                ),
+              ),
+            ],
             const SizedBox(height: 8),
             Text(
               patient.description.trim().isEmpty
@@ -732,7 +1411,9 @@ class _HomePageState extends State<HomePage> {
               style: TextStyle(
                 fontSize: 11,
                 height: 1.25,
-                color: isDark ? const Color(0xFFB2C0CC) : const Color(0xFF63707D),
+                color: isDark
+                    ? const Color(0xFFB2C0CC)
+                    : const Color(0xFF63707D),
               ),
             ),
             const Spacer(),
@@ -740,9 +1421,8 @@ class _HomePageState extends State<HomePage> {
               width: double.infinity,
               height: 32,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFFFF5),
+                gradient: const LinearGradient(colors: [kTeal, kAccentCyan]),
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFA9E1C2)),
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -750,15 +1430,16 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     context.l10n.tr('common.view'),
                     style: const TextStyle(
-                      color: _accentTextColor,
+                      color: Colors.white,
                       fontWeight: FontWeight.w700,
+                      fontSize: 13,
                     ),
                   ),
-                  SizedBox(width: 6),
-                  Icon(
-                    Icons.chevron_right,
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.chevron_right_rounded,
                     size: 16,
-                    color: Color(0xFF49BD83),
+                    color: Colors.white,
                   ),
                 ],
               ),
@@ -783,16 +1464,14 @@ class _HomePageState extends State<HomePage> {
   Widget _languageSettingsCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = context.l10n;
-    final currentCode = LanguageController.notifierOf(context).value.languageCode;
+    final currentCode = LanguageController.notifierOf(
+      context,
+    ).value.languageCode;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E8EC),
-        ),
-      ),
+    return GlassContainer(
+      padding: EdgeInsets.zero,
+      borderRadius: BorderRadius.circular(20),
+      blur: 14,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -800,20 +1479,24 @@ class _HomePageState extends State<HomePage> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Text(
               l10n.tr('home.settings'),
-              style: TextStyle(
+              style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B),
+                color: isDark
+                    ? const Color(0xFFE6EDF3)
+                    : const Color(0xFF1F252B),
               ),
             ),
           ),
           ListTile(
-            leading: const Icon(Icons.translate),
+            leading: Icon(Icons.translate, color: isDark ? kAccentCyan : kTeal),
             title: Text(l10n.tr('home.language')),
             trailing: Text(
               AppLocalizations.nativeLanguageNames[currentCode] ?? 'Hindi',
               style: TextStyle(
-                color: isDark ? const Color(0xFFA5B3BF) : const Color(0xFF6C7580),
+                color: isDark
+                    ? const Color(0xFFA5B3BF)
+                    : const Color(0xFF6C7580),
               ),
             ),
             onTap: _showLanguageSelector,
@@ -831,113 +1514,332 @@ class _HomePageState extends State<HomePage> {
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      clipBehavior: Clip.antiAlias,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.45),
+      clipBehavior: Clip.none,
       builder: (modalContext) {
+        final isDarkSheet = Theme.of(context).brightness == Brightness.dark;
         return StatefulBuilder(
           builder: (sheetContext, setSheetState) {
             final media = MediaQuery.of(modalContext);
             final maxHeight = media.size.height * 0.86;
 
-            return SafeArea(
-              top: false,
-              child: SizedBox(
-                height: maxHeight,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Column(
-                          children: [
-                            Text(
-                              l10n.tr('common.selectLanguage'),
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              l10n.tr('common.languageHint'),
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Theme.of(context).brightness == Brightness.dark
-                                    ? const Color(0xFF9AA7B3)
-                                    : const Color(0xFF7E8792),
-                              ),
-                            ),
-                          ],
+            return ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    height: maxHeight,
+                    decoration: BoxDecoration(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: isDarkSheet
+                            ? [
+                                const Color(0xFF0E1A20).withValues(alpha: 0.92),
+                                const Color(0xFF0B1318).withValues(alpha: 0.96),
+                              ]
+                            : [
+                                const Color(0xFFEAF7F5).withValues(alpha: 0.88),
+                                Colors.white.withValues(alpha: 0.80),
+                              ],
+                      ),
+                      border: Border(
+                        top: BorderSide(
+                          color: isDarkSheet
+                              ? kTeal.withValues(alpha: 0.30)
+                              : kTeal.withValues(alpha: 0.45),
+                          width: 1.5,
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      const Divider(height: 1),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: LanguageStorage.supportedLanguageCodes.length,
-                          itemBuilder: (listContext, index) {
-                            final code = LanguageStorage.supportedLanguageCodes[index];
-                            final isSelected = selectedCode == code;
-                            return ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              onTap: () {
-                                setSheetState(() {
-                                  selectedCode = code;
-                                });
-                              },
-                              leading: Icon(
-                                isSelected
-                                    ? Icons.radio_button_checked
-                                    : Icons.radio_button_unchecked,
-                                color: isSelected
-                                    ? const Color(0xFF14A7A0)
-                                    : Theme.of(context).brightness == Brightness.dark
-                                        ? const Color(0xFF99A6B2)
-                                        : const Color(0xFF7A8592),
-                              ),
-                              title: Text(
-                                AppLocalizations.nativeLanguageNames[code] ?? code,
-                              ),
-                              subtitle: Text(
-                                AppLocalizations.nativeLanguageScripts[code] ?? '',
-                                style: TextStyle(
-                                  color: Theme.of(context).brightness == Brightness.dark
-                                      ? const Color(0xFF99A6B2)
-                                      : const Color(0xFF7A8592),
-                                ),
-                              ),
-                            );
-                          },
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(
+                            alpha: isDarkSheet ? 0.5 : 0.12,
+                          ),
+                          blurRadius: 40,
+                          offset: const Offset(0, -8),
                         ),
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
+                      ],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed: () => Navigator.pop(modalContext, false),
-                              child: Text(l10n.tr('common.cancel')),
+                          // Handle pill
+                          Center(
+                            child: Container(
+                              width: 44,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: isDarkSheet
+                                    ? Colors.white.withValues(alpha: 0.20)
+                                    : kTeal.withValues(alpha: 0.35),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF14A7A0),
-                                foregroundColor: Colors.white,
-                              ),
-                              onPressed: () => Navigator.pop(modalContext, true),
-                              child: Text(l10n.tr('common.confirmSelection')),
+                          const SizedBox(height: 18),
+                          // Title
+                          Center(
+                            child: Column(
+                              children: [
+                                ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    colors: [kTeal, kAccentCyan],
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    l10n.tr('common.selectLanguage'),
+                                    style: GoogleFonts.outfit(
+                                      fontSize: 26,
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 5),
+                                Text(
+                                  l10n.tr('common.languageHint'),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: isDarkSheet
+                                        ? const Color(0xFF8A9BAA)
+                                        : const Color(0xFF5A6878),
+                                  ),
+                                ),
+                              ],
                             ),
+                          ),
+                          const SizedBox(height: 18),
+                          // Divider
+                          Container(
+                            height: 1,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  Colors.transparent,
+                                  isDarkSheet
+                                      ? kTeal.withValues(alpha: 0.35)
+                                      : kTeal.withValues(alpha: 0.30),
+                                  Colors.transparent,
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          // Language list
+                          Expanded(
+                            child: ListView.separated(
+                              itemCount:
+                                  LanguageStorage.supportedLanguageCodes.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 8),
+                              itemBuilder: (listContext, index) {
+                                final code = LanguageStorage
+                                    .supportedLanguageCodes[index];
+                                final isSelected = selectedCode == code;
+                                return GestureDetector(
+                                  onTap: () =>
+                                      setSheetState(() => selectedCode = code),
+                                  child: AnimatedContainer(
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.easeOutCubic,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      gradient: LinearGradient(
+                                        colors: isSelected
+                                            ? [
+                                                kTeal.withValues(
+                                                  alpha: isDarkSheet
+                                                      ? 0.30
+                                                      : 0.18,
+                                                ),
+                                                kAccentCyan.withValues(
+                                                  alpha: isDarkSheet
+                                                      ? 0.15
+                                                      : 0.10,
+                                                ),
+                                              ]
+                                            : [
+                                                Colors.white.withValues(
+                                                  alpha: isDarkSheet
+                                                      ? 0.06
+                                                      : 0.45,
+                                                ),
+                                                Colors.white.withValues(
+                                                  alpha: isDarkSheet
+                                                      ? 0.03
+                                                      : 0.25,
+                                                ),
+                                              ],
+                                      ),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? kTeal.withValues(
+                                                alpha: isDarkSheet
+                                                    ? 0.55
+                                                    : 0.65,
+                                              )
+                                            : (isDarkSheet
+                                                  ? Colors.white.withValues(
+                                                      alpha: 0.07,
+                                                    )
+                                                  : kTeal.withValues(
+                                                      alpha: 0.15,
+                                                    )),
+                                        width: isSelected ? 1.5 : 1.0,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 200,
+                                          ),
+                                          width: 22,
+                                          height: 22,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            color: isSelected
+                                                ? kTeal
+                                                : Colors.transparent,
+                                            border: Border.all(
+                                              color: isSelected
+                                                  ? kTeal
+                                                  : (isDarkSheet
+                                                        ? const Color(
+                                                            0xFF6A7D8A,
+                                                          )
+                                                        : const Color(
+                                                            0xFF9AABB8,
+                                                          )),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: isSelected
+                                              ? const Icon(
+                                                  Icons.check,
+                                                  size: 13,
+                                                  color: Colors.white,
+                                                )
+                                              : null,
+                                        ),
+                                        const SizedBox(width: 14),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                AppLocalizations
+                                                        .nativeLanguageNames[code] ??
+                                                    code,
+                                                style: TextStyle(
+                                                  fontSize: 15,
+                                                  fontWeight: isSelected
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500,
+                                                  color: isSelected
+                                                      ? (isDarkSheet
+                                                            ? kAccentCyan
+                                                            : kTeal)
+                                                      : (isDarkSheet
+                                                            ? const Color(
+                                                                0xFFD2DDE8,
+                                                              )
+                                                            : const Color(
+                                                                0xFF1E2830,
+                                                              )),
+                                                ),
+                                              ),
+                                              Text(
+                                                AppLocalizations
+                                                        .nativeLanguageScripts[code] ??
+                                                    '',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: isDarkSheet
+                                                      ? const Color(0xFF7A8D9A)
+                                                      : const Color(0xFF7A8D9A),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          // Action buttons
+                          Row(
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () =>
+                                      Navigator.pop(modalContext, false),
+                                  child: Container(
+                                    height: 52,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: isDarkSheet
+                                            ? Colors.white.withValues(
+                                                alpha: 0.15,
+                                              )
+                                            : kTeal.withValues(alpha: 0.35),
+                                      ),
+                                      color: isDarkSheet
+                                          ? Colors.white.withValues(alpha: 0.06)
+                                          : Colors.white.withValues(
+                                              alpha: 0.50,
+                                            ),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        l10n.tr('common.cancel'),
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w600,
+                                          color: isDarkSheet
+                                              ? const Color(0xFFB0C0CC)
+                                              : const Color(0xFF3A5060),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GlassButton(
+                                  label: l10n.tr('common.confirmSelection'),
+                                  height: 52,
+                                  onPressed: () =>
+                                      Navigator.pop(modalContext, true),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

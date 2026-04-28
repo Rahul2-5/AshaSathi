@@ -50,11 +50,12 @@ class AppDatabaseOffline {
         description TEXT,
         phoneNumber TEXT NOT NULL,
         photoPath TEXT,
-        caste TEXT DEFAULT '',
+        caste TEXT,
         isPregnant INTEGER DEFAULT 0,
         monthsOfPregnancy INTEGER,
         expectedDeliveryDate TEXT,
-        medicalConditions TEXT DEFAULT '',
+        declinedHealthInfo INTEGER DEFAULT 0,
+        diseases TEXT,
         syncStatus INTEGER NOT NULL,
         updatedAt INTEGER NOT NULL,
         retryCount INTEGER NOT NULL DEFAULT 0,
@@ -131,11 +132,12 @@ class AppDatabaseOffline {
     }
 
     if (oldVersion < 6) {
+      // Add missing health-related columns
       await _addColumnIfMissing(
         db,
         table: patientTable,
         column: 'caste',
-        definition: "TEXT DEFAULT ''",
+        definition: 'TEXT',
       );
       await _addColumnIfMissing(
         db,
@@ -158,8 +160,14 @@ class AppDatabaseOffline {
       await _addColumnIfMissing(
         db,
         table: patientTable,
-        column: 'medicalConditions',
-        definition: "TEXT DEFAULT ''",
+        column: 'declinedHealthInfo',
+        definition: 'INTEGER DEFAULT 0',
+      );
+      await _addColumnIfMissing(
+        db,
+        table: patientTable,
+        column: 'diseases',
+        definition: 'TEXT',
       );
     }
   }
@@ -174,5 +182,12 @@ class AppDatabaseOffline {
     final exists = cols.any((c) => c['name'] == column);
     if (exists) return;
     await db.execute('ALTER TABLE $table ADD COLUMN $column $definition');
+  }
+
+  /// Clear all offline data from patients and tasks tables
+  Future<void> clearAllData() async {
+    final db = await database;
+    await db.delete(patientTable);
+    await db.delete(taskTable);
   }
 }

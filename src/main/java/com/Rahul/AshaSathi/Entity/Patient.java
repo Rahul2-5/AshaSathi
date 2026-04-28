@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "patients")
+@SuppressWarnings("unused")
 public class Patient {
 
     @Id
@@ -21,6 +22,19 @@ public class Patient {
     private LocalDate dateOfBirth;
 
     private String gender;
+
+    private String caste;
+
+    private Boolean isPregnant;
+
+    private Integer monthsOfPregnancy;
+
+    private String expectedDeliveryDate;
+
+    private Boolean declinedHealthInfo;
+
+    @Column(columnDefinition = "TEXT")
+    private String diseases;
 
     private String address;
 
@@ -93,6 +107,54 @@ public class Patient {
 
     public void setGender(String gender) {
         this.gender = gender;
+    }
+
+    public String getCaste() {
+        return caste;
+    }
+
+    public void setCaste(String caste) {
+        this.caste = caste;
+    }
+
+    public Boolean getIsPregnant() {
+        return isPregnant;
+    }
+
+    public void setIsPregnant(Boolean isPregnant) {
+        this.isPregnant = isPregnant;
+    }
+
+    public Integer getMonthsOfPregnancy() {
+        return monthsOfPregnancy;
+    }
+
+    public void setMonthsOfPregnancy(Integer monthsOfPregnancy) {
+        this.monthsOfPregnancy = monthsOfPregnancy;
+    }
+
+    public String getExpectedDeliveryDate() {
+        return expectedDeliveryDate;
+    }
+
+    public void setExpectedDeliveryDate(String expectedDeliveryDate) {
+        this.expectedDeliveryDate = expectedDeliveryDate;
+    }
+
+    public Boolean getDeclinedHealthInfo() {
+        return declinedHealthInfo;
+    }
+
+    public void setDeclinedHealthInfo(Boolean declinedHealthInfo) {
+        this.declinedHealthInfo = declinedHealthInfo;
+    }
+
+    public String getDiseases() {
+        return diseases;
+    }
+
+    public void setDiseases(String diseases) {
+        this.diseases = diseases;
     }
 
     public String getAddress() {

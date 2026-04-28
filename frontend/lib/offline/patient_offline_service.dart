@@ -17,8 +17,9 @@ class PatientOfflineService {
     String caste = '',
     bool isPregnant = false,
     int? monthsOfPregnancy,
-    String? expectedDeliveryDate,
-    List<String> medicalConditions = const [],
+    String expectedDeliveryDate = '',
+    Map<String, bool> diseases = const {},
+    bool declinedHealthInfo = false,
   }) async {
     final patient = PatientOfflineEntity(
       name: name,
@@ -30,10 +31,11 @@ class PatientOfflineService {
       phoneNumber: phoneNumber,
       photoPath: photoPath,
       caste: caste,
-      isPregnant: isPregnant ? 1 : 0,
+      isPregnant: isPregnant,
       monthsOfPregnancy: monthsOfPregnancy,
       expectedDeliveryDate: expectedDeliveryDate,
-      medicalConditions: medicalConditions.join(','),
+      diseases: diseases,
+      declinedHealthInfo: declinedHealthInfo,
       syncStatus: SyncStatusOffline.pending,
     );
 

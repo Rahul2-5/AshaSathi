@@ -1,13 +1,16 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
+import 'package:frontend/utils/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../auth/cubit/login_cubit.dart';
-import '../auth/cubit/patient_cubit.dart';
+import '../providers/login_provider.dart';
+import '../providers/patient_provider.dart';
 import 'patient_detail_page.dart';
 import 'patient_model.dart';
 
@@ -15,14 +18,14 @@ enum _GenderFilter { all, male, female, others }
 
 enum _SortBy { newest, oldest, nameAZ }
 
-class PatientsListPage extends StatefulWidget {
+class PatientsListPage extends ConsumerStatefulWidget {
   const PatientsListPage({super.key});
 
   @override
-  State<PatientsListPage> createState() => _PatientsListPageState();
+  ConsumerState<PatientsListPage> createState() => _PatientsListPageState();
 }
 
-class _PatientsListPageState extends State<PatientsListPage> {
+class _PatientsListPageState extends ConsumerState<PatientsListPage> {
   static String get _baseUrl => AppConfig.apiBaseUrl;
 
   final TextEditingController _searchController = TextEditingController();
@@ -32,15 +35,15 @@ class _PatientsListPageState extends State<PatientsListPage> {
   _SortBy _sortBy = _SortBy.newest;
 
   bool get _isCompact => MediaQuery.sizeOf(context).width <= 380;
-  double get _horizontalPad => _isCompact ? 10 : 14;
-  double get _sectionGap => _isCompact ? 8 : 10;
+  double get _horizontalPad => _isCompact ? 12 : 16;
+  double get _sectionGap => _isCompact ? 10 : 12;
 
   @override
   void initState() {
     super.initState();
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
     if (token != null) {
-      context.read<PatientCubit>().loadPatients(token);
+      ref.read(patientListProvider.notifier).loadPatients(token);
     }
   }
 
@@ -53,49 +56,84 @@ class _PatientsListPageState extends State<PatientsListPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = Theme.of(context).scaffoldBackgroundColor;
-    final border = isDark ? const Color(0xFF31414F) : const Color(0xFFDDE3E8);
-    final titleColor = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1A1E24);
 
     return Scaffold(
-      backgroundColor: bg,
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: titleColor),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          context.l10n.tr('patients.title'),
-          style: TextStyle(
-            color: titleColor,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        centerTitle: false,
-      ),
-      body: Column(
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          Container(height: 1, color: border),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(_horizontalPad, _sectionGap, _horizontalPad, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSearchBox(),
-                  SizedBox(height: _sectionGap),
-                  _buildFiltersHeader(),
-                  SizedBox(height: _isCompact ? 6 : 8),
-                  _buildFilters(),
-                  SizedBox(height: _isCompact ? 10 : 12),
-                  _recordsHeader(),
-                  SizedBox(height: _isCompact ? 6 : 8),
-                  Expanded(child: _buildPatientsList()),
-                ],
+          // Gradient background
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [Color(0xFF0B1120), Color(0xFF0E1A26)]
+                    : const [Color(0xFFE4F7F4), Color(0xFFEEF4FF), Color(0xFFF7FBFF)],
               ),
+            ),
+          ),
+          // Glass orbs
+          Positioned(
+            top: -80,
+            right: -60,
+            child: _buildOrb(
+              240,
+              isDark
+                  ? kTeal.withValues(alpha: 0.10)
+                  : kTeal.withValues(alpha: 0.16),
+            ),
+          ),
+          Positioned(
+            bottom: -100,
+            left: -80,
+            child: _buildOrb(
+              280,
+              isDark
+                  ? kAccentCyan.withValues(alpha: 0.06)
+                  : kAccentCyan.withValues(alpha: 0.12),
+            ),
+          ),
+          // Main scaffold
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: _buildGlassAppBar(isDark),
+            body: Column(
+              children: [
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      _horizontalPad,
+                      _sectionGap,
+                      _horizontalPad,
+                      0,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _heroSummary(),
+                        SizedBox(height: _sectionGap),
+                        GlassSearchBar(
+                          controller: _searchController,
+                          hintText: context.l10n.tr('patients.searchHint'),
+                          onChanged: (v) =>
+                              setState(() => _query = v.trim().toLowerCase()),
+                          height: 44,
+                        ),
+                        SizedBox(height: _sectionGap),
+                        _buildFiltersHeader(),
+                        SizedBox(height: _isCompact ? 6 : 8),
+                        _buildFilters(),
+                        SizedBox(height: _isCompact ? 10 : 12),
+                        _recordsHeader(),
+                        SizedBox(height: _isCompact ? 6 : 8),
+                        Expanded(child: _buildPatientsList()),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -103,43 +141,130 @@ class _PatientsListPageState extends State<PatientsListPage> {
     );
   }
 
-  Widget _buildSearchBox() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  Widget _buildOrb(double size, Color color) {
     return Container(
-      height: _isCompact ? 38 : 40,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: isDark ? const Color(0xFF31414F) : const Color(0xFFDDE3E8),
+        shape: BoxShape.circle,
+        gradient: RadialGradient(colors: [color, Colors.transparent]),
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildGlassAppBar(bool isDark) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: AppBar(
+            backgroundColor: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.65),
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1A1E24),
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              context.l10n.tr('patients.title'),
+              style: GoogleFonts.outfit(
+                color: isDark
+                    ? const Color(0xFFE6EDF3)
+                    : const Color(0xFF1A1E24),
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            centerTitle: false,
+          ),
         ),
       ),
-      child: TextField(
-        controller: _searchController,
-        onChanged: (value) {
-          setState(() {
-            _query = value.trim().toLowerCase();
-          });
-        },
-        style: TextStyle(
-          fontSize: 12,
-          color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF1D232B),
-        ),
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          prefixIcon: Icon(
-            Icons.search,
-            size: 16,
-            color: isDark ? const Color(0xFFA5B3BF) : const Color(0xFF88939D),
+    );
+  }
+
+  Widget _heroSummary() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Consumer(
+      builder: (context, ref, _) {
+        final state = ref.watch(patientListProvider);
+        final filtered = _applyFilters(state.patients);
+
+        return GlassContainer(
+          padding: EdgeInsets.fromLTRB(
+            _isCompact ? 14 : 16,
+            _isCompact ? 14 : 16,
+            _isCompact ? 14 : 16,
+            _isCompact ? 12 : 14,
           ),
-          hintText: context.l10n.tr('patients.searchHint'),
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: isDark ? const Color(0xFF8B99A6) : const Color(0xFF98A2AC),
+          borderRadius: BorderRadius.circular(22),
+          blur: 14,
+          child: Row(
+            children: [
+              Container(
+                width: _isCompact ? 46 : 52,
+                height: _isCompact ? 46 : 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [kTeal, kAccentCyan],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: kTeal.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.people_alt_outlined,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              SizedBox(width: _isCompact ? 12 : 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${filtered.length} visible patients',
+                      style: GoogleFonts.outfit(
+                        fontSize: _isCompact ? 16 : 18,
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? const Color(0xFFE6EDF3)
+                            : const Color(0xFF1A1E24),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      state.loading
+                          ? 'Refreshing patient records...'
+                          : 'Search, filter, and open records quickly.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        height: 1.4,
+                        color: isDark
+                            ? const Color(0xFFA5B3BF)
+                            : const Color(0xFF667384),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          contentPadding: EdgeInsets.symmetric(vertical: _isCompact ? 10 : 11),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -157,12 +282,12 @@ class _PatientsListPageState extends State<PatientsListPage> {
           ),
         ),
         const Spacer(),
-        InkWell(
+        GestureDetector(
           onTap: _clearFilters,
           child: Text(
             context.l10n.tr('common.clear'),
             style: TextStyle(
-              color: Color(0xFF23A7CB),
+              color: isDark ? kAccentCyan : kTeal,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -177,27 +302,27 @@ class _PatientsListPageState extends State<PatientsListPage> {
       spacing: _isCompact ? 6 : 8,
       runSpacing: _isCompact ? 6 : 8,
       children: [
-        _chip(
+        GlassChip(
           label: context.l10n.tr('patients.allGender'),
           selected: _genderFilter == _GenderFilter.all,
           onTap: () => setState(() => _genderFilter = _GenderFilter.all),
         ),
-        _chip(
+        GlassChip(
           label: context.l10n.tr('patient.male'),
           selected: _genderFilter == _GenderFilter.male,
           onTap: () => setState(() => _genderFilter = _GenderFilter.male),
         ),
-        _chip(
+        GlassChip(
           label: context.l10n.tr('patient.female'),
           selected: _genderFilter == _GenderFilter.female,
           onTap: () => setState(() => _genderFilter = _GenderFilter.female),
         ),
-        _chip(
+        GlassChip(
           label: context.l10n.tr('patients.others'),
           selected: _genderFilter == _GenderFilter.others,
           onTap: () => setState(() => _genderFilter = _GenderFilter.others),
         ),
-        _chip(
+        GlassChip(
           label: context.l10n.tr('patients.age18to35'),
           selected: _age18to35,
           onTap: () => setState(() => _age18to35 = !_age18to35),
@@ -206,56 +331,21 @@ class _PatientsListPageState extends State<PatientsListPage> {
     );
   }
 
-  Widget _chip({
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: _isCompact ? 11 : 12,
-          vertical: _isCompact ? 6 : 7,
-        ),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF27A8BE)
-              : (isDark ? const Color(0xFF222D38) : const Color(0xFFF2F5F7)),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF27A8BE)
-                : (isDark ? const Color(0xFF32414E) : const Color(0xFFE2E7EB)),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? Colors.white
-                : (isDark ? const Color(0xFFC0CDD8) : const Color(0xFF626E7A)),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _recordsHeader() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        BlocBuilder<PatientCubit, PatientState>(
-          builder: (context, state) {
+        Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(patientListProvider);
             final filtered = _applyFilters(state.patients);
             return Text(
-              context.l10n.tr('patients.recentRecords', args: {'count': filtered.length.toString()}),
+              context.l10n.tr('patients.recentRecords',
+                  args: {'count': filtered.length.toString()}),
               style: TextStyle(
-                color: isDark ? const Color(0xFFAAB8C4) : const Color(0xFF5D6975),
+                color: isDark
+                    ? const Color(0xFFAAB8C4)
+                    : const Color(0xFF5D6975),
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
@@ -270,18 +360,16 @@ class _PatientsListPageState extends State<PatientsListPage> {
           elevation: 10,
           position: PopupMenuPosition.under,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(14),
             side: BorderSide(
-              color: isDark ? const Color(0xFF31414F) : const Color(0xFFE3E8EE),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : Colors.black.withValues(alpha: 0.08),
             ),
           ),
           constraints: const BoxConstraints(minWidth: 168),
           offset: const Offset(0, 8),
-          onSelected: (value) {
-            setState(() {
-              _sortBy = value;
-            });
-          },
+          onSelected: (value) => setState(() => _sortBy = value),
           itemBuilder: (_) => [
             _sortMenuItem(_SortBy.newest, context.l10n.tr('patients.newest')),
             _sortMenuItem(_SortBy.oldest, context.l10n.tr('patients.oldest')),
@@ -290,18 +378,19 @@ class _PatientsListPageState extends State<PatientsListPage> {
           child: Row(
             children: [
               Text(
-                context.l10n.tr('patients.sortBy', args: {'sort': _sortLabel()}),
-                style: const TextStyle(
-                  color: Color(0xFF23A7CB),
+                context.l10n.tr('patients.sortBy',
+                    args: {'sort': _sortLabel()}),
+                style: TextStyle(
+                  color: isDark ? kAccentCyan : kTeal,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(width: 2),
-              const Icon(
+              Icon(
                 Icons.keyboard_arrow_down,
                 size: 18,
-                color: Color(0xFF23A7CB),
+                color: isDark ? kAccentCyan : kTeal,
               ),
             ],
           ),
@@ -317,7 +406,7 @@ class _PatientsListPageState extends State<PatientsListPage> {
     return PopupMenuItem<_SortBy>(
       value: value,
       height: _isCompact ? 42 : 44,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       child: Row(
         children: [
           Expanded(
@@ -327,25 +416,23 @@ class _PatientsListPageState extends State<PatientsListPage> {
                 fontSize: 14,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
-                    ? const Color(0xFF169FBD)
-                    : (isDark ? const Color(0xFFC6D2DC) : const Color(0xFF2E3742)),
+                    ? kTeal
+                    : (isDark
+                        ? const Color(0xFFC6D2DC)
+                        : const Color(0xFF2E3742)),
               ),
             ),
           ),
-          if (selected)
-            const Icon(
-              Icons.check_rounded,
-              size: 16,
-              color: Color(0xFF169FBD),
-            ),
+          if (selected) Icon(Icons.check_rounded, size: 16, color: kTeal),
         ],
       ),
     );
   }
 
   Widget _buildPatientsList() {
-    return BlocBuilder<PatientCubit, PatientState>(
-      builder: (context, state) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final state = ref.watch(patientListProvider);
         if (state.loading && state.patients.isEmpty) {
           return _buildPatientsSkeletonList();
         }
@@ -368,8 +455,10 @@ class _PatientsListPageState extends State<PatientsListPage> {
 
   Widget _buildPatientsSkeletonList() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
+    final baseColor =
+        isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
+    final highlightColor =
+        isDark ? const Color(0xFF2A3642) : const Color(0xFFF6F8FA);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -382,27 +471,31 @@ class _PatientsListPageState extends State<PatientsListPage> {
         itemBuilder: (_, index) {
           return Container(
             padding: EdgeInsets.symmetric(
-              horizontal: _isCompact ? 12 : 13,
-              vertical: _isCompact ? 12 : 13,
+              horizontal: _isCompact ? 12 : 14,
+              vertical: _isCompact ? 14 : 16,
             ),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A232C) : Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.06)
+                  : Colors.white.withValues(alpha: 0.65),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isDark ? const Color(0xFF31414F) : const Color(0xFFE4E9ED),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.80),
               ),
             ),
             child: Row(
               children: [
-                _skeletonBox(44, 44, baseColor, circular: true),
+                _skeletonBox(46, 46, baseColor, circular: true),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _skeletonBox(128, 14, baseColor),
+                      _skeletonBox(130, 14, baseColor),
                       const SizedBox(height: 8),
-                      _skeletonBox(98, 12, baseColor),
+                      _skeletonBox(100, 12, baseColor),
                     ],
                   ),
                 ),
@@ -423,52 +516,72 @@ class _PatientsListPageState extends State<PatientsListPage> {
       height: height,
       decoration: BoxDecoration(
         color: color,
-        borderRadius:
-            circular ? BorderRadius.circular(height / 2) : BorderRadius.circular(8),
+        borderRadius: circular
+            ? BorderRadius.circular(height / 2)
+            : BorderRadius.circular(8),
       ),
     );
   }
 
   Widget _patientRow(Patient patient) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
+    return GestureDetector(
       onTap: () async {
         final deleted = await Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => PatientDetailPage(patient: patient)),
+          MaterialPageRoute(
+              builder: (_) => PatientDetailPage(patient: patient)),
         );
 
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = context.read<LoginCubit>().state.token;
+          final token = ref.read(loginProvider).token;
           if (token != null) {
-            context.read<PatientCubit>().loadPatients(token);
+            ref.read(patientListProvider.notifier).loadPatients(token);
           }
         }
       },
-      child: Container(
+      child: GlassContainer(
         padding: EdgeInsets.symmetric(
-          horizontal: _isCompact ? 12 : 13,
-          vertical: _isCompact ? 12 : 13,
+          horizontal: _isCompact ? 12 : 14,
+          vertical: _isCompact ? 12 : 14,
         ),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A232C) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isDark ? const Color(0xFF31414F) : const Color(0xFFE4E9ED),
-          ),
-        ),
+        borderRadius: BorderRadius.circular(16),
+        blur: 12,
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 22,
-              backgroundColor: const Color(0xFFE6ECF1),
-              backgroundImage: _patientImage(patient),
-              child: _patientImage(patient) == null
-                  ? const Icon(Icons.person, size: 20, color: Color(0xFF7F8A95))
-                  : null,
+            // Avatar
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    kTeal.withValues(alpha: 0.20),
+                    kAccentCyan.withValues(alpha: 0.10),
+                  ],
+                ),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.12)
+                      : kTeal.withValues(alpha: 0.25),
+                  width: 1.5,
+                ),
+              ),
+              child: ClipOval(
+                child: _patientImage(patient) != null
+                    ? Image(
+                        image: _patientImage(patient)!,
+                        fit: BoxFit.cover,
+                      )
+                    : Icon(
+                        Icons.person_rounded,
+                        size: 22,
+                        color: isDark ? kAccentCyan : kTeal,
+                      ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -479,10 +592,12 @@ class _PatientsListPageState extends State<PatientsListPage> {
                     patient.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? Color(0xFFE6EDF3) : Color(0xFF21262C),
+                      color: isDark
+                          ? const Color(0xFFE6EDF3)
+                          : const Color(0xFF21262C),
                     ),
                   ),
                   const SizedBox(height: 5),
@@ -491,20 +606,53 @@ class _PatientsListPageState extends State<PatientsListPage> {
                     runSpacing: 2,
                     children: [
                       _metaItem(
-                        Icons.calendar_today_outlined,
-                        context.l10n.tr('patients.yearsShort', args: {'age': patient.age.toString()}),
+                        Icons.cake_outlined,
+                        context.l10n.tr('patients.yearsShort',
+                            args: {'age': patient.age.toString()}),
                       ),
-                      _metaItem(Icons.person_outline, _localizedGender(patient.gender)),
+                      _metaItem(
+                          Icons.person_outline, _localizedGender(patient.gender)),
                     ],
                   ),
+                  if (patient.phoneNumber.trim().isNotEmpty ||
+                      patient.activeDiseaseLabels.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        if (patient.phoneNumber.trim().isNotEmpty)
+                          patient.phoneNumber.trim(),
+                        if (patient.activeDiseaseLabels.isNotEmpty)
+                          patient.activeDiseaseLabels.take(2).join(', '),
+                      ].join(' | '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? const Color(0xFF90A1AE)
+                            : const Color(0xFF73808A),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            Icon(
-              Icons.chevron_right,
-              color: isDark ? const Color(0xFF9AA5AF) : const Color(0xFF9AA5AF),
-              size: 18,
+            Container(
+              width: 28,
+              height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.06)
+                    : kTeal.withValues(alpha: 0.08),
+              ),
+              child: Icon(
+                Icons.chevron_right_rounded,
+                color: isDark ? kAccentCyan : kTeal,
+                size: 18,
+              ),
             ),
           ],
         ),
@@ -520,14 +668,16 @@ class _PatientsListPageState extends State<PatientsListPage> {
         Icon(
           icon,
           size: 11,
-          color: isDark ? const Color(0xFF9CA9B5) : const Color(0xFF88939D),
+          color: isDark ? const Color(0xFF9CA9B5) : kTeal.withValues(alpha: 0.65),
         ),
         const SizedBox(width: 3),
         Text(
           text,
           style: TextStyle(
             fontSize: 11,
-            color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF7D8893),
+            color: isDark
+                ? const Color(0xFFA6B3BF)
+                : const Color(0xFF7D8893),
           ),
         ),
       ],
@@ -536,40 +686,51 @@ class _PatientsListPageState extends State<PatientsListPage> {
 
   Widget _emptyState() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 26, horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1A232C) : const Color(0xFFF6F8FA),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(
-          color: isDark ? const Color(0xFF31414F) : const Color(0xFFDCE3E9),
-          style: BorderStyle.solid,
-        ),
-      ),
+    return GlassContainer(
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      borderRadius: BorderRadius.circular(20),
+      blur: 14,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.people_outline,
-            color: isDark ? const Color(0xFFA3B0BB) : const Color(0xFF88939D),
+          Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: LinearGradient(
+                colors: [
+                  kTeal.withValues(alpha: isDark ? 0.20 : 0.14),
+                  kAccentCyan.withValues(alpha: isDark ? 0.10 : 0.07),
+                ],
+              ),
+            ),
+            child: Icon(
+              Icons.people_outline_rounded,
+              size: 44,
+              color: isDark ? kAccentCyan : kTeal,
+            ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 18),
           Text(
             context.l10n.tr('patients.showingAll'),
-            style: TextStyle(
-              fontSize: 17,
-              color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF4A5561),
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              color: isDark
+                  ? const Color(0xFFD5E1EB)
+                  : const Color(0xFF4A5561),
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           Text(
             context.l10n.tr('patients.filtersHint'),
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,
-              color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF8B96A0),
+              color: isDark
+                  ? const Color(0xFFA6B3BF)
+                  : const Color(0xFF8B96A0),
             ),
           ),
         ],
@@ -580,51 +741,38 @@ class _PatientsListPageState extends State<PatientsListPage> {
   List<Patient> _applyFilters(List<Patient> patients) {
     final result = patients.where((patient) {
       final name = patient.name.toLowerCase();
-      final idText = ((patient.id ?? patient.uuid).toString()).toLowerCase();
+      final idText =
+          ((patient.id ?? patient.uuid).toString()).toLowerCase();
       final gender = _normalizeGender(patient.gender);
 
-      if (_query.isNotEmpty && !name.contains(_query) && !idText.contains(_query)) {
+      if (_query.isNotEmpty &&
+          !name.contains(_query) &&
+          !idText.contains(_query)) {
         return false;
       }
 
-      if (_genderFilter == _GenderFilter.male && gender != 'male') {
-        return false;
-      }
-
+      if (_genderFilter == _GenderFilter.male && gender != 'male') return false;
       if (_genderFilter == _GenderFilter.female && gender != 'female') {
         return false;
       }
-
       if (_genderFilter == _GenderFilter.others && gender != 'others') {
         return false;
       }
-
-      if (_age18to35 && (patient.age < 18 || patient.age > 35)) {
-        return false;
-      }
+      if (_age18to35 && (patient.age < 18 || patient.age > 35)) return false;
 
       return true;
     }).toList();
 
     switch (_sortBy) {
       case _SortBy.newest:
-        result.sort((a, b) {
-          final bId = b.id ?? -1;
-          final aId = a.id ?? -1;
-          return bId.compareTo(aId);
-        });
+        result.sort((a, b) => (b.id ?? -1).compareTo(a.id ?? -1));
         break;
       case _SortBy.oldest:
-        result.sort((a, b) {
-          final aId = a.id ?? -1;
-          final bId = b.id ?? -1;
-          return aId.compareTo(bId);
-        });
+        result.sort((a, b) => (a.id ?? -1).compareTo(b.id ?? -1));
         break;
       case _SortBy.nameAZ:
         result.sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
         break;
     }
 
@@ -636,7 +784,8 @@ class _PatientsListPageState extends State<PatientsListPage> {
     if (photo == null || photo.isEmpty) return null;
 
     final normalizedPhoto = photo.replaceAll('\\', '/');
-    final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
+    final isWindowsAbsolutePath =
+        RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
 
     if (normalizedPhoto.startsWith('/uploads/') ||
         normalizedPhoto.contains('/uploads/')) {
@@ -686,12 +835,10 @@ class _PatientsListPageState extends State<PatientsListPage> {
     return context.l10n.tr('patient.other');
   }
 
-  String _normalizeGender(String rawGender) {
-    final g = rawGender.trim().toLowerCase();
-
+  String _normalizeGender(String raw) {
+    final g = raw.trim().toLowerCase();
     if (g == 'male' || g == 'm') return 'male';
     if (g == 'female' || g == 'f') return 'female';
-
     return 'others';
   }
 }

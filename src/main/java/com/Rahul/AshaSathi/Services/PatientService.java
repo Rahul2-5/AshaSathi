@@ -3,6 +3,8 @@ package com.Rahul.AshaSathi.Services;
 import com.Rahul.AshaSathi.DTO.PatientRequest;
 import com.Rahul.AshaSathi.Entity.Patient;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -13,6 +15,9 @@ import java.io.File;
 public class PatientService {
 
     private final PatientRepository patientRepository;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public PatientService(PatientRepository patientRepository) {
         this.patientRepository = patientRepository;
@@ -32,6 +37,12 @@ public class PatientService {
                 existing.setAge(request.age);
                 existing.setDateOfBirth(request.dateOfBirth);
                 existing.setGender(request.gender);
+                existing.setCaste(request.caste);
+                existing.setIsPregnant(request.isPregnant);
+                existing.setMonthsOfPregnancy(request.monthsOfPregnancy);
+                existing.setExpectedDeliveryDate(request.expectedDeliveryDate);
+                existing.setDeclinedHealthInfo(request.declinedHealthInfo);
+                if (request.diseases != null) existing.setDiseases(request.diseases);
                 existing.setAddress(request.address);
                 existing.setDescription(request.description);
                 existing.setPhoneNumber(request.phoneNumber);
@@ -46,6 +57,12 @@ public class PatientService {
         patient.setAge(request.age);
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
+        patient.setCaste(request.caste);
+        patient.setIsPregnant(request.isPregnant);
+        patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        patient.setDeclinedHealthInfo(request.declinedHealthInfo);
+        patient.setDiseases(request.diseases);
         patient.setAddress(request.address);
         patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);
@@ -58,6 +75,15 @@ public class PatientService {
     public void deletePatient(Long id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        // Legacy schema compatibility: clear dependent disease rows first if table exists.
+        try {
+            entityManager.createNativeQuery("DELETE FROM patient_disease WHERE patient_id = :patientId")
+                    .setParameter("patientId", id)
+                    .executeUpdate();
+        } catch (Exception ignored) {
+            // No-op: table may not exist in newer schema versions.
+        }
 
         deletePatientFiles(id, patient.getPhotoPath());
         patientRepository.delete(patient);
@@ -87,6 +113,12 @@ public class PatientService {
         patient.setAge(request.age);
         patient.setDateOfBirth(request.dateOfBirth);
         patient.setGender(request.gender);
+        patient.setCaste(request.caste);
+        patient.setIsPregnant(request.isPregnant);
+        patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
+        patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
+        patient.setDeclinedHealthInfo(request.declinedHealthInfo);
+        if (request.diseases != null) patient.setDiseases(request.diseases);
         patient.setAddress(request.address);
         patient.setDescription(request.description);
         patient.setPhoneNumber(request.phoneNumber);

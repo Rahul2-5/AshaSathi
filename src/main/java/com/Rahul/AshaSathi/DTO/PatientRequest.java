@@ -8,6 +8,12 @@ public class PatientRequest {
     public Integer age;
     public LocalDate dateOfBirth;
     public String gender;
+    public String caste;
+    public Boolean isPregnant;
+    public Integer monthsOfPregnancy;
+    public String expectedDeliveryDate;
+    public Boolean declinedHealthInfo;
+    public String diseases;
     public String address;
     public String description;
     public String phoneNumber;

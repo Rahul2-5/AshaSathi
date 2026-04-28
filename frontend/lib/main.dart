@@ -1,50 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:frontend/auth/cubit/patient_cubit.dart';
-import 'package:frontend/services/patient_service.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-import 'auth/cubit/login_cubit.dart';
-import 'auth/cubit/login_state.dart';
-import 'auth/cubit/signup_cubit.dart';
 import 'auth/login_page.dart';
 import 'localization/app_localizations.dart';
 import 'localization/language_controller.dart';
 import 'navigation/main_navigation.dart';
+import 'providers/login_provider.dart';
 import 'splash/splash_page.dart';
-
-import 'services/auth_service.dart';
-import 'services/task_service.dart';
-
-import 'task/task_cubit.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(
-    MultiBlocProvider(
-      providers: [
-        //  Auth
-        BlocProvider(
-          create: (_) => LoginCubit(AuthService()),
-        ),
-        BlocProvider(
-          create: (_) => SignupCubit(AuthService()),
-        ),
-
-        //  Tasks
-        BlocProvider(
-          create: (_) => TaskCubit(TaskService()),
-        ),
-        BlocProvider(
-        create: (_) => PatientCubit(PatientService()),
-),
-
-
-      ],
-      child: const MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -56,27 +25,35 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _AppRoot extends StatefulWidget {
+class _AppRoot extends ConsumerStatefulWidget {
   const _AppRoot();
 
   @override
-  State<_AppRoot> createState() => _AppRootState();
+  ConsumerState<_AppRoot> createState() => _AppRootState();
 }
 
-class _AppRootState extends State<_AppRoot> {
-  final ValueNotifier<ThemeMode> _themeMode = ValueNotifier(ThemeMode.system);
-  final ValueNotifier<Locale> _locale = ValueNotifier(const Locale('en'));
+class _AppRootState extends ConsumerState<_AppRoot> {
+  late final ValueNotifier<ThemeMode> _themeMode;
+  late final ValueNotifier<Locale> _locale;
 
   @override
   void initState() {
     super.initState();
+    _themeMode = ValueNotifier(ThemeMode.system);
+    _locale = ValueNotifier(const Locale('en'));
     _loadSavedLocale();
+    _initializeAuth();
   }
 
   Future<void> _loadSavedLocale() async {
     final savedLocale = await LanguageStorage.loadLocale();
     if (!mounted) return;
     _locale.value = savedLocale;
+  }
+
+  Future<void> _initializeAuth() async {
+    final loginNotifier = ref.read(loginProvider.notifier);
+    await loginNotifier.initializeAuth();
   }
 
   @override
@@ -128,19 +105,90 @@ class _AppRootState extends State<_AppRoot> {
   }
 
   ThemeData _lightTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF14A7A0),
+      brightness: Brightness.light,
+    );
+    final baseTextTheme = GoogleFonts.outfitTextTheme(
+      ThemeData.light().textTheme,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFF3F4F6),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF14A7A0),
-        brightness: Brightness.light,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFFF5F6F8),
-        foregroundColor: Color(0xFF1F252B),
+      scaffoldBackgroundColor: const Color(0xFFEEF5F8),
+      colorScheme: scheme,
+      cardColor: Colors.white.withValues(alpha: 0.75),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white.withValues(alpha: 0.72),
+        foregroundColor: const Color(0xFF1F252B),
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF1F252B),
+        ),
+      ),
+      textTheme: baseTextTheme.apply(
+        bodyColor: const Color(0xFF1F252B),
+        displayColor: const Color(0xFF1F252B),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.75),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.85)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.70),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.80)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.80)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFF14A7A0), width: 1.6),
+        ),
+        hintStyle: TextStyle(
+          color: const Color(0xFF8A9BB0).withValues(alpha: 0.8),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFF14A7A0),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 32,
+        elevation: 0,
+        backgroundColor: Colors.white.withValues(alpha: 0.75),
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+          ),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -159,19 +207,29 @@ class _AppRootState extends State<_AppRoot> {
   }
 
   ThemeData _darkTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF14A7A0),
+      brightness: Brightness.dark,
+    );
+    final baseTextTheme = GoogleFonts.outfitTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0F1419),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF14A7A0),
-        brightness: Brightness.dark,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF10171E),
-        foregroundColor: Color(0xFFEAF2F8),
+      scaffoldBackgroundColor: const Color(0xFF0B1120),
+      colorScheme: scheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.80),
+        foregroundColor: const Color(0xFFEAF2F8),
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFEAF2F8),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -183,8 +241,66 @@ class _AppRootState extends State<_AppRoot> {
           TargetPlatform.fuchsia: _SmoothPageTransitionsBuilder(),
         },
       ),
-      cardColor: const Color(0xFF1A232C),
-      dividerColor: const Color(0xFF28323D),
+      cardColor: Colors.white.withValues(alpha: 0.06),
+      dividerColor: Colors.white.withValues(alpha: 0.08),
+      textTheme: baseTextTheme.apply(
+        bodyColor: const Color(0xFFEAF2F8),
+        displayColor: const Color(0xFFEAF2F8),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.06),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.07),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFF2ED1B0), width: 1.6),
+        ),
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFF14A7A0),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 60,
+        elevation: 0,
+        backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.88),
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+          ),
+        ),
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
@@ -200,8 +316,8 @@ class ThemeModeController extends InheritedNotifier<ValueNotifier<ThemeMode>> {
   }) : super(notifier: notifier);
 
   static ValueNotifier<ThemeMode> notifierOf(BuildContext context) {
-    final controller =
-        context.dependOnInheritedWidgetOfExactType<ThemeModeController>();
+    final controller = context
+        .dependOnInheritedWidgetOfExactType<ThemeModeController>();
     assert(controller != null, 'ThemeModeController not found in widget tree');
     return controller!.notifier!;
   }
@@ -228,8 +344,10 @@ class _SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
       reverseCurve: curve,
     );
 
-    final offsetTween = Tween<Offset>(begin: beginOffset, end: endOffset)
-        .chain(CurveTween(curve: curve));
+    final offsetTween = Tween<Offset>(
+      begin: beginOffset,
+      end: endOffset,
+    ).chain(CurveTween(curve: curve));
 
     return FadeTransition(
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
@@ -242,14 +360,14 @@ class _SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
 }
 
 // Check if user is already logged in
-class AuthCheckPage extends StatefulWidget {
+class AuthCheckPage extends ConsumerStatefulWidget {
   const AuthCheckPage({super.key});
 
   @override
-  State<AuthCheckPage> createState() => _AuthCheckPageState();
+  ConsumerState<AuthCheckPage> createState() => _AuthCheckPageState();
 }
 
-class _AuthCheckPageState extends State<AuthCheckPage> {
+class _AuthCheckPageState extends ConsumerState<AuthCheckPage> {
   @override
   void initState() {
     super.initState();
@@ -258,14 +376,14 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   Future<void> _checkAuth() async {
     // Initialize auth (loads saved token if exists)
-    await context.read<LoginCubit>().initializeAuth();
+    await ref.read(loginProvider.notifier).initializeAuth();
 
     // Wait a moment then check if token was loaded
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (!mounted) return;
 
-    final token = context.read<LoginCubit>().state.token;
+    final token = ref.read(loginProvider).token;
 
     if (token != null) {
       //  User is logged in → Go to MainNavigation
@@ -277,20 +395,18 @@ class _AuthCheckPageState extends State<AuthCheckPage> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LoginCubit, LoginState>(
-      builder: (context, state) {
-        if (state.token != null) {
-          // Navigate to home if token exists
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) {
-              Navigator.of(context).pushReplacementNamed('/main');
-            }
-          });
-        }
+    final loginState = ref.watch(loginProvider);
 
-        // Show login page while checking
-        return const LoginView();
-      },
-    );
+    if (loginState.token != null) {
+      // Navigate to home if token exists
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pushReplacementNamed('/main');
+        }
+      });
+    }
+
+    // Show login page while checking
+    return const LoginView();
   }
 }
