@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
+import 'package:frontend/utils/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
 import '../providers/login_provider.dart';
@@ -42,54 +45,108 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        centerTitle: true,
-        title: Text(
-          context.l10n.tr('patient.details'),
-          style: TextStyle(
-            color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
-            fontWeight: FontWeight.w700,
-            fontSize: 18,
-            letterSpacing: 0.3,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: IconButton(
-              icon: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
-                  color: isDark ? const Color(0xFF2A3642) : Colors.grey.shade100,
-                ),
-                child: Icon(
-                  Icons.edit_rounded,
-                  size: 20,
-                  color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
-                ),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark
+                    ? const [Color(0xFF0B1120), Color(0xFF0E1A26)]
+                    : const [Color(0xFFE4F7F4), Color(0xFFEEF4FF), Color(0xFFF7FBFF)],
               ),
-              tooltip: 'Edit Patient',
-              onPressed: _showEditPatientDialog,
+            ),
+          ),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: _buildGlassAppBar(isDark),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _profileSection(context),
+                  const SizedBox(height: 32),
+                  _infoCard(context),
+                  const SizedBox(height: 32),
+                  _deleteButton(context),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _profileSection(context),
-            const SizedBox(height: 32),
-            _infoCard(context),
-            const SizedBox(height: 32),
-            _deleteButton(context),
-            const SizedBox(height: 20),
-          ],
+    );
+  }
+
+  PreferredSizeWidget _buildGlassAppBar(bool isDark) {
+    return PreferredSize(
+      preferredSize: const Size.fromHeight(kToolbarHeight),
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+          child: AppBar(
+            backgroundColor: isDark
+                ? Colors.white.withValues(alpha: 0.06)
+                : Colors.white.withValues(alpha: 0.65),
+            elevation: 0,
+            centerTitle: true,
+            title: Text(
+              context.l10n.tr('patient.details'),
+              style: GoogleFonts.outfit(
+                color: isDark ? const Color(0xFFE6EDF3) : Colors.black,
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                letterSpacing: 0.3,
+              ),
+            ),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: IconButton(
+                  icon: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(10),
+                          gradient: LinearGradient(
+                            colors: isDark
+                                ? [
+                                    Colors.white.withValues(alpha: 0.10),
+                                    Colors.white.withValues(alpha: 0.06),
+                                  ]
+                                : [
+                                    Colors.white.withValues(alpha: 0.80),
+                                    Colors.white.withValues(alpha: 0.60),
+                                  ],
+                          ),
+                          border: Border.all(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.12)
+                                : Colors.white.withValues(alpha: 0.90),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.edit_rounded,
+                          size: 20,
+                          color: isDark ? kAccentCyan : kTeal,
+                        ),
+                      ),
+                    ),
+                  ),
+                  tooltip: 'Edit Patient',
+                  onPressed: _showEditPatientDialog,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -105,19 +162,54 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         Stack(
           alignment: Alignment.center,
           children: [
-            // Background gradient circle
+            // Glow ring
             Container(
-              width: 130,
-              height: 130,
+              width: 140,
+              height: 140,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF0BAEB4).withValues(alpha: 0.2),
-                    const Color(0xFF0BAEB4).withValues(alpha: 0.05),
+                    kTeal.withValues(alpha: isDark ? 0.22 : 0.18),
+                    Colors.transparent,
                   ],
+                ),
+              ),
+            ),
+            // Glass ring
+            ClipOval(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                child: Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? [
+                              Colors.white.withValues(alpha: 0.10),
+                              Colors.white.withValues(alpha: 0.05),
+                            ]
+                          : [
+                              Colors.white.withValues(alpha: 0.75),
+                              Colors.white.withValues(alpha: 0.50),
+                            ],
+                    ),
+                    border: Border.all(
+                      color: isDark
+                          ? kTeal.withValues(alpha: 0.35)
+                          : kTeal.withValues(alpha: 0.30),
+                      width: 1.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kTeal.withValues(alpha: 0.22),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -386,36 +478,35 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: isDark ? const Color(0xFF1A232C) : Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
-                letterSpacing: 0.3,
+    return GlassContainer(
+      borderRadius: BorderRadius.circular(20),
+      padding: const EdgeInsets.all(16),
+      blur: 14,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.label_outline_rounded,
+                size: 14,
+                color: isDark ? kAccentCyan : kTeal,
               ),
-            ),
-            const SizedBox(height: 12),
-            child,
-          ],
-        ),
+              const SizedBox(width: 6),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? kAccentCyan : kTeal,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }

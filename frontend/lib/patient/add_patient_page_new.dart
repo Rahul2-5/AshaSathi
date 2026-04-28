@@ -11,6 +11,7 @@ import 'package:frontend/offline/connectivity_service.dart';
 import 'widgets/step1_family_info.dart';
 import 'widgets/step2_patient_details.dart';
 import 'widgets/step3_medical_info.dart';
+import '../utils/glass_widgets.dart';
 
 class AddPatientPageNew extends ConsumerWidget {
   const AddPatientPageNew({super.key});
@@ -18,10 +19,6 @@ class AddPatientPageNew extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(addPatientFormProvider);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF0f1419) : theme.colorScheme.surface;
-
     return PopScope(
       canPop: state.step == 1,
       onPopInvokedWithResult: (didPop, result) {
@@ -30,7 +27,7 @@ class AddPatientPageNew extends ConsumerWidget {
         }
       },
       child: Scaffold(
-        backgroundColor: surfaceColor,
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Column(
             children: [
@@ -68,13 +65,12 @@ class AddPatientPageNew extends ConsumerWidget {
   Widget _buildHeader(BuildContext context, int currentStep) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final headerColor = isDark
-        ? const Color(0xFF1f2937)
-        : theme.colorScheme.surfaceContainerHighest;
 
-    return Container(
-      color: headerColor,
+    return GlassContainer(
+      borderRadius: BorderRadius.zero,
+      blur: 16,
       padding: const EdgeInsets.all(16),
+      border: Border(bottom: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5))),
       child: Column(
         children: [
           // Progress bars
@@ -172,15 +168,14 @@ class AddPatientPageNew extends ConsumerWidget {
         ? const Color(0xFF1f2937)
         : theme.colorScheme.surfaceContainerHighest;
 
-    return Container(
+    return GlassContainer(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF0f1419) : theme.colorScheme.surface,
-        border: Border(
-          top: BorderSide(
-            color: theme.colorScheme.outlineVariant,
-            width: 1,
-          ),
+      borderRadius: BorderRadius.zero,
+      blur: 24,
+      border: Border(
+        top: BorderSide(
+          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5),
+          width: 1,
         ),
       ),
       child: Column(
@@ -332,6 +327,7 @@ class AddPatientPageNew extends ConsumerWidget {
             ref.read(lastRegisteredFamilyProvider.notifier).state = snapshot;
           }
 
+          if (!context.mounted) return;
           _showStatusSnackBar(
             context,
             message: context.l10n.tr('patient.familyRegisteredSuccess'),

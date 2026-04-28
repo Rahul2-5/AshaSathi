@@ -1,22 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'auth/login_page.dart';
 import 'localization/app_localizations.dart';
 import 'localization/language_controller.dart';
 import 'navigation/main_navigation.dart';
-import 'splash/splash_page.dart';
 import 'providers/login_provider.dart';
+import 'splash/splash_page.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  runApp(
-    const ProviderScope(
-      child: MyApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -108,19 +105,90 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   }
 
   ThemeData _lightTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF14A7A0),
+      brightness: Brightness.light,
+    );
+    final baseTextTheme = GoogleFonts.outfitTextTheme(
+      ThemeData.light().textTheme,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFF3F4F6),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF14A7A0),
-        brightness: Brightness.light,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFFF5F6F8),
-        foregroundColor: Color(0xFF1F252B),
+      scaffoldBackgroundColor: const Color(0xFFEEF5F8),
+      colorScheme: scheme,
+      cardColor: Colors.white.withValues(alpha: 0.75),
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.white.withValues(alpha: 0.72),
+        foregroundColor: const Color(0xFF1F252B),
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF1F252B),
+        ),
+      ),
+      textTheme: baseTextTheme.apply(
+        bodyColor: const Color(0xFF1F252B),
+        displayColor: const Color(0xFF1F252B),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.75),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.85)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.70),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.80)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.80)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFF14A7A0), width: 1.6),
+        ),
+        hintStyle: TextStyle(
+          color: const Color(0xFF8A9BB0).withValues(alpha: 0.8),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFF14A7A0),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 32,
+        elevation: 0,
+        backgroundColor: Colors.white.withValues(alpha: 0.75),
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+          ),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -139,19 +207,29 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   }
 
   ThemeData _darkTheme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF14A7A0),
+      brightness: Brightness.dark,
+    );
+    final baseTextTheme = GoogleFonts.outfitTextTheme(
+      ThemeData.dark().textTheme,
+    );
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0F1419),
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: const Color(0xFF14A7A0),
-        brightness: Brightness.dark,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Color(0xFF10171E),
-        foregroundColor: Color(0xFFEAF2F8),
+      scaffoldBackgroundColor: const Color(0xFF0B1120),
+      colorScheme: scheme,
+      appBarTheme: AppBarTheme(
+        backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.80),
+        foregroundColor: const Color(0xFFEAF2F8),
         elevation: 0,
         centerTitle: true,
+        titleTextStyle: GoogleFonts.outfit(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFFEAF2F8),
+        ),
       ),
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -163,8 +241,66 @@ class _AppRootState extends ConsumerState<_AppRoot> {
           TargetPlatform.fuchsia: _SmoothPageTransitionsBuilder(),
         },
       ),
-      cardColor: const Color(0xFF1A232C),
-      dividerColor: const Color(0xFF28323D),
+      cardColor: Colors.white.withValues(alpha: 0.06),
+      dividerColor: Colors.white.withValues(alpha: 0.08),
+      textTheme: baseTextTheme.apply(
+        bodyColor: const Color(0xFFEAF2F8),
+        displayColor: const Color(0xFFEAF2F8),
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white.withValues(alpha: 0.06),
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.white.withValues(alpha: 0.07),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(18),
+          borderSide: const BorderSide(color: Color(0xFF2ED1B0), width: 1.6),
+        ),
+        hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.35)),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          backgroundColor: const Color(0xFF14A7A0),
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        height: 60,
+        elevation: 0,
+        backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.88),
+        surfaceTintColor: Colors.transparent,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: states.contains(WidgetState.selected)
+                ? FontWeight.w700
+                : FontWeight.w600,
+          ),
+        ),
+      ),
       snackBarTheme: const SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
       ),
@@ -180,8 +316,8 @@ class ThemeModeController extends InheritedNotifier<ValueNotifier<ThemeMode>> {
   }) : super(notifier: notifier);
 
   static ValueNotifier<ThemeMode> notifierOf(BuildContext context) {
-    final controller =
-        context.dependOnInheritedWidgetOfExactType<ThemeModeController>();
+    final controller = context
+        .dependOnInheritedWidgetOfExactType<ThemeModeController>();
     assert(controller != null, 'ThemeModeController not found in widget tree');
     return controller!.notifier!;
   }
@@ -208,8 +344,10 @@ class _SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
       reverseCurve: curve,
     );
 
-    final offsetTween = Tween<Offset>(begin: beginOffset, end: endOffset)
-        .chain(CurveTween(curve: curve));
+    final offsetTween = Tween<Offset>(
+      begin: beginOffset,
+      end: endOffset,
+    ).chain(CurveTween(curve: curve));
 
     return FadeTransition(
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
@@ -258,7 +396,7 @@ class _AuthCheckPageState extends ConsumerState<AuthCheckPage> {
   @override
   Widget build(BuildContext context) {
     final loginState = ref.watch(loginProvider);
-    
+
     if (loginState.token != null) {
       // Navigate to home if token exists
       WidgetsBinding.instance.addPostFrameCallback((_) {

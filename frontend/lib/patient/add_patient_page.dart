@@ -24,7 +24,8 @@ class AddPatientPage extends ConsumerStatefulWidget {
   ConsumerState<AddPatientPage> createState() => _AddPatientPageState();
 }
 
-class _AddPatientPageState extends ConsumerState<AddPatientPage> {
+class _AddPatientPageState extends ConsumerState<AddPatientPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
   final _nameController = TextEditingController();
@@ -42,14 +43,50 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
 
+  late final AnimationController _photoAnimController;
+
+  // ================= SNACKBAR =================
+
   void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.red : Colors.green,
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: isError
+            ? (isDark ? const Color(0xFFB91C1C) : const Color(0xFFDC2626))
+            : (isDark ? const Color(0xFF166534) : const Color(0xFF16A34A)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        duration: const Duration(seconds: 3),
+        showCloseIcon: true,
+        closeIconColor: Colors.white70,
       ),
     );
   }
+
+  // ================= VALIDATORS =================
 
   String? _validateName(String? value) {
     final v = value?.trim() ?? '';
@@ -61,10 +98,26 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   String? _validateAge(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return context.l10n.tr('common.required');
+
     final age = int.tryParse(v);
-    if (age == null || age < 1 || age > 130) {
-      return context.l10n.tr('patient.invalidAge');
+    if (age == null) {
+      return 'Please enter a valid number for age';
     }
+
+    // Validate realistic age limits
+    if (age < 0) {
+      return 'Age cannot be negative';
+    }
+
+    if (age > 150) {
+      return 'Age seems too high. Please verify (max 150)';
+    }
+
+    if (age > 130) {
+      return 'Age is over 130. Please verify this is correct';
+    }
+
+    // Age 0 is valid (newborns)
     return null;
   }
 
@@ -94,31 +147,62 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     return null;
   }
 
+  // ================= LIFECYCLE =================
+
   @override
   void initState() {
     super.initState();
-    debugPrint('[AddPatient] initState called');
-    // Add listener to age controller - this is more reliable than onChanged
-    _ageController.addListener(() {
-      debugPrint('[AddPatient] Age controller listener triggered: "${_ageController.text}"');
-      _syncDobFromAge();
-    });
+    _photoAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+
+    // Add listener to age controller for auto DOB sync
+    _ageController.addListener(_syncDobFromAge);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _profilePhoto(),
-            const SizedBox(height: 28),
-            _patientForm(),
-            const SizedBox(height: 28),
-            _saveButton(),
-          ],
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new_rounded,
+              size: 20,
+              color: isDark ? const Color(0xFFD3DEE8) : const Color(0xFF494D53),
+            ),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            context.l10n.tr('patient.patientName'),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1A1E24),
+            ),
+          ),
+          centerTitle: true,
+        ),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              children: [
+                _profilePhoto(),
+                const SizedBox(height: 28),
+                _patientForm(),
+                const SizedBox(height: 32),
+                _saveButton(),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -133,39 +217,64 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       children: [
         GestureDetector(
           onTap: _showImageSourceSheet,
-          child: Stack(
-            alignment: Alignment.bottomRight,
-            children: [
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: _selectedImageBytes != null
+                  ? [
+                      BoxShadow(
+                        color: const Color(0xFF00A6A6).withValues(alpha: 0.3),
+                        blurRadius: 16,
+                        spreadRadius: 2,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: Stack(
+              alignment: Alignment.bottomRight,
+              children: [
                 CircleAvatar(
-                radius: 52,
-                backgroundColor:
-                    isDark ? const Color(0xFF293542) : Colors.grey.shade200,
-                backgroundImage: _selectedImageBytes != null
-                  ? MemoryImage(_selectedImageBytes!)
-                  : (_selectedImage != null ? FileImage(_selectedImage!) : null),
-                child: _selectedImage == null
-                  ? const Icon(Icons.person,
-                    size: 48, color: Colors.grey)
-                  : null,
+                  radius: 52,
+                  backgroundColor:
+                      isDark ? const Color(0xFF293542) : Colors.grey.shade200,
+                  backgroundImage: _selectedImageBytes != null
+                      ? MemoryImage(_selectedImageBytes!)
+                      : (_selectedImage != null
+                          ? FileImage(_selectedImage!)
+                          : null),
+                  child: _selectedImage == null && _selectedImageBytes == null
+                      ? Icon(Icons.person, size: 48, color: isDark
+                          ? const Color(0xFF5A6B7B)
+                          : Colors.grey.shade400)
+                      : null,
                 ),
-              Container(
-                decoration: const BoxDecoration(
-                  color: Color(0xFF00A6A6),
-                  shape: BoxShape.circle,
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF00A6A6),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? const Color(0xFF0F1419) : Colors.white,
+                      width: 2.5,
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(6),
+                  child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
                 ),
-                padding: const EdgeInsets.all(6),
-                child: const Icon(Icons.camera_alt,
-                    size: 16, color: Colors.white),
-              )
-            ],
+              ],
+            ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 10),
         Text(
-          context.l10n.tr('patient.addPhoto'),
+          _selectedImageBytes != null
+              ? context.l10n.tr('patient.addPhoto')
+              : context.l10n.tr('patient.addPhoto'),
           style: TextStyle(
             color: isDark ? const Color(0xFF66CFC7) : const Color(0xFF00A6A6),
             fontWeight: FontWeight.w600,
+            fontSize: 13,
           ),
         ),
       ],
@@ -178,23 +287,40 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       autovalidateMode: AutovalidateMode.onUserInteraction,
       child: Column(
         children: [
-            _inputField(
-              context.l10n.tr('patient.patientName'),
-              _nameController,
-              validator: _validateName,
-            ),
-            _ageField(),
-          _dobField(), 
+          _inputField(
+            context.l10n.tr('patient.patientName'),
+            _nameController,
+            validator: _validateName,
+            prefixIcon: Icons.person_outline,
+          ),
+          _ageField(),
+          _dobField(),
           _genderDropdown(),
-            _inputField(
-              context.l10n.tr('patient.address'),
-              _addressController,
-              validator: _validateAddress,
-            ),
-            _inputField('Description / Notes', _descriptionController),
-            _inputField(context.l10n.tr('auth.phoneNumber'), _phoneController,
-              keyboard: TextInputType.phone,
-              validator: _validatePhone),
+          _inputField(
+            context.l10n.tr('patient.address'),
+            _addressController,
+            validator: _validateAddress,
+            prefixIcon: Icons.location_on_outlined,
+            maxLines: 2,
+          ),
+          _inputField(
+            'Description / Notes',
+            _descriptionController,
+            prefixIcon: Icons.notes_outlined,
+            maxLines: 3,
+            isOptional: true,
+          ),
+          _inputField(
+            context.l10n.tr('auth.phoneNumber'),
+            _phoneController,
+            keyboard: TextInputType.phone,
+            validator: _validatePhone,
+            prefixIcon: Icons.phone_outlined,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+          ),
         ],
       ),
     );
@@ -208,69 +334,66 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       valueListenable: _ageController,
       builder: (context, ageValue, child) {
         final age = ageValue.text.trim();
+        final parsedAge = int.tryParse(age);
+        final isValidAge = parsedAge != null && parsedAge >= 0 && parsedAge <= 130;
+
         return Padding(
           padding: const EdgeInsets.only(bottom: 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                context.l10n.tr('patient.age'),
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280),
+              _fieldLabel(context.l10n.tr('patient.age')),
+              const SizedBox(height: 6),
+              TextFormField(
+                controller: _ageController,
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(3),
+                ],
+                validator: _validateAge,
+                decoration: _inputDecoration(
+                  age.isNotEmpty ? 'Age: $age' : context.l10n.tr('patient.age'),
+                ).copyWith(
+                  prefixIcon: Icon(
+                    Icons.cake_outlined,
+                    size: 20,
+                    color: isDark ? const Color(0xFF78849E) : const Color(0xFF9CA3AF),
+                  ),
+                  suffixIcon: isValidAge && age.isNotEmpty
+                      ? Icon(Icons.check_circle,
+                          color: isDark
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6),
+                          size: 20)
+                      : null,
                 ),
               ),
-              const SizedBox(height: 6),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _ageController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
-                    validator: _validateAge,
-                    decoration: _inputDecoration(
-                      age.isNotEmpty ? 'Age: $age' : context.l10n.tr('patient.age')
-                    ).copyWith(
-                      suffixIcon: age.isNotEmpty
-                          ? Icon(Icons.check_circle,
-                              color: isDark
-                                  ? const Color(0xFF66CFC7)
-                                  : const Color(0xFF00A6A6),
-                              size: 20)
-                          : null,
-                    ),
-                  ),
-                  if (age.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outlined,
-                              size: 14,
-                              color: isDark
-                                  ? const Color(0xFF78849E)
-                                  : const Color(0xFF9CA3AF)),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Date of Birth will auto-calculate',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark
-                                  ? const Color(0xFF78849E)
-                                  : const Color(0xFF9CA3AF),
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+              if (age.isNotEmpty && isValidAge)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.auto_awesome,
+                          size: 13,
+                          color: isDark
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6)),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Date of Birth will auto-calculate',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6),
+                          fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                ],
-              ),
+                    ],
+                  ),
+                ),
             ],
           ),
         );
@@ -283,6 +406,10 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     TextEditingController controller, {
     TextInputType keyboard = TextInputType.text,
     String? Function(String?)? validator,
+    IconData? prefixIcon,
+    int maxLines = 1,
+    bool isOptional = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -291,21 +418,46 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text(title,
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
+          Row(
+            children: [
+              _fieldLabel(title),
+              if (isOptional) ...[
+                const SizedBox(width: 6),
+                Text(
+                  '(optional)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w400,
+                    color: isDark ? const Color(0xFF78849E) : const Color(0xFFADB5BD),
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ],
+          ),
           const SizedBox(height: 6),
           TextFormField(
             controller: controller,
             keyboardType: keyboard,
-            validator: validator ??
-              (v) =>
-                v == null || v.trim().isEmpty
-                  ? context.l10n.tr('common.required')
+            maxLines: maxLines,
+            inputFormatters: inputFormatters,
+            validator: isOptional
+                ? null
+                : (validator ??
+                    (v) => v == null || v.trim().isEmpty
+                        ? context.l10n.tr('common.required')
+                        : null),
+            decoration: _inputDecoration(title).copyWith(
+              prefixIcon: prefixIcon != null
+                  ? Icon(
+                      prefixIcon,
+                      size: 20,
+                      color: isDark
+                          ? const Color(0xFF78849E)
+                          : const Color(0xFF9CA3AF),
+                    )
                   : null,
-            decoration: _inputDecoration(title),
+            ),
           ),
         ],
       ),
@@ -325,11 +477,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(context.l10n.tr('patient.dateOfBirth'),
-                style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
+              _fieldLabel(context.l10n.tr('patient.dateOfBirth')),
               const SizedBox(height: 6),
               TextFormField(
                 controller: _dobController,
@@ -337,31 +485,39 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
                 onTap: _pickDateOfBirth,
                 validator: _validateDob,
                 decoration: _inputDecoration(dob.isEmpty
-                    ? context.l10n.tr('patient.selectDate')
-                    : dob)
+                        ? context.l10n.tr('patient.selectDate')
+                        : dob)
                     .copyWith(
-                      suffixIcon: const Icon(Icons.calendar_today),
-                    ),
+                  prefixIcon: Icon(
+                    Icons.calendar_month_outlined,
+                    size: 20,
+                    color: isDark
+                        ? const Color(0xFF78849E)
+                        : const Color(0xFF9CA3AF),
+                  ),
+                  suffixIcon: const Icon(Icons.calendar_today, size: 18),
+                ),
               ),
               if (dob.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 8, left: 4),
                   child: Row(
                     children: [
-                      Icon(Icons.info_outlined,
-                          size: 14,
+                      Icon(Icons.auto_awesome,
+                          size: 13,
                           color: isDark
-                              ? const Color(0xFF78849E)
-                              : const Color(0xFF9CA3AF)),
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6)),
                       const SizedBox(width: 6),
                       Text(
                         'Auto-calculated from age',
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark
-                              ? const Color(0xFF78849E)
-                              : const Color(0xFF9CA3AF),
+                              ? const Color(0xFF66CFC7)
+                              : const Color(0xFF00A6A6),
                           fontStyle: FontStyle.italic,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -382,23 +538,50 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-            Text(context.l10n.tr('patient.gender'),
-              style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280))),
+          _fieldLabel(context.l10n.tr('patient.gender')),
           const SizedBox(height: 6),
           DropdownButtonFormField<String>(
             initialValue: _gender,
             items: [
-              DropdownMenuItem(value: 'Female', child: Text(context.l10n.tr('patient.female'))),
-              DropdownMenuItem(value: 'Male', child: Text(context.l10n.tr('patient.male'))),
-              DropdownMenuItem(value: 'Other', child: Text(context.l10n.tr('patient.other'))),
+              DropdownMenuItem(
+                  value: 'Female',
+                  child: Text(context.l10n.tr('patient.female'))),
+              DropdownMenuItem(
+                  value: 'Male',
+                  child: Text(context.l10n.tr('patient.male'))),
+              DropdownMenuItem(
+                  value: 'Other',
+                  child: Text(context.l10n.tr('patient.other'))),
             ],
             onChanged: (v) => setState(() => _gender = v!),
-            decoration: _inputDecoration(context.l10n.tr('patient.gender')),
+            decoration: _inputDecoration(context.l10n.tr('patient.gender')).copyWith(
+              prefixIcon: Icon(
+                _gender == 'Male'
+                    ? Icons.male
+                    : _gender == 'Female'
+                        ? Icons.female
+                        : Icons.transgender,
+                size: 20,
+                color: isDark
+                    ? const Color(0xFF78849E)
+                    : const Color(0xFF9CA3AF),
+              ),
+            ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _fieldLabel(String label) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: isDark ? const Color(0xFFAEBAC6) : const Color(0xFF6B7280),
+        letterSpacing: 0.1,
       ),
     );
   }
@@ -408,6 +591,12 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
 
     return InputDecoration(
       hintText: hint,
+      hintStyle: TextStyle(
+        color: isDark
+            ? const Color(0xFF5A6B7B)
+            : const Color(0xFFB0B7BF),
+        fontSize: 14,
+      ),
       filled: true,
       fillColor: isDark ? const Color(0xFF1A232C) : Colors.white,
       contentPadding:
@@ -423,30 +612,77 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide:
-            const BorderSide(color: Color(0xFF00A6A6)),
+        borderSide: const BorderSide(color: Color(0xFF00A6A6), width: 1.5),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(
+          color: isDark ? const Color(0xFFEF4444) : const Color(0xFFF87171),
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
       ),
     );
   }
 
   Widget _saveButton() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SizedBox(
       width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        onPressed: _isLoading ? null : _handleSave,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF00A6A6),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      height: 54,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: _isLoading
+              ? []
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF00A6A6).withValues(alpha: 0.35),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
-        child: _isLoading
-            ? const CircularProgressIndicator(color: Colors.white)
-            : Text(context.l10n.tr('patient.saveData'),
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white)),
+        child: ElevatedButton(
+          onPressed: _isLoading ? null : _handleSave,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF00A6A6),
+            disabledBackgroundColor: isDark
+                ? const Color(0xFF1A3A3A)
+                : const Color(0xFFB3E0E0),
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14)),
+            elevation: 0,
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.save_outlined, size: 20, color: Colors.white),
+                    const SizedBox(width: 10),
+                    Text(
+                      context.l10n.tr('patient.saveData'),
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
@@ -474,38 +710,25 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   }
 
   void _syncDobFromAge() {
-    debugPrint('[AddPatient] ========== _syncDobFromAge START ==========');
-    
-    if (_isSyncingAgeDob) {
-      debugPrint('[AddPatient] Already syncing, returning');
-      return;
-    }
+    if (_isSyncingAgeDob) return;
 
     final rawAge = _ageController.text.trim();
-    debugPrint('[AddPatient] Age input: "|$rawAge|"');
-    
+
     if (rawAge.isEmpty) {
-      debugPrint('[AddPatient] Age empty, clearing DOB');
       _isSyncingAgeDob = true;
+      final hadValue = _dobController.text.isNotEmpty;
       _dobController.clear();
       _isSyncingAgeDob = false;
-      setState(() {
-        debugPrint('[AddPatient] setState called after clearing DOB');
-      });
+      if (hadValue) {
+        setState(() {});
+      }
       return;
     }
 
     final age = int.tryParse(rawAge);
-    debugPrint('[AddPatient] Parsed age: $age (isNull: ${age == null})');
-    
-    if (age == null || age < 1 || age > 130) {
-      debugPrint('[AddPatient] Invalid age: $age, returning without changes');
-      return;
-    }
+    if (age == null || age < 1 || age > 130) return;
 
     final now = DateTime.now();
-    debugPrint('[AddPatient] Now: ${now.toIso8601String()}');
-    
     final targetYear = now.year - age;
     final maxDayInMonth = DateTime(targetYear, now.month + 1, 0).day;
     final targetDay = now.day <= maxDayInMonth ? now.day : maxDayInMonth;
@@ -513,25 +736,13 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     final formattedDob =
         "${estimatedDob.year}-${estimatedDob.month.toString().padLeft(2, '0')}-${estimatedDob.day.toString().padLeft(2, '0')}";
 
-    final currentDob = _dobController.text;
-    debugPrint('[AddPatient] Current DOB: "|$currentDob|", Calculated: "|$formattedDob|"');
-    
-    if (currentDob == formattedDob) {
-      debugPrint('[AddPatient] DOB already matches, skipping setState');
-      return;
-    }
+    if (_dobController.text == formattedDob) return;
 
-    debugPrint('[AddPatient] Setting DOB to: $formattedDob');
     _isSyncingAgeDob = true;
     _dobController.text = formattedDob;
     _isSyncingAgeDob = false;
-    
-    debugPrint('[AddPatient] Calling setState to rebuild UI');
-    setState(() {
-      debugPrint('[AddPatient] I am rebuilding with DOB: ${_dobController.text}');
-    });
-    
-    debugPrint('[AddPatient] ========== _syncDobFromAge END ==========');
+
+    setState(() {});
   }
 
   void _syncAgeFromDob(DateTime dob) {
@@ -556,7 +767,10 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
   }
 
   Future<void> _handleSave() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      _showSnackBar('Please fix the errors in the form', isError: true);
+      return;
+    }
 
     final l10n = context.l10n;
     final patientNotifier = ref.read(patientListProvider.notifier);
@@ -622,81 +836,114 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage> {
     }
   }
 
- Future<void> _pickImage(ImageSource source) async {
-  final image = await _picker.pickImage(
-    source: source,
-    imageQuality: 70,
-  );
+  Future<void> _pickImage(ImageSource source) async {
+    final image = await _picker.pickImage(
+      source: source,
+      imageQuality: 70,
+    );
 
-  if (image != null) {
-    try {
-      final persistedImage = await _persistPickedImage(image);
-      final bytes = await persistedImage.readAsBytes();
-      setState(() {
-        _selectedImage = persistedImage;
-        _selectedImageBytes = bytes;
-      });
-    } catch (_) {
-      // Fallback to source file if persistence fails for any reason.
-      final bytes = await image.readAsBytes();
-      setState(() {
-        _selectedImage = File(image.path);
-        _selectedImageBytes = bytes;
-      });
+    if (image != null) {
+      try {
+        final persistedImage = await _persistPickedImage(image);
+        final bytes = await persistedImage.readAsBytes();
+        setState(() {
+          _selectedImage = persistedImage;
+          _selectedImageBytes = bytes;
+        });
+        _photoAnimController.forward(from: 0);
+      } catch (_) {
+        // Fallback to source file if persistence fails for any reason.
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = File(image.path);
+          _selectedImageBytes = bytes;
+        });
+        _photoAnimController.forward(from: 0);
+      }
     }
   }
-}
 
-Future<File> _persistPickedImage(XFile image) async {
-  final docsDir = await getApplicationDocumentsDirectory();
-  final photosDir = Directory(p.join(docsDir.path, 'patient_photos'));
-  if (!photosDir.existsSync()) {
-    photosDir.createSync(recursive: true);
+  Future<File> _persistPickedImage(XFile image) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final photosDir = Directory(p.join(docsDir.path, 'patient_photos'));
+    if (!photosDir.existsSync()) {
+      photosDir.createSync(recursive: true);
+    }
+
+    final ext =
+        p.extension(image.path).isNotEmpty ? p.extension(image.path) : '.jpg';
+    final fileName = 'patient_${DateTime.now().microsecondsSinceEpoch}$ext';
+    final savedPath = p.join(photosDir.path, fileName);
+
+    return File(image.path).copy(savedPath);
   }
 
-  final ext = p.extension(image.path).isNotEmpty ? p.extension(image.path) : '.jpg';
-  final fileName = 'patient_${DateTime.now().microsecondsSinceEpoch}$ext';
-  final savedPath = p.join(photosDir.path, fileName);
+  void _showImageSourceSheet() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-  return File(image.path).copy(savedPath);
-}
-
-void _showImageSourceSheet() {
-  showModalBottomSheet(
-    context: context,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-    ),
-    builder: (_) {
-      return SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.camera_alt),
-              title: Text(context.l10n.tr('patient.takePhoto')),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1A232C) : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? const Color(0xFF3D4E5C)
+                        : Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A6A6).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.camera_alt,
+                        color: Color(0xFF00A6A6), size: 22),
+                  ),
+                  title: Text(context.l10n.tr('patient.takePhoto')),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF00A6A6).withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.photo_library,
+                        color: Color(0xFF00A6A6), size: 22),
+                  ),
+                  title: Text(context.l10n.tr('patient.chooseFromGallery')),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.photo_library),
-              title: Text(context.l10n.tr('patient.chooseFromGallery')),
-              onTap: () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-
-
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void dispose() {
@@ -706,6 +953,7 @@ void _showImageSourceSheet() {
     _addressController.dispose();
     _descriptionController.dispose();
     _phoneController.dispose();
+    _photoAnimController.dispose();
     super.dispose();
   }
 }

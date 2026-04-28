@@ -42,6 +42,13 @@ class FamilyListNotifier extends StateNotifier<FamilyListState> {
 
   FamilyListNotifier(this.patientService) : super(FamilyListState());
 
+  // 📥 Initialize: Service handles offline caching automatically
+  // Calling this routes through the service which loads cached + pending families if offline
+  Future<void> initialize(String token) async {
+    await loadFamilies(token);
+  }
+
+  // 📥 Load all families (service handles offline logic)
   Future<void> loadFamilies(String token) async {
     state = state.copyWith(loading: true, error: null);
 

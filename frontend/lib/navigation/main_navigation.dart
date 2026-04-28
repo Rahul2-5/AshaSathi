@@ -4,6 +4,8 @@ import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/family_model.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../utils/glass_widgets.dart';
+
 import '../home/home_page.dart';
 import '../main.dart';
 import '../patient/add_patient_models.dart';
@@ -18,10 +20,7 @@ import '../providers/task_provider.dart';
 class MainNavigation extends ConsumerStatefulWidget {
   final int initialIndex;
 
-  const MainNavigation({
-    super.key,
-    this.initialIndex = 0,
-  });
+  const MainNavigation({super.key, this.initialIndex = 0});
 
   @override
   ConsumerState<MainNavigation> createState() => _MainNavigationState();
@@ -50,7 +49,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
   Future<void> _loadFamiliesWithValidToken() async {
     final token = await ref.read(loginProvider.notifier).getValidToken();
     if (token != null && token.isNotEmpty) {
-      await ref.read(familyListProvider.notifier).loadFamilies(token);
+      // Initialize will check if online/offline and load accordingly
+      await ref.read(familyListProvider.notifier).initialize(token);
     }
   }
 
@@ -70,25 +70,22 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       curve: Curves.easeOutCubic,
       reverseCurve: Curves.easeOutCubic,
     );
-    _drawerSlideAnimation = Tween<Offset>(
-      begin: const Offset(-0.08, 0),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _drawerContentController,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeOutCubic,
-      ),
-    );
-    _themeRevealController = AnimationController(
-      vsync: this,
-      duration: _themeTransitionDuration,
-    )..addStatusListener((status) {
-        if (status == AnimationStatus.completed && mounted) {
-          setState(() => _isThemeRevealActive = false);
-          _themeRevealController.reset();
-        }
-      });
+    _drawerSlideAnimation =
+        Tween<Offset>(begin: const Offset(-0.08, 0), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _drawerContentController,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeOutCubic,
+          ),
+        );
+    _themeRevealController =
+        AnimationController(vsync: this, duration: _themeTransitionDuration)
+          ..addStatusListener((status) {
+            if (status == AnimationStatus.completed && mounted) {
+              setState(() => _isThemeRevealActive = false);
+              _themeRevealController.reset();
+            }
+          });
 
     if (_currentIndex == 2) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,8 +111,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
     final l10n = context.l10n;
     const lightScaffoldBg = Color(0xFFF3F4F6);
     const darkScaffoldBg = Color(0xFF0F1419);
-    final bottomNavBackground =
-        isDark ? const Color(0xFF10171E) : const Color(0xFFF7F7F8);
 
     final pages = [
       const HomePage(),
@@ -124,7 +119,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       const PhcDashboardPage(),
     ];
 
-    final scaffold = Scaffold(
+    final scaffold = GradientScaffold(
+      extendBody: true,
+      extendBodyBehindAppBar: true,
       onDrawerChanged: (isOpened) {
         if (isOpened) {
           _drawerContentController.forward(from: 0);
@@ -132,15 +129,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
           _drawerContentController.reverse();
         }
       },
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
-        elevation: 0.6,
-        scrolledUnderElevation: 0.8,
-        title: _buildAppBarTitle(isDark),
+      appBar: GlassAppBar(
         centerTitle: true,
-        iconTheme: IconThemeData(
-          color: isDark ? const Color(0xFFD3DEE8) : const Color(0xFF494D53),
-        ),
+        title: _buildAppBarTitle(isDark),
         actions: _currentIndex == 0
             ? [
                 Padding(
@@ -150,8 +141,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                     height: 36,
                     decoration: BoxDecoration(
                       color: isDark
-                          ? const Color(0xFF1E2A35)
-                          : const Color(0xFFE9F3F0),
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : const Color(0xFFE9F3F0).withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Builder(
@@ -163,7 +154,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                           child: IconButton(
                             onPressed: () {
                               final box =
-                                  buttonContext.findRenderObject() as RenderBox?;
+                                  buttonContext.findRenderObject()
+                                      as RenderBox?;
                               final center = box != null
                                   ? box.localToGlobal(
                                       box.size.center(Offset.zero),
@@ -173,12 +165,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                   _lastThemeToggleTapPosition ?? center;
                               setState(() {
                                 _themeRevealCenter = revealCenter;
-                                _themeRevealColor =
-                                    isDark ? darkScaffoldBg : lightScaffoldBg;
+                                _themeRevealColor = isDark
+                                    ? darkScaffoldBg
+                                    : lightScaffoldBg;
                                 _isThemeRevealActive = true;
                               });
-                              themeModeNotifier.value =
-                                  isDark ? ThemeMode.light : ThemeMode.dark;
+                              themeModeNotifier.value = isDark
+                                  ? ThemeMode.light
+                                  : ThemeMode.dark;
                               _themeRevealController.forward(from: 0);
                               _lastThemeToggleTapPosition = null;
                             },
@@ -206,7 +200,101 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
             : null,
       ),
       drawer: _buildDrawer(context),
-      body: PageView(
+
+      bottomNavigationBar: Container(
+        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 6, top: 4),
+        child: GlassContainer(
+          borderRadius: BorderRadius.circular(30),
+          blur: 24,
+          child: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              backgroundColor: Colors.transparent,
+              indicatorColor: isDark
+                  ? kTeal.withValues(alpha: 0.25)
+                  : kTeal.withValues(alpha: 0.15),
+              labelTextStyle: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: isDark ? kAccentCyan : kTeal,
+                  );
+                }
+                return TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isDark
+                      ? const Color(0xFF9AA7B3)
+                      : const Color(0xFF6A7480),
+                );
+              }),
+              iconTheme: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) {
+                  return IconThemeData(
+                    color: isDark ? kAccentCyan : kTeal,
+                    size: 26,
+                  );
+                }
+                return IconThemeData(
+                  color: isDark
+                      ? const Color(0xFF8B99A6)
+                      : const Color(0xFF808B96),
+                  size: 24,
+                );
+              }),
+            ),
+            child: NavigationBar(
+              selectedIndex: _currentIndex,
+              elevation: 0,
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+              onDestinationSelected: (index) async {
+                if (_currentIndex == index) return;
+                final token = ref.read(loginProvider).token;
+                final patientNotifier = ref.read(patientListProvider.notifier);
+                final taskNotifier = ref.read(taskListProvider.notifier);
+
+                await _pageController.animateToPage(
+                  index,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOutCubic,
+                );
+
+                if (index == 0 && token != null) {
+                  patientNotifier.loadPatients(token);
+                  taskNotifier.loadTasks(token);
+                }
+
+                if (index == 2) {
+                  await _loadFamiliesWithValidToken();
+                }
+              },
+              destinations: [
+                NavigationDestination(
+                  icon: const Icon(Icons.home_outlined),
+                  selectedIcon: const Icon(Icons.home),
+                  label: l10n.tr('nav.dashboard'),
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.person_add_alt_1_outlined),
+                  selectedIcon: const Icon(Icons.person_add_alt_1),
+                  label: l10n.tr('nav.addPatient'),
+                ),
+                const NavigationDestination(
+                  icon: Icon(Icons.groups_outlined),
+                  selectedIcon: Icon(Icons.groups_rounded),
+                  label: 'Family',
+                ),
+                NavigationDestination(
+                  icon: const Icon(Icons.insert_chart_outlined_rounded),
+                  selectedIcon: const Icon(Icons.insert_chart_rounded),
+                  label: l10n.tr('nav.phcPortal'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      child: PageView(
         controller: _pageController,
         physics: const NeverScrollableScrollPhysics(),
         onPageChanged: (index) {
@@ -214,59 +302,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
           setState(() => _currentIndex = index);
         },
         children: pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        backgroundColor: bottomNavBackground,
-        selectedItemColor: const Color(0xFF4DC982),
-        unselectedItemColor:
-            isDark ? const Color(0xFF8FA0B0) : const Color(0xFF8E949C),
-        selectedFontSize: 12,
-        unselectedFontSize: 11,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) async {
-          if (_currentIndex == index) return;
-          final token = ref.read(loginProvider).token;
-          final patientNotifier = ref.read(patientListProvider.notifier);
-          final taskNotifier = ref.read(taskListProvider.notifier);
-
-          await _pageController.animateToPage(
-            index,
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-          );
-
-          if (index == 0 && token != null) {
-            patientNotifier.loadPatients(token);
-            taskNotifier.loadTasks(token);
-          }
-
-          if (index == 2) {
-            await _loadFamiliesWithValidToken();
-          }
-        },
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home_outlined),
-            activeIcon: const Icon(Icons.home),
-            label: l10n.tr('nav.dashboard'),
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person_add_alt_1_outlined),
-            activeIcon: const Icon(Icons.person_add_alt_1),
-            label: l10n.tr('nav.addPatient'),
-          ),
-          const BottomNavigationBarItem(
-            icon: Icon(Icons.groups_outlined),
-            activeIcon: Icon(Icons.groups_rounded),
-            label: 'Family',
-          ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.insert_chart_outlined_rounded),
-            activeIcon: const Icon(Icons.insert_chart_rounded),
-            label: l10n.tr('nav.phcPortal'),
-          ),
-        ],
       ),
     );
 
@@ -291,8 +326,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                   ),
                   builder: (context, child) {
                     final progress = _themeRevealController.value;
-                    final revealProgress =
-                        Curves.easeInOutCubic.transform(progress);
+                    final revealProgress = Curves.easeInOutCubic.transform(
+                      progress,
+                    );
                     final radius = maxRadius * revealProgress;
 
                     final fadeT = ((progress - 0.35) / 0.65).clamp(0.0, 1.0);
@@ -354,17 +390,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A232C) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: isDark
-                        ? const Color(0xFF5C3B3B)
-                        : const Color(0xFFF3C7C7),
-                  ),
-                ),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(24),
+                borderRadius: BorderRadius.circular(20),
+                blur: 16,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -416,31 +445,27 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
           return Center(
             child: Padding(
               padding: const EdgeInsets.all(24),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A232C) : Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color:
-                        isDark ? const Color(0xFF31414F) : const Color(0xFFE2E8EE),
-                  ),
-                ),
+              child: GlassContainer(
+                padding: const EdgeInsets.all(24),
+                borderRadius: BorderRadius.circular(20),
+                blur: 16,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Icon(
                       Icons.groups_rounded,
                       size: 48,
-                      color:
-                          isDark ? const Color(0xFF9FB2C4) : const Color(0xFF6D7A88),
+                      color: isDark
+                          ? const Color(0xFF9FB2C4)
+                          : const Color(0xFF6D7A88),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'No family registered yet',
                       style: TextStyle(
-                        color:
-                            isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B),
+                        color: isDark
+                            ? const Color(0xFFE6EDF3)
+                            : const Color(0xFF1F252B),
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
                       ),
@@ -450,8 +475,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                       'Register a family from Add Patient to view details here.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        color:
-                            isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+                        color: isDark
+                            ? const Color(0xFF9FB0C0)
+                            : const Color(0xFF667384),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -480,27 +506,41 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
         final filteredFamilies = _applyFamilyFilters(familyState.families);
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          padding: EdgeInsets.fromLTRB(
+            16,
+            MediaQuery.of(context).padding.top + 20,
+            16,
+            120,
+          ),
           child: Column(
             children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1A232C) : Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color:
-                        isDark ? const Color(0xFF31414F) : const Color(0xFFE2E8EE),
-                  ),
-                ),
+              GlassContainer(
+                borderRadius: BorderRadius.circular(16),
+                blur: 14,
                 child: TextField(
                   controller: _familySearchController,
                   onChanged: (value) {
                     if (!mounted) return;
                     setState(() => _familyQuery = value.trim().toLowerCase());
                   },
+                  style: TextStyle(
+                    color: isDark
+                        ? const Color(0xFFD5E1EB)
+                        : const Color(0xFF1D232B),
+                  ),
                   decoration: InputDecoration(
                     hintText: 'Search by family head or address',
-                    prefixIcon: const Icon(Icons.search),
+                    hintStyle: TextStyle(
+                      color: isDark
+                          ? const Color(0xFF8B99A6)
+                          : const Color(0xFF98A2AC),
+                    ),
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: isDark
+                          ? const Color(0xFFA5B3BF)
+                          : const Color(0xFF14A7A0).withValues(alpha: 0.7),
+                    ),
                     border: InputBorder.none,
                     contentPadding: const EdgeInsets.symmetric(vertical: 14),
                     suffixIcon: _familyQuery.isEmpty
@@ -510,7 +550,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                               _familySearchController.clear();
                               setState(() => _familyQuery = '');
                             },
-                            icon: const Icon(Icons.close),
+                            icon: Icon(
+                              Icons.close,
+                              color: isDark
+                                  ? const Color(0xFFA5B3BF)
+                                  : const Color(0xFF98A2AC),
+                            ),
                           ),
                   ),
                 ),
@@ -521,8 +566,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                 runSpacing: 8,
                 children: [
                   _familyFilterChip('All', _FamilyMemberFilter.all),
-                  _familyFilterChip('1-2 Members', _FamilyMemberFilter.oneToTwo),
-                  _familyFilterChip('3-5 Members', _FamilyMemberFilter.threeToFive),
+                  _familyFilterChip(
+                    '1-2 Members',
+                    _FamilyMemberFilter.oneToTwo,
+                  ),
+                  _familyFilterChip(
+                    '3-5 Members',
+                    _FamilyMemberFilter.threeToFive,
+                  ),
                   _familyFilterChip('6+ Members', _FamilyMemberFilter.sixPlus),
                 ],
               ),
@@ -533,8 +584,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                     child: Text(
                       'Showing ${filteredFamilies.length} of ${familyState.families.length} families',
                       style: TextStyle(
-                        color:
-                            isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+                        color: isDark
+                            ? const Color(0xFF9FB0C0)
+                            : const Color(0xFF667384),
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -576,15 +628,16 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+
               Expanded(
                 child: filteredFamilies.isEmpty
                     ? Center(
                         child: Text(
                           'No families match the selected filters.',
                           style: TextStyle(
-                            color:
-                                isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+                            color: isDark
+                                ? const Color(0xFF9FB0C0)
+                                : const Color(0xFF667384),
                           ),
                         ),
                       )
@@ -592,17 +645,10 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                         itemCount: filteredFamilies.length,
                         itemBuilder: (context, index) {
                           final family = filteredFamilies[index];
-                          return Container(
+                          return GlassContainer(
                             margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: isDark ? const Color(0xFF1A232C) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: isDark
-                                    ? const Color(0xFF31414F)
-                                    : const Color(0xFFE4E9ED),
-                              ),
-                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            blur: 14,
                             child: ListTile(
                               leading: CircleAvatar(
                                 backgroundColor: isDark
@@ -611,7 +657,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                 child: Text(
                                   family.headOfFamily.isEmpty
                                       ? '?'
-                                      : family.headOfFamily.substring(0, 1).toUpperCase(),
+                                      : family.headOfFamily
+                                            .substring(0, 1)
+                                            .toUpperCase(),
                                 ),
                               ),
                               title: Text(
@@ -659,9 +707,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                             context,
                                             MaterialPageRoute(
                                               builder: (_) => FamilyDetailsPage(
-                                                familyInfo: _toFamilyInfo(family),
-                                                members: _toPatientDataModels(family),
-                                                showBackToDashboardButton: false,
+                                                familyInfo: _toFamilyInfo(
+                                                  family,
+                                                ),
+                                                members: _toPatientDataModels(
+                                                  family,
+                                                ),
+                                                showBackToDashboardButton:
+                                                    false,
                                               ),
                                             ),
                                           );
@@ -669,10 +722,14 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                         }
 
                                         if (value == 'delete') {
-                                          final token = ref.read(loginProvider).token;
+                                          final token = ref
+                                              .read(loginProvider)
+                                              .token;
                                           if (token == null || token.isEmpty) {
                                             if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context).showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                               const SnackBar(
                                                 content: Text(
                                                   'Session expired. Please login again.',
@@ -682,11 +739,13 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                             return;
                                           }
 
-                                          final shouldDelete = await _confirmDeleteFamily(
-                                            context,
-                                            family,
-                                          );
-                                          if (!shouldDelete || !context.mounted) return;
+                                          final shouldDelete =
+                                              await _confirmDeleteFamily(
+                                                context,
+                                                family,
+                                              );
+                                          if (!shouldDelete || !context.mounted)
+                                            return;
 
                                           final deleted = await ref
                                               .read(familyListProvider.notifier)
@@ -697,14 +756,17 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
 
                                           if (!context.mounted) return;
 
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
                                               content: Text(
                                                 deleted
                                                     ? 'Family deleted successfully'
                                                     : 'Unable to delete family',
                                               ),
-                                              behavior: SnackBarBehavior.floating,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
                                             ),
                                           );
                                         }
@@ -748,8 +810,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
   }
 
   Widget _buildFamilyLoadingSkeleton(bool isDark) {
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF253240) : const Color(0xFFF7F9FB);
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.1)
+        : Colors.black.withValues(alpha: 0.05);
+    final highlightColor = isDark
+        ? Colors.white.withValues(alpha: 0.05)
+        : Colors.black.withValues(alpha: 0.02);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -861,39 +927,15 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
   }
 
   Widget _familyFilterChip(String label, _FamilyMemberFilter value) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final selected = _familyMemberFilter == value;
 
-    return InkWell(
+    return GlassChip(
+      label: label,
+      selected: selected,
       onTap: () {
         if (!mounted) return;
         setState(() => _familyMemberFilter = value);
       },
-      borderRadius: BorderRadius.circular(18),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? const Color(0xFF14B8A6)
-              : (isDark ? const Color(0xFF222D38) : const Color(0xFFF2F5F7)),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected
-                ? const Color(0xFF14B8A6)
-                : (isDark ? const Color(0xFF32414E) : const Color(0xFFE2E7EB)),
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? Colors.white
-                : (isDark ? const Color(0xFFC0CDD8) : const Color(0xFF626E7A)),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ),
     );
   }
 
@@ -914,7 +956,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       final address = family.familyAddress.toLowerCase();
       final members = family.patients.length;
 
-      final searchMatch = _familyQuery.isEmpty ||
+      final searchMatch =
+          _familyQuery.isEmpty ||
           head.contains(_familyQuery) ||
           address.contains(_familyQuery);
 
@@ -943,8 +986,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
         break;
       case _FamilySortBy.nameAZ:
         filtered.sort(
-          (a, b) =>
-              a.headOfFamily.toLowerCase().compareTo(b.headOfFamily.toLowerCase()),
+          (a, b) => a.headOfFamily.toLowerCase().compareTo(
+            b.headOfFamily.toLowerCase(),
+          ),
         );
         break;
     }
@@ -971,9 +1015,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.red,
-              ),
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
               child: const Text('Delete'),
             ),
           ],
@@ -1065,56 +1107,101 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Drawer(
-      backgroundColor: isDark ? const Color(0xFF1A232C) : Colors.white,
-      child: SlideTransition(
-        position: _drawerSlideAnimation,
-        child: FadeTransition(
-          opacity: _drawerFadeAnimation,
-          child: ListView(
-            children: [
-              DrawerHeader(
-                decoration: BoxDecoration(
-                  color:
-                      isDark ? const Color(0xFF22303C) : const Color(0xFF00A6A6),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.person, size: 48, color: Colors.white),
-                    const SizedBox(height: 8),
-                    Text(
-                      'AshaSathi',
-                      style: TextStyle(
-                        color: isDark ? const Color(0xFFE6EDF3) : Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      width: 280,
+      child: GlassContainer(
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(30),
+          bottomRight: Radius.circular(30),
+        ),
+        blur: 24,
+        child: SlideTransition(
+          position: _drawerSlideAnimation,
+          child: FadeTransition(
+            opacity: _drawerFadeAnimation,
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                DrawerHeader(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [
+                              Colors.white.withValues(alpha: 0.1),
+                              Colors.white.withValues(alpha: 0.05),
+                            ]
+                          : [
+                              const Color(0xFF14A7A0).withValues(alpha: 0.8),
+                              const Color(0xFF2ED1B0).withValues(alpha: 0.6),
+                            ],
                     ),
-                  ],
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.logout, color: Colors.red),
-                title: Text(
-                  context.l10n.tr('drawer.logout'),
-                  style: TextStyle(
-                    color:
-                        isDark ? const Color(0xFFE6EDF3) : const Color(0xFF1F252B),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.14),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.health_and_safety_outlined,
+                          size: 34,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'AshaSathi',
+                        style: TextStyle(
+                          color: isDark
+                              ? const Color(0xFFE6EDF3)
+                              : Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Community care dashboard',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.85),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                onTap: () async {
-                  Navigator.pop(context);
-                  await ref.read(loginProvider.notifier).logout();
-                  if (context.mounted) {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/login',
-                      (route) => false,
-                    );
-                  }
-                },
-              ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.logout, color: Colors.red),
+                  title: Text(
+                    context.l10n.tr('drawer.logout'),
+                    style: TextStyle(
+                      color: isDark
+                          ? const Color(0xFFE6EDF3)
+                          : const Color(0xFF1F252B),
+                    ),
+                  ),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await ref.read(loginProvider.notifier).logout();
+                    if (context.mounted) {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/login',
+                        (route) => false,
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -1145,15 +1232,6 @@ class _InverseCircularRevealClipper extends CustomClipper<Path> {
   }
 }
 
-enum _FamilyMemberFilter {
-  all,
-  oneToTwo,
-  threeToFive,
-  sixPlus,
-}
+enum _FamilyMemberFilter { all, oneToTwo, threeToFive, sixPlus }
 
-enum _FamilySortBy {
-  newest,
-  oldest,
-  nameAZ,
-}
+enum _FamilySortBy { newest, oldest, nameAZ }

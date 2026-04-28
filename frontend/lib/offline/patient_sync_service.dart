@@ -4,6 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 
 import 'connectivity_service.dart';
 import 'patient_offline_dao.dart';
@@ -265,6 +267,27 @@ class PatientSyncService {
                 photoPath: serverPhotoPath,
               );
               debugPrint('[PatientSync] updated photoPath to $serverPhotoPath for local ${patient.localId}');
+
+              // Cache the original file to prevent it from vanishing if the backend resets (Heroku ephemeral storage)
+              try {
+                final docsDir = await getApplicationDocumentsDirectory();
+                final cacheDir = Directory(p.join(docsDir.path, 'patient_photo_cache'));
+                if (!cacheDir.existsSync()) {
+                  cacheDir.createSync(recursive: true);
+                }
+                final safeId = patient.uuid.trim().replaceAll(RegExp(r'[^a-zA-Z0-9_-]'), '_');
+                String extension = p.extension(serverPhotoPath);
+                if (extension.isEmpty) extension = '.jpg';
+                final cachePath = p.join(cacheDir.path, 'patient_$safeId$extension');
+                
+                final originalFile = File(localPhotoPath);
+                if (originalFile.existsSync() && originalFile.path != cachePath) {
+                  await originalFile.copy(cachePath);
+                  debugPrint('[PatientSync] Cached original photo to $cachePath to prevent loss');
+                }
+              } catch (e) {
+                debugPrint('[PatientSync] Failed to cache local photo: $e');
+              }
             }
           } catch (e) {
             debugPrint('[PatientSync] photo upload failed for local ${patient.localId}: $e');

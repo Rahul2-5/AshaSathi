@@ -17,6 +17,41 @@ class AddPatientStep1Widget extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 16),
+          
+          // Show validation errors summary if any
+          if (state.validationErrors.isNotEmpty && state.step == 1)
+            Container(
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFef4444).withValues(alpha: 0.1),
+                border: Border.all(
+                  color: const Color(0xFFef4444).withValues(alpha: 0.3),
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFef4444),
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Please fix the errors below',
+                      style: TextStyle(
+                        color: Color(0xFFef4444),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
           _buildCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,7 +76,7 @@ class AddPatientStep1Widget extends ConsumerWidget {
                     notifier.updateFamilyInfo(numberOfMembers: value);
                   },
                   errorText: state.validationErrors['numberOfMembers'],
-                  helperText: 'Minimum 1 member',
+                  helperText: '(Minimum 1, Maximum 20 members)',
                 ),
                 const SizedBox(height: 20),
 
@@ -137,16 +172,31 @@ class AddPatientStep1Widget extends ConsumerWidget {
     String? errorText,
     String? helperText,
   }) {
+    final hasError = errorText != null && errorText.isNotEmpty;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF9CA3AF),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF9CA3AF),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (label.endsWith('*'))
+              const Text(
+                ' (Required)',
+                style: TextStyle(
+                  color: Color(0xFFef4444),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         TextField(
@@ -163,23 +213,25 @@ class AddPatientStep1Widget extends ConsumerWidget {
             hintText: 'Enter $label',
             hintStyle: const TextStyle(color: Color(0xFF6B7280)),
             filled: true,
-            fillColor: const Color(0xFF0f1419),
+            fillColor: hasError 
+                ? const Color(0xFFef4444).withValues(alpha: 0.08)
+                : const Color(0xFF0f1419),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF4B5563),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF4B5563),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF4B5563),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF4B5563),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF14b8a6),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF14b8a6),
                 width: 2,
               ),
             ),
@@ -189,14 +241,39 @@ class AddPatientStep1Widget extends ConsumerWidget {
                 color: Color(0xFFef4444),
               ),
             ),
-            errorText: errorText,
-            errorStyle: const TextStyle(
-              color: Color(0xFFef4444),
-              fontSize: 12,
-            ),
+            suffixIcon: value.isNotEmpty && !hasError
+                ? const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF14b8a6),
+                    size: 20,
+                  )
+                : null,
           ),
         ),
-        if (helperText != null)
+        if (hasError)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFef4444),
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    errorText,
+                    style: const TextStyle(
+                      color: Color(0xFFef4444),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (helperText != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
             child: Text(

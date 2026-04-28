@@ -222,3 +222,19 @@ final searchedAndFilteredPatientsProvider = Provider<List<Patient>>((ref) {
 
   return filtered;
 });
+
+// ==================== RECENT PATIENTS PROVIDER (Optimized) ====================
+final recentPatientsProvider = Provider<List<Patient>>((ref) {
+  final allPatients = ref.watch(patientListProvider).patients;
+  
+  // Sort by recency (most recently updated/created first)
+  final sorted = [...allPatients]
+    ..sort((a, b) {
+      final aTime = a.updatedAt ?? (a.id ?? -1);
+      final bTime = b.updatedAt ?? (b.id ?? -1);
+      return bTime.compareTo(aTime); // Descending: newest first
+    });
+  
+  // Return only top 5
+  return sorted.take(5).toList();
+});

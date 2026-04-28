@@ -194,7 +194,7 @@ class AddPatientWizardScreen extends ConsumerWidget {
       child: SafeArea(
         child: Column(
           children: [
-            // Error message
+            // Error message with more details
             if (state.errorMessage.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -206,23 +206,63 @@ class AddPatientWizardScreen extends ConsumerWidget {
                   ),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.error_outline,
-                      color: Color(0xFFef4444),
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage,
-                        style: const TextStyle(
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
                           color: Color(0xFFef4444),
-                          fontSize: 14,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            state.errorMessage,
+                            style: const TextStyle(
+                              color: Color(0xFFef4444),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Show validation errors if any
+                    if (state.validationErrors.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: state.validationErrors.entries
+                              .take(3)
+                              .map(
+                                (e) => Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '• ${e.value}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFef4444),
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ),
+                              )
+                              .toList(),
                         ),
                       ),
-                    ),
+                    if (state.validationErrors.length > 3)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '• +${state.validationErrors.length - 3} more error(s)',
+                          style: const TextStyle(
+                            color: Color(0xFFef4444),
+                            fontSize: 11,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

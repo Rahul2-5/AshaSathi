@@ -1,5 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+
 import 'package:frontend/providers/add_patient_provider.dart';
 
 class AddPatientStep2Widget extends ConsumerWidget {
@@ -10,6 +15,7 @@ class AddPatientStep2Widget extends ConsumerWidget {
     final state = ref.watch(addPatientFormProvider);
     final notifier = ref.read(addPatientFormProvider.notifier);
     final currentPatient = ref.watch(currentPatientProvider);
+    final currentIndex = state.currentPatientIndex;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -100,6 +106,8 @@ class AddPatientStep2Widget extends ConsumerWidget {
                   onChanged: (value) {
                     notifier.updatePatient(patientName: value);
                   },
+                  errorKey: 'patient_${currentIndex}_name',
+                  errors: state.validationErrors,
                 ),
                 const SizedBox(height: 16),
 
@@ -114,6 +122,9 @@ class AddPatientStep2Widget extends ConsumerWidget {
                         onChanged: (value) {
                           notifier.updatePatient(age: value);
                         },
+                        helperText: 'Enter in years (0-150)',
+                        errorKey: 'patient_${currentIndex}_age',
+                        errors: state.validationErrors,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -125,6 +136,9 @@ class AddPatientStep2Widget extends ConsumerWidget {
                         onChanged: (value) {
                           notifier.updatePatient(dateOfBirth: value);
                         },
+                        helperText: 'Auto-fills from age',
+                        errorKey: 'patient_${currentIndex}_dob',
+                        errors: state.validationErrors,
                       ),
                     ),
                   ],
@@ -201,7 +215,7 @@ class AddPatientStep2Widget extends ConsumerWidget {
                       if (currentPatient.isPregnant) ...[
                         const SizedBox(height: 12),
                         _buildInputField(
-                          label: 'Months of Pregnancy',
+                          label: 'Months of Pregnancy *',
                           value: currentPatient.monthsOfPregnancy,
                           keyboardType: TextInputType.number,
                           onChanged: (value) {
@@ -209,17 +223,23 @@ class AddPatientStep2Widget extends ConsumerWidget {
                               monthsOfPregnancy: value.isEmpty ? '1' : value,
                             );
                           },
+                          helperText: 'Enter between 1-9 months',
+                          errorKey: 'patient_${currentIndex}_months',
+                          errors: state.validationErrors,
                         ),
                         const SizedBox(height: 12),
                         _buildInputField(
-                          label: 'Expected Delivery Date',
+                          label: 'Expected Delivery Date *',
                           value: currentPatient.expectedDeliveryDate,
-                          placeholder: 'dd-mm-yyyy',
+                          placeholder: 'YYYY-MM-DD',
                           onChanged: (value) {
                             notifier.updatePatient(
                               expectedDeliveryDate: value,
                             );
                           },
+                          helperText: 'Must be a future date',
+                          errorKey: 'patient_${currentIndex}_delivery',
+                          errors: state.validationErrors,
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -242,12 +262,14 @@ class AddPatientStep2Widget extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildInputField(
-                        label: 'Address',
+                        label: 'Address *',
                         value: currentPatient.address,
                         maxLines: 2,
                         onChanged: (value) {
                           notifier.updatePatient(address: value);
                         },
+                        errorKey: 'patient_${currentIndex}_address',
+                        errors: state.validationErrors,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -261,6 +283,8 @@ class AddPatientStep2Widget extends ConsumerWidget {
                   onChanged: (value) {
                     notifier.updatePatient(phoneNumber: value);
                   },
+                  errorKey: 'patient_${currentIndex}_phone',
+                  errors: state.validationErrors,
                 ),
                 const SizedBox(height: 20),
 
@@ -312,8 +336,26 @@ class AddPatientStep2Widget extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         GestureDetector(
-          onTap: () {
-            // Implement photo picker
+          onTap: () async {
+            try {
+              final picker = ImagePicker();
+              final pickedFile = await picker.pickImage(source: ImageSource.camera);
+              if (pickedFile != null) {
+                final docsDir = await getApplicationDocumentsDirectory();
+                final photosDir = Directory(p.join(docsDir.path, 'patient_photos'));
+                if (!photosDir.existsSync()) {
+                  photosDir.createSync(recursive: true);
+                }
+                final ext = p.extension(pickedFile.path).isNotEmpty ? p.extension(pickedFile.path) : '.jpg';
+                final fileName = 'patient_${DateTime.now().microsecondsSinceEpoch}$ext';
+                final savedPath = p.join(photosDir.path, fileName);
+                
+                final savedFile = await File(pickedFile.path).copy(savedPath);
+                notifier.updatePatient(photoPath: savedFile.path);
+              }
+            } catch (e) {
+              debugPrint('Failed to pick image: $e');
+            }
           },
           child: Container(
             height: 120,
@@ -329,8 +371,9 @@ class AddPatientStep2Widget extends ConsumerWidget {
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(12),
                     child: Image.file(
-                      currentPatient.photoPath!,
+                      File(currentPatient.photoPath!),
                       fit: BoxFit.cover,
+                      width: double.infinity,
                     ),
                   )
                 : const Center(
@@ -378,17 +421,36 @@ class AddPatientStep2Widget extends ConsumerWidget {
     TextInputType keyboardType = TextInputType.text,
     int maxLines = 1,
     String? placeholder,
+    String? errorKey,
+    Map<String, String>? errors,
+    String? helperText,
   }) {
+    final hasError = errorKey != null && errors != null && errors.containsKey(errorKey);
+    final errorText = hasError ? errors[errorKey] : null;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF9CA3AF),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF9CA3AF),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            if (label.endsWith('*'))
+              const Text(
+                ' (Required)',
+                style: TextStyle(
+                  color: Color(0xFFef4444),
+                  fontSize: 10,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+          ],
         ),
         const SizedBox(height: 8),
         TextField(
@@ -405,24 +467,83 @@ class AddPatientStep2Widget extends ConsumerWidget {
             hintText: placeholder ?? 'Enter $label',
             hintStyle: const TextStyle(color: Color(0xFF6B7280)),
             filled: true,
-            fillColor: const Color(0xFF0f1419),
+            fillColor: hasError
+                ? const Color(0xFFef4444).withValues(alpha: 0.08)
+                : const Color(0xFF0f1419),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF4B5563)),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF4B5563),
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFF4B5563)),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF4B5563),
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF14b8a6),
+              borderSide: BorderSide(
+                color: hasError ? const Color(0xFFef4444) : const Color(0xFF14b8a6),
                 width: 2,
               ),
             ),
+            suffixIcon: value.isNotEmpty && !hasError && label.endsWith('*')
+                ? const Icon(
+                    Icons.check_circle,
+                    color: Color(0xFF14b8a6),
+                    size: 20,
+                  )
+                : null,
           ),
         ),
+        if (hasError && errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Color(0xFFef4444),
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    errorText,
+                    style: const TextStyle(
+                      color: Color(0xFFef4444),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (helperText != null && helperText.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.info_outlined,
+                  color: Color(0xFF6B7280),
+                  size: 14,
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    helperText,
+                    style: const TextStyle(
+                      color: Color(0xFF6B7280),
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
       ],
     );
   }

@@ -346,6 +346,118 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
   }
 
   /// ===========================================
+  /// VALIDATION HELPERS
+  /// ===========================================
+  String? _validateHeadOfFamily(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Head of family name is required';
+    if (v.length < 2) return 'Name must be at least 2 characters';
+    if (v.length > 100) return 'Name cannot exceed 100 characters';
+    return null;
+  }
+
+  String? _validateNumberOfMembers(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Number of members is required';
+    final num = int.tryParse(v);
+    if (num == null || num < 1 || num > 20) {
+      return 'Family size must be between 1 and 20';
+    }
+    return null;
+  }
+
+  String? _validateFamilyAddress(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Family address is required';
+    if (v.length < 5) return 'Address must be at least 5 characters';
+    if (v.length > 500) return 'Address is too long';
+    return null;
+  }
+
+  String? _validatePatientName(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Patient name is required';
+    if (v.length < 2) return 'Name must be at least 2 characters';
+    if (v.length > 100) return 'Name cannot exceed 100 characters';
+    if (!RegExp(r'^[a-zA-Z\s]').hasMatch(v)) {
+      return 'Name can only contain letters and spaces';
+    }
+    return null;
+  }
+
+  String? _validateAge(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Age is required';
+    
+    final age = int.tryParse(v);
+    if (age == null) return 'Please enter a valid number for age';
+    
+    // Validate realistic age limits
+    if (age < 0) {
+      return 'Age cannot be negative';
+    }
+    
+    if (age > 150) {
+      return 'Age seems too high. Please verify (max 150)';
+    }
+    
+    // Warn for unlikely but possible ages
+    if (age > 130) {
+      return 'Age is over 130. Please verify this is correct';
+    }
+    
+    // Age 0 is valid (newborns)
+    return null;
+  }
+
+  String? _validateDateOfBirth(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Date of birth is required';
+    final parsed = DateTime.tryParse(v);
+    if (parsed == null) return 'Invalid date format';
+    if (parsed.isAfter(DateTime.now())) return 'Date of birth cannot be in the future';
+    return null;
+  }
+
+  String? _validatePhone(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return null; // Phone is optional
+    if (!RegExp(r'^\d{10}$').hasMatch(v)) {
+      return 'Phone must be exactly 10 digits';
+    }
+    return null;
+  }
+
+  String? _validateAddress(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return null; // Optional when using family address
+    if (v.length < 5) return 'Address must be at least 5 characters';
+    if (v.length > 500) return 'Address is too long';
+    return null;
+  }
+
+  String? _validateMonthsOfPregnancy(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Months of pregnancy is required';
+    final months = int.tryParse(v);
+    if (months == null || months < 1 || months > 9) {
+      return 'Months must be between 1 and 9';
+    }
+    return null;
+  }
+
+  String? _validateExpectedDeliveryDate(String value) {
+    final v = value.trim();
+    if (v.isEmpty) return 'Expected delivery date is required';
+    final parsed = DateTime.tryParse(v);
+    if (parsed == null) return 'Invalid date format';
+    if (parsed.isBefore(DateTime.now())) {
+      return 'Expected delivery date must be in the future';
+    }
+    return null;
+  }
+
+  /// ===========================================
   /// VALIDATION & SUBMISSION
   /// ===========================================
   bool _validateCurrentStep() {
@@ -364,18 +476,14 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
   bool _validateFamilyInfo() {
     final errors = <String, String>{};
     
-    if (state.familyInfo.headOfFamily.isEmpty) {
-      errors['headOfFamily'] = 'Head of family name is required';
-    }
+    final headOfFamilyError = _validateHeadOfFamily(state.familyInfo.headOfFamily);
+    if (headOfFamilyError != null) errors['headOfFamily'] = headOfFamilyError;
     
-    final numMembers = int.tryParse(state.familyInfo.numberOfMembers);
-    if (numMembers == null || numMembers < 1) {
-      errors['numberOfMembers'] = 'Number of members must be at least 1';
-    }
+    final numMembersError = _validateNumberOfMembers(state.familyInfo.numberOfMembers);
+    if (numMembersError != null) errors['numberOfMembers'] = numMembersError;
     
-    if (state.familyInfo.familyAddress.isEmpty) {
-      errors['familyAddress'] = 'Family address is required';
-    }
+    final addressError = _validateFamilyAddress(state.familyInfo.familyAddress);
+    if (addressError != null) errors['familyAddress'] = addressError;
     
     state = state.copyWith(
       validationErrors: errors,
@@ -398,18 +506,32 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
     for (int i = 0; i < state.patients.length; i++) {
       final patient = state.patients[i];
       
-      if (patient.patientName.isEmpty) {
-        errors['patient_${i}_name'] = 'Patient name is required';
-      }
+      final nameError = _validatePatientName(patient.patientName);
+      if (nameError != null) errors['patient_${i}_name'] = nameError;
       
-      if (patient.age.isEmpty) {
-        errors['patient_${i}_age'] = 'Age is required';
-      } else if (int.tryParse(patient.age) == null) {
-        errors['patient_${i}_age'] = 'Age must be a number';
-      }
+      final ageError = _validateAge(patient.age);
+      if (ageError != null) errors['patient_${i}_age'] = ageError;
       
-      if (patient.dateOfBirth.isEmpty) {
-        errors['patient_${i}_dob'] = 'Date of birth is required';
+      final dobError = _validateDateOfBirth(patient.dateOfBirth);
+      if (dobError != null) errors['patient_${i}_dob'] = dobError;
+      
+      // Phone validation only if family uses individual addresses
+      if (!state.familyInfo.sameAddressForAll) {
+        final addressError = _validateAddress(patient.address);
+        if (addressError != null) errors['patient_${i}_address'] = addressError;
+      }
+
+      // Phone number validation
+      final phoneError = _validatePhone(patient.phoneNumber);
+      if (phoneError != null) errors['patient_${i}_phone'] = phoneError;
+      
+      // Pregnancy field validation
+      if (patient.isPregnant) {
+        final monthsError = _validateMonthsOfPregnancy(patient.monthsOfPregnancy);
+        if (monthsError != null) errors['patient_${i}_months'] = monthsError;
+        
+        final deliveryDateError = _validateExpectedDeliveryDate(patient.expectedDeliveryDate);
+        if (deliveryDateError != null) errors['patient_${i}_delivery'] = deliveryDateError;
       }
     }
     
@@ -417,7 +539,7 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
       validationErrors: errors,
       errorMessage: errors.isEmpty
           ? ''
-          : 'Please complete Name, Age and Date of Birth for all required members.',
+          : 'Please complete all required fields correctly.',
     );
     return errors.isEmpty;
   }
@@ -443,7 +565,7 @@ class AddPatientNotifier extends StateNotifier<AddPatientFormState> {
           'familyAddress': state.familyInfo.familyAddress,
         },
         'patients': resolvedPatients
-            .map((p) => {
+            .map((p) => <String, dynamic>{
               'patientName': p.patientName,
               'age': int.parse(p.age),
               'dateOfBirth': p.dateOfBirth,

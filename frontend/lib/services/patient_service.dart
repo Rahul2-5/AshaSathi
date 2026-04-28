@@ -389,12 +389,31 @@ class PatientService {
       debugPrint('[FamilyService] Error loading pending offline families: $e');
     }
 
-    // 🟡 STEP 2: Offline → RETURN PENDING ONLY
+    // 🟡 STEP 2: Offline → RETURN CACHED + PENDING FAMILIES
     if (!isOnline) {
+      // Load previously synced families from cache
+      final cachedFamilies = await _familyCache.loadFamilies();
+      
+      // Deduplicate: pending families take priority, but add unique cached ones
+      final dedupedMap = <String, FamilyRecord>{};
+      
+      // Add cached families first
+      for (final cachedFamily in cachedFamilies) {
+        final key = '${cachedFamily.headOfFamily}::${cachedFamily.familyAddress}';
+        dedupedMap[key] = cachedFamily;
+      }
+      
+      // Override with pending families (they're newer/local-only)
+      for (final pendingFamily in pendingOfflineFamilies) {
+        final key = '${pendingFamily.headOfFamily}::${pendingFamily.familyAddress}';
+        dedupedMap[key] = pendingFamily;
+      }
+      
+      final combined = dedupedMap.values.toList();
       debugPrint(
-        'Offline mode: returning ${pendingOfflineFamilies.length} pending unsynced families',
+        'Offline mode: returning ${combined.length} families (${cachedFamilies.length} cached + ${pendingOfflineFamilies.length} pending)',
       );
-      return pendingOfflineFamilies;
+      return combined;
     }
 
     // 🟢 STEP 3: ONLINE → Try to load from backend
