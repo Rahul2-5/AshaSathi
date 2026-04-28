@@ -11,10 +11,12 @@ import 'package:frontend/patient/patient_success_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:uuid/uuid.dart';
 
 import '../offline/patient_offline_service.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_service.dart';
+import 'add_patient_form_data.dart';
 
 
 class AddPatientPage extends ConsumerStatefulWidget {
@@ -36,11 +38,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
   final _phoneController = TextEditingController();
   bool _isSyncingAgeDob = false;
 
-  String _gender = 'Female';
   bool _isLoading = false;
-
-  File? _selectedImage;
-  Uint8List? _selectedImageBytes;
   final ImagePicker _picker = ImagePicker();
 
   late final AnimationController _photoAnimController;
@@ -91,11 +89,11 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
   String? _validateName(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return context.l10n.tr('common.required');
-    if (v.length < 2) return context.l10n.tr('patient.invalidName');
+    if (v.length < 2) return 'Name must be at least 2 characters';
     return null;
   }
 
-  String? _validateAge(String? value) {
+  String? _validateNumberOfMembers(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return context.l10n.tr('common.required');
 
@@ -124,25 +122,24 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
   String? _validateAddress(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return context.l10n.tr('common.required');
-    if (v.length < 5) return context.l10n.tr('patient.invalidAddress');
+    if (v.length < 5) return 'Address must be at least 5 characters';
     return null;
   }
 
-  String? _validatePhone(String? value) {
+  String? _validatePatientName(String? value) {
     final v = value?.trim() ?? '';
     if (v.isEmpty) return context.l10n.tr('common.required');
-    if (!RegExp(r'^\d{10}$').hasMatch(v)) {
-      return context.l10n.tr('patient.invalidPhone');
-    }
+    if (v.length < 2) return 'Name must be at least 2 characters';
     return null;
   }
 
-  String? _validateDob(String? value) {
+  String? _validateAge(String? value) {
     final v = value?.trim() ?? '';
-    if (v.isEmpty) return context.l10n.tr('common.required');
-    final parsed = DateTime.tryParse(v);
-    if (parsed == null || parsed.isAfter(DateTime.now())) {
-      return context.l10n.tr('patient.invalidDob');
+    if (v.isNotEmpty) {
+      final age = int.tryParse(v);
+      if (age == null || age < 0 || age > 130) {
+        return 'Age must be 0-130 years';
+      }
     }
     return null;
   }
@@ -161,6 +158,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     _ageController.addListener(_syncDobFromAge);
   }
 
+  // ==================== BUILD ====================
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -204,14 +202,43 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
             ),
           ),
         ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: BoxDecoration(
+        color: bgColor,
+        border: Border(
+          bottom: BorderSide(
+            color: isDark ? const Color(0xFF1F2B42) : const Color(0xFFE5E7EB),
+            width: 1,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          stepItem('Family', _currentStep == 0),
+          const SizedBox(width: 12),
+          stepItem('Patient', _currentStep == 1),
+          const SizedBox(width: 12),
+          stepItem('Medical', _currentStep == 2),
+        ],
       ),
     );
   }
 
-  // ================= UI =================
+  // ==================== PATIENT STEP ====================
+  Widget _buildPatientStep() {
+    if (_patients.isEmpty) {
+      return Center(
+        child: Text(context.l10n.tr('common.noData')),
+      );
+    }
 
-  Widget _profilePhoto() {
+    final currentPatient = _patients[_currentPatientIndex];
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F1419) : const Color(0xFFF3F4F6);
 
     return Column(
       children: [
@@ -277,15 +304,129 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
             fontSize: 13,
           ),
         ),
-      ],
+      ),
     );
   }
 
-  Widget _patientForm() {
-    return Form(
-      key: _formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+  // ==================== HELPER WIDGETS ====================
+  Widget _buildNumberFieldForPregnancy({
+    required TextEditingController controller,
+    required Function(String) onChanged,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? const Color(0xFF151D2E) : const Color(0xFFFFFFFF);
+    final borderColor = isDark ? const Color(0xFFFF6B6B) : const Color(0xFFFF6B6B);
+    final dividerColor = isDark ? const Color(0xFFFF6B6B) : const Color(0xFFFF6B6B);
+    final hintColor = isDark ? const Color(0xFF6F85A8) : const Color(0xFF6B7280);
+    final textColor = isDark ? Colors.white : const Color(0xFF171A1F);
+    
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        color: fillColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor, width: 2),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.left,
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                hintText: '1',
+                hintStyle: TextStyle(
+                  color: hintColor,
+                  fontSize: 13,
+                ),
+              ),
+              onChanged: onChanged,
+            ),
+          ),
+          Container(
+            width: 44,
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: dividerColor, width: 2),
+              ),
+            ),
+            child: Column(
+              children: [
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        final current = int.tryParse(controller.text) ?? 1;
+                        if (current < 9) {
+                          controller.text = (current + 1).toString();
+                          onChanged(controller.text);
+                          setState(() {});
+                        }
+                      },
+                      child: const Icon(
+                        Icons.arrow_drop_up,
+                        color: Color(0xFF25D8C3),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+                Container(
+                  height: 1,
+                  color: const Color(0xFFFF6B6B),
+                ),
+                Expanded(
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        final current = int.tryParse(controller.text) ?? 1;
+                        if (current > 1) {
+                          controller.text = (current - 1).toString();
+                          onChanged(controller.text);
+                          setState(() {});
+                        }
+                      },
+                      child: const Icon(
+                        Icons.arrow_drop_down,
+                        color: Color(0xFF25D8C3),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNumberField({
+    required String label,
+    required TextEditingController controller,
+    String? Function(String?)? validator,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? const Color(0xFF0A1424) : const Color(0xFFFFFFFF);
+    final borderColor = isDark ? const Color(0xFF2A4265) : const Color(0xFFE5E7EB);
+    final textColor = isDark ? Colors.white : const Color(0xFF171A1F);
+    final hintColor = isDark ? const Color(0xFF6F85A8) : const Color(0xFF9CA3AF);
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 18),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _inputField(
             context.l10n.tr('patient.patientName'),
@@ -412,6 +553,8 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     List<TextInputFormatter>? inputFormatters,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? Colors.white : const Color(0xFF171A1F);
+    final ctrl = controller;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
@@ -464,9 +607,17 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     );
   }
 
-  // 📅 DATE OF BIRTH FIELD
-  Widget _dobField() {
+  Widget _buildDateField({
+    required String label,
+    required String initialValue,
+    required Function(String) onChanged,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final controller = TextEditingController(text: initialValue);
+    final isDeliveryDate = label.contains('Delivery');
+    final fillColor = isDark ? const Color(0xFF151D2E) : const Color(0xFFFFFFFF);
+    final hintColor = isDark ? const Color(0xFF6F85A8) : const Color(0xFF6B7280);
+    final textColor = isDark ? Colors.white : const Color(0xFF171A1F);
 
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: _dobController,
@@ -530,9 +681,17 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     );
   }
 
-  Widget _genderDropdown() {
+  Widget _buildDeliveryDateField({
+    required String label,
+    required String initialValue,
+    required Function(String) onChanged,
+  }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final controller = TextEditingController(text: initialValue);
+    final fillColor = isDark ? const Color(0xFF151D2E) : const Color(0xFFFFFFFF);
+    final hintColor = isDark ? const Color(0xFF6F85A8) : const Color(0xFF9CA3AF);
+    final textColor = isDark ? Colors.white : const Color(0xFF171A1F);
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 18),
       child: Column(
@@ -588,7 +747,24 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
 
   InputDecoration _inputDecoration(String hint) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark ? const Color(0xFF8EA1C4) : const Color(0xFF374151);
+    
+    return Text(
+      label,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: labelColor,
+      ),
+    );
+  }
 
+  InputDecoration _inputDecoration(String hint) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final fillColor = isDark ? const Color(0xFF151D2E) : const Color(0xFFFFFFFF);
+    final borderColor = isDark ? const Color(0xFF2A3F5A) : const Color(0xFFE5E7EB);
+    final hintColor = isDark ? const Color(0xFF6F85A8) : const Color(0xFF6B7280);
+    
     return InputDecoration(
       hintText: hint,
       hintStyle: TextStyle(
@@ -604,11 +780,13 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+      filled: true,
+      fillColor: fillColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: isDark ? const Color(0xFF31414F) : Colors.grey.shade300,
-        ),
+        borderSide: BorderSide(color: borderColor, width: 1),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -733,7 +911,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     final maxDayInMonth = DateTime(targetYear, now.month + 1, 0).day;
     final targetDay = now.day <= maxDayInMonth ? now.day : maxDayInMonth;
     final estimatedDob = DateTime(targetYear, now.month, targetDay);
-    final formattedDob =
+    final formatted =
         "${estimatedDob.year}-${estimatedDob.month.toString().padLeft(2, '0')}-${estimatedDob.day.toString().padLeft(2, '0')}";
 
     if (_dobController.text == formattedDob) return;
@@ -745,25 +923,39 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     setState(() {});
   }
 
-  void _syncAgeFromDob(DateTime dob) {
-    if (_isSyncingAgeDob) return;
+  void _syncAgeFromDob(String dob) {
+    final parsed = DateTime.tryParse(dob);
+    if (parsed == null) return;
 
     final now = DateTime.now();
-    var age = now.year - dob.year;
+    var age = now.year - parsed.year;
     final hadBirthdayThisYear =
-        (now.month > dob.month) || (now.month == dob.month && now.day >= dob.day);
+        (now.month > parsed.month) ||
+            (now.month == parsed.month && now.day >= parsed.day);
     if (!hadBirthdayThisYear) {
       age -= 1;
     }
 
     if (age < 0 || age > 130) return;
 
-    final ageText = age.toString();
-    if (_ageController.text == ageText) return;
+    if (_patients[_currentPatientIndex].age != age) {
+      _patients[_currentPatientIndex] =
+          _patients[_currentPatientIndex].copyWith(age: age);
+      setState(() {});
+    }
+  }
 
-    _isSyncingAgeDob = true;
-    _ageController.text = ageText;
-    _isSyncingAgeDob = false;
+  void _calculateExpectedDeliveryDate(int months) {
+    final now = DateTime.now();
+    final deliveryDate = now.add(Duration(days: months * 30));
+    final formatted =
+        "${deliveryDate.year}-${deliveryDate.month.toString().padLeft(2, '0')}-${deliveryDate.day.toString().padLeft(2, '0')}";
+    
+    if (_patients[_currentPatientIndex].expectedDeliveryDate != formatted) {
+      _patients[_currentPatientIndex] = _patients[_currentPatientIndex]
+          .copyWith(expectedDeliveryDate: formatted);
+      setState(() {});
+    }
   }
 
   Future<void> _handleSave() async {
@@ -776,30 +968,47 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     final patientNotifier = ref.read(patientListProvider.notifier);
     final navigator = Navigator.of(context);
 
-    if (_selectedImage == null) {
-      _showSnackBar(l10n.tr('patient.pleaseAddPhoto'), isError: true);
-      return;
-    }
-
-    final age = int.tryParse(_ageController.text.trim());
-    if (age == null) {
-      _showSnackBar(l10n.tr('patient.invalidAge'), isError: true);
-      return;
+    // Validate all patients
+    for (int i = 0; i < _patients.length; i++) {
+      if (!_patients[i].isValidForPatientStep()) {
+        _showSnackBar('Patient ${i + 1} is incomplete', isError: true);
+        setState(() => _currentPatientIndex = i);
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
 
     try {
-      await PatientOfflineService().saveOffline(
-        name: _nameController.text.trim(),
-        gender: _gender,
-        age: age,
-        dateOfBirth: _dobController.text.trim(),
-        address: _addressController.text.trim(),
-        description: _descriptionController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        photoPath: _selectedImage!.path,
-      );
+      const uuid = Uuid();
+
+      // Save each patient to offline database
+      for (final patient in _patients) {
+        uuid.v4();
+        final selectedConditions = patient.medicalInfo.conditions
+            .where((c) => c.selected)
+            .map((c) => c.id)
+            .toList();
+        
+        await PatientOfflineService().saveOffline(
+          name: patient.name,
+          gender: patient.gender,
+          age: patient.age ?? 0,
+          dateOfBirth: patient.dateOfBirth,
+          address: patient.usesFamilyAddress
+              ? _familyAddressController.text.trim()
+              : (patient.address ?? _familyAddressController.text.trim()),
+          description: patient.medicalInfo.notes,
+          phoneNumber: patient.phoneNumber,
+          photoPath: patient.photoPath,
+          caste: patient.caste,
+          isPregnant: patient.isPregnant,
+          monthsOfPregnancy: patient.monthsOfPregnancy,
+          expectedDeliveryDate: patient.expectedDeliveryDate,
+          medicalConditions: selectedConditions,
+        );
+      }
+
       await PatientSyncService().refreshSyncStatus();
 
       final isOnline = await ConnectivityService().isOnline();
@@ -819,8 +1028,8 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
 
       _showSnackBar(
         isOnline
-            ? l10n.tr('patient.saveSuccessOnline')
-            : l10n.tr('patient.saveSuccessOffline'),
+            ? 'Data saved and synced'
+            : 'Data saved offline. Will sync when online',
       );
 
       navigator.push(
@@ -828,7 +1037,7 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
       );
     } catch (e) {
       if (!mounted) return;
-      _showSnackBar(l10n.tr('patient.saveFailed'), isError: true);
+      _showSnackBar('Failed to save patient data: $e', isError: true);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -956,4 +1165,6 @@ class _AddPatientPageState extends ConsumerState<AddPatientPage>
     _photoAnimController.dispose();
     super.dispose();
   }
+
 }
+

@@ -51,6 +51,18 @@ public class TaskController {
         );
     }
 
+    // ================= UPDATE TASK =================
+    @PutMapping("/{taskId}")
+    public ResponseEntity<Task> updateTask(@PathVariable Long taskId, @RequestBody Task updatedTask) {
+
+        String email = getCurrentUserEmail();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        return ResponseEntity.ok(taskService.updateTask(taskId, updatedTask, user.getId()));
+    }
+
     // ================= DELETE TASK =================
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {

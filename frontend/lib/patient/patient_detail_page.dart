@@ -787,6 +787,27 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     return context.l10n.tr('patient.other');
   }
 
+  String _formatMedicalConditions(List<String> conditionIds) {
+    if (conditionIds.isEmpty) return 'None';
+    
+    final conditionLabels = {
+      'bp': 'BP',
+      'elephantiasis': 'Elephantiasis',
+      'diabetes': 'Diabetes',
+      'heart_disease': 'Heart Disease',
+      'asthma': 'Asthma',
+      'thyroid': 'Thyroid',
+      'arthritis': 'Arthritis',
+      'kidney_disease': 'Kidney Disease',
+      'liver_disease': 'Liver Disease',
+      'cancer': 'Cancer',
+    };
+    
+    return conditionIds
+        .map((id) => conditionLabels[id] ?? id)
+        .join(', ');
+  }
+
   Future<void> _showEditPatientDialog() async {
     final formKey = GlobalKey<FormState>();
     final nameController = TextEditingController(text: _patient.name);

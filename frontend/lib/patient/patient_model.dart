@@ -69,6 +69,7 @@ class Patient {
 
   // ================= BACKEND → UI =================
   factory Patient.fromJson(Map<String, dynamic> json) {
+    final conditions = List<String>.from(json['medicalConditions'] ?? json['conditions'] ?? []);
     return Patient(
       id: json['id'],
       uuid: json['uuid'] ?? (json['id'] != null ? json['id'].toString() : ''), // fallback to id if uuid missing
@@ -96,6 +97,18 @@ class Patient {
 
   // ================= OFFLINE → UI =================
   factory Patient.fromOffline(Map<String, dynamic> map) {
+    final conditionsJson = map['medicalConditions'] ?? '[]';
+    List<String> conditions = [];
+    try {
+      conditions = List<String>.from(
+        (conditionsJson is String) 
+          ? (conditionsJson.isEmpty ? [] : conditionsJson.split(','))
+          : (conditionsJson ?? [])
+      );
+    } catch (_) {
+      conditions = [];
+    }
+    
     return Patient(
       id: map['serverId'],     // may be null
       uuid: map['uuid'],       // always present
