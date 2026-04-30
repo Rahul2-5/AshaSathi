@@ -11,18 +11,13 @@ public class PatientRequest {
     public String caste;
     public Boolean isPregnant;
     public Integer monthsOfPregnancy;
-    public String expectedDeliveryDate;
+    public LocalDate expectedDeliveryDate;
     public Boolean declinedHealthInfo;
     public String diseases;
     public String address;
     public String description;
     public String phoneNumber;
-    // Optional fields sent by clients (offline sync)
     public String photoPath;
     public String clientTempId;
-    public String caste;
-    public Boolean isPregnant;
-    public Integer monthsOfPregnancy;
-    public LocalDate expectedDeliveryDate;
     public String medicalConditions;
 }

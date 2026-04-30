@@ -1,4 +1,4 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
@@ -312,7 +312,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // DEMOGRAPHICS SECTION
         _sectionCard(
           context,
-          title: '👤 Demographics',
+          title: '≡ƒæñ Demographics',
           child: Column(
             children: [
               Row(
@@ -366,7 +366,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // CONTACT SECTION
         _sectionCard(
           context,
-          title: '📞 Contact Information',
+          title: '≡ƒô₧ Contact Information',
           child: Column(
             children: [
               _infoField(
@@ -391,7 +391,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // HEALTH SECTION
         _sectionCard(
           context,
-          title: '⚕️ Health Information',
+          title: 'ΓÜò∩╕Å Health Information',
           child: Column(
             children: [
               if (_patient.gender == 'Female')
@@ -457,7 +457,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         if (_patient.description.trim().isNotEmpty)
           _sectionCard(
             context,
-            title: '📝 Notes',
+            title: '≡ƒô¥ Notes',
             child: _infoField(
               context,
               label: 'Description / Notes',
