@@ -1,6 +1,7 @@
 package com.Rahul.AshaSathi.Controller;
 
 import com.Rahul.AshaSathi.DTO.AuthResponse;
+import com.Rahul.AshaSathi.DTO.GoogleLoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.LoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.SignupRequestDTO;
 import com.Rahul.AshaSathi.Services.AuthService;
@@ -37,10 +38,9 @@ public class AuthController {
 
     @PostMapping("/google")
     public ResponseEntity<AuthResponse> googleLogin(
-            @RequestParam("email") String email,
-            @RequestParam("username") String username
+            @RequestBody GoogleLoginRequestDTO request
     ) {
-        AuthResponse response = authService.googleLogin(email, username);
+        AuthResponse response = authService.googleLogin(request);
         return ResponseEntity.ok(response);
     }
 }

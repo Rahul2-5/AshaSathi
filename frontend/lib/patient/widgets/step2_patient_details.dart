@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import '../../utils/glass_widgets.dart';
 
 class Step2PatientDetails extends ConsumerWidget {
   const Step2PatientDetails({super.key});
@@ -20,7 +21,6 @@ class Step2PatientDetails extends ConsumerWidget {
     final currentPatient = ref.watch(currentPatientProvider);
     final familyInfo = state.familyInfo;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -41,14 +41,7 @@ class Step2PatientDetails extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // Patient form card
-        Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1f2937)
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
+        GlassContainer(
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
@@ -238,17 +231,20 @@ class Step2PatientDetails extends ConsumerWidget {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isActive
-                        ? const Color(0xFF14b8a6)
+                        ? const Color(0xFF14A7A0).withValues(alpha: 0.15)
                         : (isDark
-                            ? const Color(0xFF1f2937)
-                            : theme.colorScheme.surfaceContainerHighest),
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.05)),
                     foregroundColor: isActive
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ? const Color(0xFF14A7A0)
+                        : theme.colorScheme.onSurface,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
                     side: BorderSide(
                       color: isActive
-                          ? const Color(0xFF14b8a6)
-                          : theme.colorScheme.outlineVariant,
+                          ? const Color(0xFF14A7A0).withValues(alpha: 0.8)
+                          : Colors.transparent,
+                      width: 1.5,
                     ),
                   ),
                   child: Text(
@@ -446,27 +442,7 @@ class Step2PatientDetails extends ConsumerWidget {
           maxLines: maxLines,
           onChanged: onChanged,
           decoration: InputDecoration(
-            filled: true,
-            fillColor: isDark
-                ? const Color(0xFF0f1419)
-                : theme.colorScheme.surface,
             counterText: '',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(
-                color: Color(0xFF14b8a6),
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.all(10),
           ),
         ),
       ],
@@ -521,24 +497,11 @@ class Step2PatientDetails extends ConsumerWidget {
             enabled: false,
             style: TextStyle(color: theme.colorScheme.onSurface),
             decoration: InputDecoration(
-              filled: true,
-              fillColor: isDark
-                  ? const Color(0xFF0f1419)
-                  : theme.colorScheme.surface,
               suffixIcon: Icon(
                 Icons.calendar_today,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.65),
                 size: 18,
               ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-              ),
-              contentPadding: const EdgeInsets.all(10),
             ),
           ),
         ),
@@ -567,20 +530,18 @@ class Step2PatientDetails extends ConsumerWidget {
         const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0f1419)
-                : theme.colorScheme.surface,
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-            borderRadius: BorderRadius.circular(10),
+            color: theme.inputDecorationTheme.fillColor,
+            border: Border.all(color: theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? theme.colorScheme.outlineVariant),
+            borderRadius: BorderRadius.circular(18),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DropdownButton<String>(
             value: patient.gender,
             isExpanded: true,
-            underline: SizedBox(),
+            underline: const SizedBox(),
             dropdownColor: isDark
                 ? const Color(0xFF1f2937)
-                : theme.colorScheme.surface,
+                : theme.colorScheme.surfaceContainerHighest,
             items: const ['Female', 'Male', 'Other']
                 .map(
                   (gender) => DropdownMenuItem(
@@ -728,11 +689,9 @@ class Step2PatientDetails extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF0f1419)
-                : theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
+            color: theme.inputDecorationTheme.fillColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? theme.colorScheme.outlineVariant),
           ),
           child: Row(
             children: [

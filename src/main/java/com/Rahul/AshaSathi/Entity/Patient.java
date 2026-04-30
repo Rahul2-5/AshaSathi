@@ -1,5 +1,6 @@
 package com.Rahul.AshaSathi.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -65,6 +66,11 @@ public class Patient {
 
     @Column(columnDefinition = "TEXT")
     private String medicalConditions;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnore
+    private User user;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -249,6 +255,14 @@ public class Patient {
 
     public void setMedicalConditions(String medicalConditions) {
         this.medicalConditions = medicalConditions;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 
 }

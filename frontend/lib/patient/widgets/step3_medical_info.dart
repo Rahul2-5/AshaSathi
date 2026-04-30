@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/add_patient_models.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
+import '../../utils/glass_widgets.dart';
 
 class Step3MedicalInfo extends ConsumerWidget {
   const Step3MedicalInfo({super.key});
@@ -50,14 +51,7 @@ class Step3MedicalInfo extends ConsumerWidget {
         const SizedBox(height: 16),
 
         // Medical info card
-        Container(
-          decoration: BoxDecoration(
-            color: isDark
-                ? const Color(0xFF1f2937)
-                : theme.colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
+        GlassContainer(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,16 +134,14 @@ class Step3MedicalInfo extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: isSelected
                                 ? const Color(0xFF14b8a6)
-                                : (isDark
-                                    ? const Color(0xFF0f1419)
-                                    : theme.colorScheme.surface),
+                                : theme.inputDecorationTheme.fillColor,
                             border: Border.all(
                               color: isSelected
                                   ? const Color(0xFF14b8a6)
-                                  : theme.colorScheme.outlineVariant,
-                              width: 2,
+                                  : theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? theme.colorScheme.outlineVariant,
+                              width: 1,
                             ),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
@@ -216,30 +208,7 @@ class Step3MedicalInfo extends ConsumerWidget {
                       .updateNotes(value);
                 },
                 decoration: InputDecoration(
-                  filled: true,
-                  fillColor: isDark
-                      ? const Color(0xFF0f1419)
-                      : theme.colorScheme.surface,
                   hintText: context.l10n.tr('patient.additionalNotesHint'),
-                  hintStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: theme.colorScheme.outlineVariant),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(
-                      color: Color(0xFF14b8a6),
-                      width: 2,
-                    ),
-                  ),
-                  contentPadding: const EdgeInsets.all(12),
                 ),
               ),
 
@@ -328,21 +297,24 @@ class Step3MedicalInfo extends ConsumerWidget {
                 onPressed: () {
                   ref.read(addPatientFormProvider.notifier).selectPatient(index);
                 },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isActive
-                      ? const Color(0xFF14b8a6)
-                      : (isDark
-                          ? const Color(0xFF1f2937)
-                          : theme.colorScheme.surfaceContainerHighest),
-                  foregroundColor: isActive
-                      ? Colors.white
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  side: BorderSide(
-                    color: isActive
-                        ? const Color(0xFF14b8a6)
-                        : theme.colorScheme.outlineVariant,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: isActive
+                        ? const Color(0xFF14A7A0).withValues(alpha: 0.15)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : Colors.black.withValues(alpha: 0.05)),
+                    foregroundColor: isActive
+                        ? const Color(0xFF14A7A0)
+                        : theme.colorScheme.onSurface,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    side: BorderSide(
+                      color: isActive
+                          ? const Color(0xFF14A7A0).withValues(alpha: 0.8)
+                          : Colors.transparent,
+                      width: 1.5,
+                    ),
                   ),
-                ),
                 child: Text(patient.patientName.isEmpty
                     ? context.l10n.tr(
                         'patient.memberWithIndex',

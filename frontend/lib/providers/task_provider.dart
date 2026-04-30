@@ -51,48 +51,75 @@ class TaskListNotifier extends StateNotifier<TaskListState> {
     }
   }
 
-  // ➕ Add a new task
+  // ➕ Add a new task — optimistic update
   Future<void> addTask(TaskModel task, String token) async {
+    // ⚡ Instantly show the new task in the list (optimistic)
+    state = state.copyWith(tasks: [task, ...state.tasks]);
     try {
       await taskService.addTask(task, token);
-      // 🔑 Only reload from backend if online
+      // Silently sync from backend to get the real server ID
       await loadTasks(token);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Revert optimistic update on failure
+      state = state.copyWith(
+        tasks: state.tasks.where((t) => t.uuid != task.uuid).toList(),
+        error: e.toString(),
+      );
       rethrow;
     }
   }
 
-  // ❌ Delete a task by ID
+  // ❌ Delete a task by ID — optimistic update
   Future<void> deleteTask(int taskId, String token) async {
+    final previousTasks = state.tasks;
+    // ⚡ Remove instantly from UI
+    state = state.copyWith(
+      tasks: state.tasks.where((t) => t.id != taskId).toList(),
+    );
     try {
       await taskService.deleteTask(taskId, "", token);
-      await loadTasks(token);
+      // Silent background sync
+      loadTasks(token);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Revert on failure
+      state = state.copyWith(tasks: previousTasks, error: e.toString());
       rethrow;
     }
   }
 
-  // 🔄 Update a task
+  // 🔄 Update a task — optimistic update
   Future<void> updateTask(TaskModel task, String token) async {
+    final previousTasks = state.tasks;
+    // ⚡ Instantly reflect changes in the list
+    state = state.copyWith(
+      tasks: state.tasks.map((t) => t.uuid == task.uuid ? task : t).toList(),
+    );
     try {
       await taskService.updateTask(task, token);
-      await loadTasks(token);
+      // Silent background sync
+      loadTasks(token);
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Revert on failure
+      state = state.copyWith(tasks: previousTasks, error: e.toString());
       rethrow;
     }
   }
 
-  // 🗑️ Delete task with UUID
+  // 🗑️ Delete task with UUID — optimistic update
   Future<bool> deleteTaskWithUuid(int taskId, String uuid, String token) async {
+    final previousTasks = state.tasks;
+    // ⚡ Remove instantly from UI
+    state = state.copyWith(
+      tasks: state.tasks.where((t) => t.uuid != uuid && t.id != taskId).toList(),
+    );
     try {
       final deleted = await taskService.deleteTask(taskId, uuid, token);
-      await loadTasks(token);
+      // Silent background sync
+      loadTasks(token);
       return deleted;
     } catch (e) {
-      state = state.copyWith(error: e.toString());
+      // Revert on failure
+      state = state.copyWith(tasks: previousTasks, error: e.toString());
       rethrow;
     }
   }

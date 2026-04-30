@@ -50,6 +50,14 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
       extendBodyBehindAppBar: true,
       appBar: GlassAppBar(
         centerTitle: true,
+        leading: IconButton(
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            size: 20,
+            color: textColor,
+          ),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Text(
           _isEditMode ? l10n.tr('task.editTask') : l10n.tr('task.addNewTask'),
           style: TextStyle(

@@ -2,24 +2,41 @@ package com.Rahul.AshaSathi.Services;
 
 
 import com.Rahul.AshaSathi.DTO.AuthResponse;
+import com.Rahul.AshaSathi.DTO.GoogleLoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.LoginRequestDTO;
 import com.Rahul.AshaSathi.DTO.SignupRequestDTO;
 import com.Rahul.AshaSathi.Entity.User;
 import com.Rahul.AshaSathi.JWT.JwtUtil;
 import com.Rahul.AshaSathi.Repository.UserRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.Map;
 
 @Service
 public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final RestClient googleTokenClient;
+    private final String googleClientId;
 
-    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder, JwtUtil jwtUtil) {
+    public AuthService(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder,
+            JwtUtil jwtUtil,
+            @Value("${spring.security.oauth2.client.registration.google.client-id:}") String googleClientId
+    ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.googleClientId = googleClientId;
+        this.googleTokenClient = RestClient.builder()
+                .baseUrl("https://oauth2.googleapis.com")
+                .build();
     }
 
     public AuthResponse signup(SignupRequestDTO request){
@@ -57,7 +74,44 @@ public class AuthService {
     }
 
 
-    public AuthResponse googleLogin(String email , String username) {
+    public AuthResponse googleLogin(GoogleLoginRequestDTO request) {
+        if (request == null || request.getIdToken() == null || request.getIdToken().isBlank()) {
+            throw new RuntimeException("GOOGLE_ID_TOKEN_REQUIRED");
+        }
+
+        Map<String, Object> tokenInfo = googleTokenClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/tokeninfo")
+                        .queryParam("id_token", request.getIdToken())
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {});
+
+        if (tokenInfo == null) {
+            throw new RuntimeException("GOOGLE_TOKEN_INVALID");
+        }
+
+        String audience = asString(tokenInfo.get("aud"));
+        if (googleClientId != null && !googleClientId.isBlank() && !googleClientId.equals(audience)) {
+            throw new RuntimeException("GOOGLE_TOKEN_AUDIENCE_INVALID");
+        }
+
+        String emailVerified = asString(tokenInfo.get("email_verified"));
+        if (!"true".equalsIgnoreCase(emailVerified)) {
+            throw new RuntimeException("GOOGLE_EMAIL_NOT_VERIFIED");
+        }
+
+        String email = asString(tokenInfo.get("email"));
+        if (email.isBlank()) {
+            throw new RuntimeException("GOOGLE_EMAIL_MISSING");
+        }
+
+        String username = asString(tokenInfo.get("name"));
+        int atIndex = email.indexOf('@');
+        if (username.isBlank() && atIndex > 0) {
+            username = email.substring(0, atIndex);
+        }
+
         User user = userRepository.findByEmail(email).orElse(null);
 
         if(user == null){
@@ -79,5 +133,8 @@ public class AuthService {
 
     }
 
+    private String asString(Object value) {
+        return value == null ? "" : value.toString();
+    }
 
 }

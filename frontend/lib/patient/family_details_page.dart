@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../utils/glass_widgets.dart';
 import 'add_patient_models.dart';
 
 class FamilyDetailsPage extends StatelessWidget {
@@ -52,26 +53,15 @@ class FamilyDetailsPage extends StatelessWidget {
           if (showBackToDashboardButton)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
-                      '/main',
-                      (route) => false,
-                    );
-                  },
-                  icon: const Icon(Icons.home_rounded),
-                  label: const Text('Back to Dashboard'),
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    backgroundColor: const Color(0xFF14B8A6),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+              child: GlassButton(
+                icon: Icons.home_rounded,
+                label: 'Back to Dashboard',
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+                    '/main',
+                    (route) => false,
+                  );
+                },
               ),
             ),
         ],
@@ -79,47 +69,25 @@ class FamilyDetailsPage extends StatelessWidget {
     );
 
     if (!showAppBar) {
-      return ColoredBox(
-        color: Theme.of(context).scaffoldBackgroundColor,
+      return GradientScaffold(
         child: content,
       );
     }
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      appBar: AppBar(
-        title: const Text('Family Details'),
+    return GradientScaffold(
+      extendBodyBehindAppBar: true,
+      appBar: GlassAppBar(
+        title: const Text('Family Details', style: TextStyle(fontWeight: FontWeight.w700)),
         centerTitle: true,
       ),
-      body: content,
+      child: content,
     );
   }
 
   Widget _familyHeaderCard(BuildContext context, bool isDark) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [const Color(0xFF17212A), const Color(0xFF10181F)]
-              : [Colors.white, const Color(0xFFF5FBF9)],
-        ),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF31414F) : const Color(0xFFDCE5E3),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.18 : 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
+    return GlassContainer(
+      padding: const EdgeInsets.all(18),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -189,31 +157,15 @@ class FamilyDetailsPage extends StatelessWidget {
             ),
           ],
         ),
-      ),
     );
   }
 
   Widget _memberCard(BuildContext context, PatientDataModel member, bool isDark) {
     final hasActiveDisease = member.diseases.values.any((active) => active);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF162028) : Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: isDark ? const Color(0xFF31414F) : const Color(0xFFE4E9ED),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.05),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -341,7 +293,6 @@ class FamilyDetailsPage extends StatelessWidget {
             ],
           ],
         ),
-      ),
     );
   }
 

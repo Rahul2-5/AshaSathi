@@ -17,4 +17,9 @@ class AppConfig {
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue: '',
   );
+
+  static const String githubClientId = String.fromEnvironment(
+    'GITHUB_CLIENT_ID',
+    defaultValue: '',
+  );
 }

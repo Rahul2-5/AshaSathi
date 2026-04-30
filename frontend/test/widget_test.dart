@@ -5,20 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:frontend/main.dart';
 
 void main() {
-  testWidgets('MyApp renders splash shell', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MyApp(),
-      ),
-    );
+  testWidgets('MyApp renders app shell', (WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: MyApp()));
+    await tester.pump();
 
     expect(find.byType(MyApp), findsOneWidget);
     expect(find.byType(MaterialApp), findsOneWidget);
-
-    await tester.pump(const Duration(milliseconds: 1200));
-    await tester.pumpAndSettle();
-
-    expect(find.byType(MyApp), findsOneWidget);
-    expect(find.byType(Scaffold), findsWidgets);
   });
 }

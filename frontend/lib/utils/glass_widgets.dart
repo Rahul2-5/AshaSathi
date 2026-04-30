@@ -12,7 +12,7 @@ const kAccentCyan = Color(0xFF2ED1B0);
 // GRADIENT SCAFFOLD  — full-screen mesh gradient background
 // ─────────────────────────────────────────────────────────────────────────────
 
-class GradientScaffold extends StatelessWidget {
+class GradientScaffold extends StatefulWidget {
   const GradientScaffold({
     super.key,
     required this.child,
@@ -37,90 +37,142 @@ class GradientScaffold extends StatelessWidget {
   final bool extendBody;
 
   @override
+  State<GradientScaffold> createState() => _GradientScaffoldState();
+}
+
+class _GradientScaffoldState extends State<GradientScaffold>
+    with SingleTickerProviderStateMixin {
+  // Smooth background transition duration
+  static const _kDuration = Duration(milliseconds: 500);
+  static const _kCurve = Curves.easeInOutCubic;
+
+  // Dark palette
+  static const _darkBg1 = Color(0xFF0B1120);
+  static const _darkBg2 = Color(0xFF0E1A20);
+  static const _darkBg3 = Color(0xFF0A1218);
+
+  // Light palette
+  static const _lightBg1 = Color(0xFFE8F8F5);
+  static const _lightBg2 = Color(0xFFF2F6FF);
+  static const _lightBg3 = Color(0xFFF7FBFF);
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgStart = isDark ? _darkBg1 : _lightBg1;
+    final bgMid   = isDark ? _darkBg2 : _lightBg2;
+    final bgEnd   = isDark ? _darkBg3 : _lightBg3;
+
+    final orb1Color = isDark
+        ? kTeal.withValues(alpha: 0.12)
+        : kTeal.withValues(alpha: 0.18);
+    final orb2Color = isDark
+        ? kAccentCyan.withValues(alpha: 0.07)
+        : kAccentCyan.withValues(alpha: 0.12);
+    final orb3Color = isDark
+        ? const Color(0xFF4F46E5).withValues(alpha: 0.06)
+        : const Color(0xFF818CF8).withValues(alpha: 0.10);
+
     return Scaffold(
-      extendBodyBehindAppBar: extendBodyBehindAppBar,
-      extendBody: extendBody,
-      resizeToAvoidBottomInset: resizeToAvoidBottomInset,
-      appBar: appBar,
-      drawer: drawer,
-      onDrawerChanged: onDrawerChanged,
-      floatingActionButton: floatingActionButton,
-      bottomNavigationBar: bottomNavigationBar,
+      extendBodyBehindAppBar: widget.extendBodyBehindAppBar,
+      extendBody: widget.extendBody,
+      resizeToAvoidBottomInset: widget.resizeToAvoidBottomInset,
+      appBar: widget.appBar,
+      drawer: widget.drawer,
+      onDrawerChanged: widget.onDrawerChanged,
+      floatingActionButton: widget.floatingActionButton,
+      bottomNavigationBar: widget.bottomNavigationBar,
       backgroundColor: Colors.transparent,
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // Base gradient
-          Container(
+          // ── Animated base gradient ──────────────────────────────────────
+          AnimatedContainer(
+            duration: _kDuration,
+            curve: _kCurve,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: isDark
-                    ? const [Color(0xFF0B1120), Color(0xFF0E1A20), Color(0xFF0A1218)]
-                    : const [Color(0xFFE8F8F5), Color(0xFFF2F6FF), Color(0xFFF7FBFF)],
+                colors: [bgStart, bgMid, bgEnd],
               ),
             ),
           ),
-          // Orb 1 — top-right accent
+          // ── Orb 1 — top-right accent ────────────────────────────────────
           Positioned(
             top: -80,
             right: -60,
-            child: _GlowOrb(
+            child: _AnimatedGlowOrb(
               size: 260,
-              color: isDark
-                  ? kTeal.withValues(alpha: 0.12)
-                  : kTeal.withValues(alpha: 0.18),
+              color: orb1Color,
+              duration: _kDuration,
+              curve: _kCurve,
             ),
           ),
-          // Orb 2 — bottom-left accent
+          // ── Orb 2 — bottom-left accent ──────────────────────────────────
           Positioned(
             bottom: -100,
             left: -80,
-            child: _GlowOrb(
+            child: _AnimatedGlowOrb(
               size: 300,
-              color: isDark
-                  ? kAccentCyan.withValues(alpha: 0.07)
-                  : kAccentCyan.withValues(alpha: 0.12),
+              color: orb2Color,
+              duration: _kDuration,
+              curve: _kCurve,
             ),
           ),
-          // Orb 3 — mid-right subtle
+          // ── Orb 3 — mid-right subtle ────────────────────────────────────
           Positioned(
             top: 200,
             right: -120,
-            child: _GlowOrb(
+            child: _AnimatedGlowOrb(
               size: 220,
-              color: isDark
-                  ? const Color(0xFF4F46E5).withValues(alpha: 0.06)
-                  : const Color(0xFF818CF8).withValues(alpha: 0.10),
+              color: orb3Color,
+              duration: _kDuration,
+              curve: _kCurve,
             ),
           ),
-          // Main content
-          child,
+          // ── Main content ────────────────────────────────────────────────
+          widget.child,
         ],
       ),
     );
   }
 }
 
-class _GlowOrb extends StatelessWidget {
-  const _GlowOrb({required this.size, required this.color});
+/// A glow orb that smoothly animates its radial gradient color.
+class _AnimatedGlowOrb extends StatelessWidget {
+  const _AnimatedGlowOrb({
+    required this.size,
+    required this.color,
+    required this.duration,
+    required this.curve,
+  });
   final double size;
   final Color color;
+  final Duration duration;
+  final Curve curve;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [color, Colors.transparent],
-        ),
-      ),
+    // TweenAnimationBuilder interpolates the color smoothly
+    return TweenAnimationBuilder<Color?>(
+      tween: ColorTween(end: color),
+      duration: duration,
+      curve: curve,
+      builder: (context, animatedColor, _) {
+        final c = animatedColor ?? color;
+        return Container(
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(
+              colors: [c, Colors.transparent],
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -306,7 +358,7 @@ class GlassSectionCard extends StatelessWidget {
 // GLASS APP BAR  — frosted glass top bar
 // ─────────────────────────────────────────────────────────────────────────────
 
-class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
+class GlassAppBar extends StatefulWidget implements PreferredSizeWidget {
   const GlassAppBar({
     super.key,
     this.title,
@@ -330,50 +382,75 @@ class GlassAppBar extends StatelessWidget implements PreferredSizeWidget {
   Size get preferredSize => Size.fromHeight(height);
 
   @override
+  State<GlassAppBar> createState() => _GlassAppBarState();
+}
+
+class _GlassAppBarState extends State<GlassAppBar> {
+  static const _kDuration = Duration(milliseconds: 500);
+  static const _kCurve = Curves.easeInOutCubic;
+
+  @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Target colors for this theme
+    final topColor    = isDark ? const Color(0xFF0B1120).withValues(alpha: 0.85) : const Color(0xFFE8F8F5).withValues(alpha: 0.55);
+    final bottomColor = isDark ? const Color(0xFF0B1120).withValues(alpha: 0.70) : Colors.white.withValues(alpha: 0.38);
+    final borderColor = isDark ? Colors.white.withValues(alpha: 0.08) : kTeal.withValues(alpha: 0.15);
+
     return ClipRect(
       child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: Container(
-          height: height + MediaQuery.of(context).padding.top,
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFF0B1120).withValues(alpha: 0.85),
-                      const Color(0xFF0B1120).withValues(alpha: 0.70),
-                    ],
-                  )
-                : LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      const Color(0xFFE8F8F5).withValues(alpha: 0.55),
-                      Colors.white.withValues(alpha: 0.38),
-                    ],
-                  ),
-            border: Border(
-              bottom: BorderSide(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.08)
-                    : kTeal.withValues(alpha: 0.15),
-                width: 0.5,
-              ),
-            ),
-          ),
-          child: SafeArea(
-            bottom: false,
-            child: NavigationToolbar(
-              leading: leading,
-              middle: title,
-              trailing: actions != null ? Row(mainAxisSize: MainAxisSize.min, children: actions!) : null,
-              centerMiddle: centerTitle,
-            ),
-          ),
+        filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
+        child: TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: topColor),
+          duration: _kDuration,
+          curve: _kCurve,
+          builder: (context, animTop, _) {
+            return TweenAnimationBuilder<Color?>(
+              tween: ColorTween(end: bottomColor),
+              duration: _kDuration,
+              curve: _kCurve,
+              builder: (context, animBottom, _) {
+                return TweenAnimationBuilder<Color?>(
+                  tween: ColorTween(end: borderColor),
+                  duration: _kDuration,
+                  curve: _kCurve,
+                  builder: (context, animBorder, _) {
+                    return Container(
+                      height: widget.height + MediaQuery.of(context).padding.top,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            animTop    ?? topColor,
+                            animBottom ?? bottomColor,
+                          ],
+                        ),
+                        border: Border(
+                          bottom: BorderSide(
+                            color: animBorder ?? borderColor,
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                      child: SafeArea(
+                        bottom: false,
+                        child: NavigationToolbar(
+                          leading: widget.leading,
+                          middle: widget.title,
+                          trailing: widget.actions != null
+                              ? Row(mainAxisSize: MainAxisSize.min, children: widget.actions!)
+                              : null,
+                          centerMiddle: widget.centerTitle,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            );
+          },
         ),
       ),
     );

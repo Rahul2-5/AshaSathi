@@ -25,10 +25,10 @@ public class SqliteToPostgresMigration {
 
     private final JdbcTemplate postgresJdbc;
 
-    @Value("${app.migration.sqlite-to-postgres.enabled:true}")
+    @Value("${app.migration.sqlite-to-postgres.enabled:false}")
     private boolean migrationEnabled;
 
-    @Value("${app.migration.sqlite-path:D:/Flutter_Projects/AshaSathi/Backend/data/ashasathi.db}")
+    @Value("${app.migration.sqlite-path:./data/ashasathi.db}")
     private String sqlitePath;
 
     public SqliteToPostgresMigration(JdbcTemplate postgresJdbc) {

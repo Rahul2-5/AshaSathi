@@ -1,57 +1,63 @@
 import 'dart:convert';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
 
 import '../patient/family_model.dart';
+import 'app_database_offline.dart';
 
 class FamilyCacheService {
-  static const String _cachedFamiliesKey = 'cached_family_records_v1';
-
   Future<void> saveFamilies(List<FamilyRecord> families) async {
-    final prefs = await SharedPreferences.getInstance();
-    final payload = families.map((family) => family.toJson()).toList();
-    await prefs.setString(_cachedFamiliesKey, jsonEncode(payload));
+    final db = await AppDatabaseOffline().database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    await db.transaction((txn) async {
+      await txn.delete(AppDatabaseOffline.cachedFamilyTable);
+      for (final family in families) {
+        await txn.insert(AppDatabaseOffline.cachedFamilyTable, {
+          'familyId': family.id,
+          'payload': jsonEncode(family.toJson()),
+          'updatedAt': now,
+        });
+      }
+    });
   }
 
   Future<void> upsertFamily(FamilyRecord family) async {
-    final families = await loadFamilies();
-    final updatedFamilies = [
-      ...families.where((existing) => existing.id != family.id),
-      family,
-    ];
-    await saveFamilies(updatedFamilies);
+    final db = await AppDatabaseOffline().database;
+    await db.insert(
+      AppDatabaseOffline.cachedFamilyTable,
+      {
+        'familyId': family.id,
+        'payload': jsonEncode(family.toJson()),
+        'updatedAt': DateTime.now().millisecondsSinceEpoch,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
   }
 
   Future<void> removeFamilyById(int familyId) async {
-    final families = await loadFamilies();
-    final updatedFamilies = families.where((family) => family.id != familyId).toList();
-    await saveFamilies(updatedFamilies);
+    final db = await AppDatabaseOffline().database;
+    await db.delete(
+      AppDatabaseOffline.cachedFamilyTable,
+      where: 'familyId = ?',
+      whereArgs: [familyId],
+    );
   }
 
   Future<List<FamilyRecord>> loadFamilies() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_cachedFamiliesKey);
-    if (raw == null || raw.trim().isEmpty) {
-      return <FamilyRecord>[];
-    }
+    final db = await AppDatabaseOffline().database;
+    final rows = await db.query(
+      AppDatabaseOffline.cachedFamilyTable,
+      orderBy: 'updatedAt DESC',
+    );
 
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) {
-        return <FamilyRecord>[];
-      }
-
-      return decoded
-          .whereType<Map<String, dynamic>>()
-          .map(FamilyRecord.fromJson)
-          .toList();
-    } catch (_) {
-      return <FamilyRecord>[];
-    }
+    return rows.map((row) {
+      final payload = jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+      return FamilyRecord.fromJson(payload);
+    }).toList();
   }
 
   Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_cachedFamiliesKey);
+    final db = await AppDatabaseOffline().database;
+    await db.delete(AppDatabaseOffline.cachedFamilyTable);
   }
 }

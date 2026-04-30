@@ -90,6 +90,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
                   themeAnimationCurve: Curves.easeInOutCubicEmphasized,
                   theme: _lightTheme(),
                   darkTheme: _darkTheme(),
+                  // ⚡ Smooth bouncing scroll globally (no color flash)
+                  scrollBehavior: const _SmoothScrollBehavior(),
                   home: const SplashPage(),
                   routes: {
                     '/main': (_) => const MainNavigation(),
@@ -116,7 +118,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      scaffoldBackgroundColor: const Color(0xFFEEF5F8),
+      // Transparent so GradientScaffold background always shows through
+      scaffoldBackgroundColor: Colors.transparent,
       colorScheme: scheme,
       cardColor: Colors.white.withValues(alpha: 0.75),
       appBarTheme: AppBarTheme(
@@ -218,7 +221,8 @@ class _AppRootState extends ConsumerState<_AppRoot> {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      scaffoldBackgroundColor: const Color(0xFF0B1120),
+      // Transparent so GradientScaffold background always shows through
+      scaffoldBackgroundColor: Colors.transparent,
       colorScheme: scheme,
       appBarTheme: AppBarTheme(
         backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.80),
@@ -320,6 +324,31 @@ class ThemeModeController extends InheritedNotifier<ValueNotifier<ThemeMode>> {
         .dependOnInheritedWidgetOfExactType<ThemeModeController>();
     assert(controller != null, 'ThemeModeController not found in widget tree');
     return controller!.notifier!;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SMOOTH SCROLL BEHAVIOR
+// Applies a natural bounce effect at the edges of scroll views without showing
+// the default Android colored glow or stretch, which can disrupt the glass theme.
+// ─────────────────────────────────────────────────────────────────────────────
+class _SmoothScrollBehavior extends ScrollBehavior {
+  const _SmoothScrollBehavior();
+
+  @override
+  Widget buildOverscrollIndicator(
+    BuildContext context,
+    Widget child,
+    ScrollableDetails details,
+  ) {
+    // Remove the colored overscroll glow completely
+    return child;
+  }
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) {
+    // Provide a smooth bouncing effect instead of a hard stop or colored stretch
+    return const BouncingScrollPhysics();
   }
 }
 

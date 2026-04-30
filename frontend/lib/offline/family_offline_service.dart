@@ -1,97 +1,120 @@
-import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
-class FamilyOfflineService {
-  static const String _pendingFamiliesKey = 'pending_family_registrations_v1';
+import 'package:flutter/foundation.dart';
 
-  /// Save a family and its members offline for later sync
+import 'app_database_offline.dart';
+
+class FamilyOfflineService {
   Future<void> saveFamilyOffline({
     required Map<String, dynamic> familyInfo,
     required List<Map<String, dynamic>> patients,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // Load existing pending families
-    final existingJson = prefs.getString(_pendingFamiliesKey);
-    final List<dynamic> pendingFamilies = existingJson != null 
-        ? jsonDecode(existingJson) as List<dynamic>
-        : [];
-
-    // Create new pending family entry
-    final newEntry = {
+    final db = await AppDatabaseOffline().database;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final payload = {
       'familyInfo': familyInfo,
       'patients': patients,
-      'createdAt': DateTime.now().millisecondsSinceEpoch,
+      'createdAt': now,
       'syncAttempts': 0,
       'lastError': null,
     };
 
-    pendingFamilies.add(newEntry);
-
-    // Save back to SharedPreferences
-    await prefs.setString(_pendingFamiliesKey, jsonEncode(pendingFamilies));
-    debugPrint('[FamilyOfflineService] Saved family offline for pending sync');
+    await db.insert(AppDatabaseOffline.pendingFamilyTable, {
+      'payload': jsonEncode(payload),
+      'createdAt': now,
+      'syncAttempts': 0,
+      'lastError': null,
+    });
+    debugPrint('[FamilyOfflineService] Saved family offline in SQLite');
   }
 
-  /// Get all pending families that need to be synced
   Future<List<Map<String, dynamic>>> getPendingFamilies() async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_pendingFamiliesKey);
-    if (json == null) return [];
+    final db = await AppDatabaseOffline().database;
+    final rows = await db.query(
+      AppDatabaseOffline.pendingFamilyTable,
+      orderBy: 'createdAt ASC, localId ASC',
+    );
 
-    try {
-      final decoded = jsonDecode(json) as List<dynamic>;
-      return List<Map<String, dynamic>>.from(decoded);
-    } catch (e) {
-      debugPrint('[FamilyOfflineService] Error parsing pending families: $e');
-      return [];
-    }
+    return rows.map((row) {
+      final payload = jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+      payload['localId'] = row['localId'];
+      payload['syncAttempts'] = row['syncAttempts'];
+      payload['lastError'] = row['lastError'];
+      return payload;
+    }).toList();
   }
 
-  /// Mark a pending family as synced and remove from pending list
+  Future<void> replacePendingFamilies(List<Map<String, dynamic>> families) async {
+    final db = await AppDatabaseOffline().database;
+    await db.transaction((txn) async {
+      await txn.delete(AppDatabaseOffline.pendingFamilyTable);
+      for (final family in families) {
+        final createdAt = (family['createdAt'] as num?)?.toInt() ??
+            DateTime.now().millisecondsSinceEpoch;
+        await txn.insert(AppDatabaseOffline.pendingFamilyTable, {
+          'payload': jsonEncode({
+            'familyInfo': family['familyInfo'],
+            'patients': family['patients'],
+            'createdAt': createdAt,
+            'syncAttempts': family['syncAttempts'] ?? 0,
+            'lastError': family['lastError'],
+          }),
+          'createdAt': createdAt,
+          'syncAttempts': (family['syncAttempts'] as num?)?.toInt() ?? 0,
+          'lastError': family['lastError']?.toString(),
+        });
+      }
+    });
+  }
+
   Future<void> markFamilySynced(int index) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_pendingFamiliesKey);
-    if (json == null) return;
+    final rows = await _orderedRows();
+    if (index < 0 || index >= rows.length) return;
 
-    try {
-      final decoded = jsonDecode(json) as List<dynamic>;
-      decoded.removeAt(index);
-      await prefs.setString(_pendingFamiliesKey, jsonEncode(decoded));
-      debugPrint('[FamilyOfflineService] Marked family at index $index as synced');
-    } catch (e) {
-      debugPrint('[FamilyOfflineService] Error marking family as synced: $e');
-    }
+    final db = await AppDatabaseOffline().database;
+    await db.delete(
+      AppDatabaseOffline.pendingFamilyTable,
+      where: 'localId = ?',
+      whereArgs: [rows[index]['localId']],
+    );
   }
 
-  /// Update sync error for a pending family
   Future<void> updateSyncError({
     required int index,
     required String error,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final json = prefs.getString(_pendingFamiliesKey);
-    if (json == null) return;
+    final rows = await _orderedRows();
+    if (index < 0 || index >= rows.length) return;
 
-    try {
-      final decoded = jsonDecode(json) as List<dynamic>;
-      if (index < decoded.length) {
-        final family = decoded[index] as Map<String, dynamic>;
-        family['lastError'] = error;
-        family['syncAttempts'] = (family['syncAttempts'] ?? 0) + 1;
-        await prefs.setString(_pendingFamiliesKey, jsonEncode(decoded));
-        debugPrint('[FamilyOfflineService] Updated sync error for family at index $index');
-      }
-    } catch (e) {
-      debugPrint('[FamilyOfflineService] Error updating sync error: $e');
-    }
+    final row = rows[index];
+    final attempts = ((row['syncAttempts'] as num?)?.toInt() ?? 0) + 1;
+    final payload = jsonDecode(row['payload'] as String) as Map<String, dynamic>;
+    payload['lastError'] = error;
+    payload['syncAttempts'] = attempts;
+
+    final db = await AppDatabaseOffline().database;
+    await db.update(
+      AppDatabaseOffline.pendingFamilyTable,
+      {
+        'payload': jsonEncode(payload),
+        'syncAttempts': attempts,
+        'lastError': error,
+      },
+      where: 'localId = ?',
+      whereArgs: [row['localId']],
+    );
   }
 
-  /// Clear all pending families (usually after successful team sync)
   Future<void> clearPending() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_pendingFamiliesKey);
-    debugPrint('[FamilyOfflineService] Cleared all pending families');
+    final db = await AppDatabaseOffline().database;
+    await db.delete(AppDatabaseOffline.pendingFamilyTable);
+  }
+
+  Future<List<Map<String, Object?>>> _orderedRows() async {
+    final db = await AppDatabaseOffline().database;
+    return db.query(
+      AppDatabaseOffline.pendingFamilyTable,
+      orderBy: 'createdAt ASC, localId ASC',
+    );
   }
 }

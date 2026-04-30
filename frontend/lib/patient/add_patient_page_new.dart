@@ -73,6 +73,17 @@ class AddPatientPageNew extends ConsumerWidget {
       border: Border(bottom: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5))),
       child: Column(
         children: [
+          // Title - centered, no icons
+          Text(
+            'Add Patient',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isDark ? Colors.white : Colors.black,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
           // Progress bars
           Row(
             children: [
@@ -87,10 +98,10 @@ class AddPatientPageNew extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 color: currentStep >= 2
-                    ? const Color(0xFF14b8a6)
+                    ? const Color(0xFF14A7A0)
                     : (isDark
-                        ? const Color(0xFF374151)
-                        : theme.colorScheme.outlineVariant),
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.05)),
               ),
               _buildProgressSegment(
                 context,
@@ -103,10 +114,10 @@ class AddPatientPageNew extends ConsumerWidget {
                 height: 4,
                 margin: const EdgeInsets.symmetric(horizontal: 4),
                 color: currentStep >= 3
-                    ? const Color(0xFF14b8a6)
+                    ? const Color(0xFF14A7A0)
                     : (isDark
-                        ? const Color(0xFF374151)
-                        : theme.colorScheme.outlineVariant),
+                        ? Colors.white.withValues(alpha: 0.1)
+                        : Colors.black.withValues(alpha: 0.05)),
               ),
               _buildProgressSegment(
                 context,
@@ -138,10 +149,10 @@ class AddPatientPageNew extends ConsumerWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               color: isActive
-                  ? const Color(0xFF14b8a6)
+                  ? const Color(0xFF14A7A0)
                   : (isDark
-                      ? const Color(0xFF374151)
-                      : theme.colorScheme.outlineVariant),
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : Colors.black.withValues(alpha: 0.05)),
             ),
           ),
           const SizedBox(height: 8),
@@ -149,7 +160,7 @@ class AddPatientPageNew extends ConsumerWidget {
             label,
             style: TextStyle(
               color: isActive
-                  ? const Color(0xFF14b8a6)
+                  ? const Color(0xFF14A7A0)
                   : theme.colorScheme.onSurface.withValues(alpha: 0.6),
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -164,9 +175,6 @@ class AddPatientPageNew extends ConsumerWidget {
     final canProceed = ref.watch(canProceedToNextStepProvider);
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final backButtonColor = isDark
-        ? const Color(0xFF1f2937)
-        : theme.colorScheme.surfaceContainerHighest;
 
     return GlassContainer(
       padding: const EdgeInsets.all(16),
@@ -185,9 +193,9 @@ class AddPatientPageNew extends ConsumerWidget {
               padding: const EdgeInsets.all(12),
               margin: const EdgeInsets.only(bottom: 12),
               decoration: BoxDecoration(
-                color: theme.colorScheme.errorContainer,
-                border: Border.all(color: theme.colorScheme.error),
-                borderRadius: BorderRadius.circular(8),
+                color: theme.colorScheme.errorContainer.withValues(alpha: 0.8),
+                border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.5)),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 state.errorMessage,
@@ -202,23 +210,29 @@ class AddPatientPageNew extends ConsumerWidget {
               // Back button (visible after step 1)
               if (state.step > 1)
                 Expanded(
-                  child: ElevatedButton(
+                  child: ElevatedButton.icon(
                     onPressed: () {
                       ref.read(addPatientFormProvider.notifier).previousStep();
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: backButtonColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                    icon: const Icon(Icons.arrow_back, size: 20),
+                    label: Text(
+                      context.l10n.tr('common.back'),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.3,
                       ),
                     ),
-                    child: Text(
-                      context.l10n.tr('common.back'),
-                      style: TextStyle(
-                        color: theme.colorScheme.onSurface,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isDark
+                          ? Colors.white.withValues(alpha: 0.1)
+                          : Colors.black.withValues(alpha: 0.05),
+                      foregroundColor: theme.colorScheme.onSurface,
+                      elevation: 0,
+                      shadowColor: Colors.transparent,
+                      minimumSize: const Size(double.infinity, 56),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
                       ),
                     ),
                   ),
@@ -227,33 +241,21 @@ class AddPatientPageNew extends ConsumerWidget {
 
               // Next/Save button
               Expanded(
-                child: ElevatedButton(
+                child: GlassButton(
                   onPressed: canProceed
                       ? state.step == 3
                           ? () => _handleSubmit(context, ref, state)
                           : () {
                               ref.read(addPatientFormProvider.notifier).nextStep();
                             }
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: canProceed
-                        ? const Color(0xFF14b8a6)
-                        : const Color(0xFF14b8a6).withValues(alpha: 0.5),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: Text(
-                    state.step == 3
-                        ? context.l10n.tr('patient.saveData')
-                        : context.l10n.tr('common.next'),
-                    style: TextStyle(
-                      color: theme.colorScheme.onPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                      : () {},
+                  label: state.step == 3
+                      ? context.l10n.tr('patient.saveData')
+                      : context.l10n.tr('common.next'),
+                  icon: state.step == 3 ? Icons.check : Icons.arrow_forward,
+                  gradientColors: canProceed
+                      ? [const Color(0xFF14A7A0), const Color(0xFF108C86)]
+                      : [const Color(0xFF14A7A0).withValues(alpha: 0.3), const Color(0xFF108C86).withValues(alpha: 0.3)],
                 ),
               ),
             ],

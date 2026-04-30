@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
+import '../../utils/glass_widgets.dart';
 
 class Step1FamilyInfo extends ConsumerWidget {
   const Step1FamilyInfo({super.key});
@@ -12,7 +13,6 @@ class Step1FamilyInfo extends ConsumerWidget {
     final familyInfo = state.familyInfo;
     final errors = state.validationErrors;
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -31,14 +31,7 @@ class Step1FamilyInfo extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Card container
-          Container(
-            decoration: BoxDecoration(
-              color: isDark
-                  ? const Color(0xFF1f2937)
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
+          GlassContainer(
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
@@ -118,10 +111,6 @@ class Step1FamilyInfo extends ConsumerWidget {
     required BuildContext context,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final inputBg = isDark
-        ? const Color(0xFF0f1419)
-        : theme.colorScheme.surface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,36 +130,7 @@ class Step1FamilyInfo extends ConsumerWidget {
           maxLines: maxLines,
           onChanged: onChanged,
           decoration: InputDecoration(
-            filled: true,
-            fillColor: inputBg,
             hintText: hintText,
-            hintStyle: TextStyle(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
-            ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: errorText != null
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.outlineVariant,
-              ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: errorText != null
-                    ? theme.colorScheme.error
-                    : theme.colorScheme.outlineVariant,
-              ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: Color(0xFF14b8a6),
-                width: 2,
-              ),
-            ),
-            contentPadding: const EdgeInsets.all(12),
             errorText: errorText,
           ),
         ),
@@ -216,11 +176,13 @@ class Step1FamilyInfo extends ConsumerWidget {
                   : null,
             ),
             const SizedBox(width: 12),
-            Text(
-              label,
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 14,
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: theme.colorScheme.onSurface,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],
@@ -236,10 +198,6 @@ class Step1FamilyInfo extends ConsumerWidget {
     String? errorText,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final inputBg = isDark
-        ? const Color(0xFF0f1419)
-        : theme.colorScheme.surface;
 
     final safeValue = value < 1 ? 1 : value;
 
@@ -263,14 +221,14 @@ class Step1FamilyInfo extends ConsumerWidget {
         ),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: inputBg,
-            borderRadius: BorderRadius.circular(12),
+            color: theme.inputDecorationTheme.fillColor,
+            borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: errorText != null
                   ? theme.colorScheme.error
-                  : theme.colorScheme.outlineVariant,
+                  : theme.inputDecorationTheme.enabledBorder?.borderSide.color ?? theme.colorScheme.outlineVariant,
             ),
           ),
           child: Row(

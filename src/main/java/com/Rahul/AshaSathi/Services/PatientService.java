@@ -2,6 +2,7 @@ package com.Rahul.AshaSathi.Services;
 
 import com.Rahul.AshaSathi.DTO.PatientRequest;
 import com.Rahul.AshaSathi.Entity.Patient;
+import com.Rahul.AshaSathi.Entity.User;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -23,13 +24,12 @@ public class PatientService {
         this.patientRepository = patientRepository;
     }
 
-    public Patient savePatient(PatientRequest request) {
+    public Patient savePatient(PatientRequest request, User user) {
         // If clientTempId is provided and a patient with that clientTempId exists,
         // return the existing patient (avoid duplicate creates from offline retries).
         if (request.clientTempId != null && !request.clientTempId.isEmpty()) {
-            Patient existing = patientRepository.findAll().stream()
-                    .filter(p -> request.clientTempId.equals(p.getClientTempId()))
-                    .findFirst()
+            Patient existing = patientRepository
+                    .findByClientTempIdAndUserId(request.clientTempId, user.getId())
                     .orElse(null);
             if (existing != null) {
                 // update existing fields
@@ -78,12 +78,13 @@ public class PatientService {
         if (request.monthsOfPregnancy != null) patient.setMonthsOfPregnancy(request.monthsOfPregnancy);
         if (request.expectedDeliveryDate != null) patient.setExpectedDeliveryDate(request.expectedDeliveryDate);
         if (request.medicalConditions != null) patient.setMedicalConditions(request.medicalConditions);
+        patient.setUser(user);
 
         return patientRepository.save(patient);
     }
 
-    public void deletePatient(Long id) {
-        Patient patient = patientRepository.findById(id)
+    public void deletePatient(Long id, Long userId) {
+        Patient patient = patientRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
         // Legacy schema compatibility: clear dependent disease rows first if table exists.
@@ -115,8 +116,8 @@ public class PatientService {
     }
 
     @Transactional
-    public Patient updatePatient(Long id, PatientRequest request) {
-        Patient patient = patientRepository.findById(id)
+    public Patient updatePatient(Long id, PatientRequest request, Long userId) {
+        Patient patient = patientRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
         patient.setPatientName(request.patientName);

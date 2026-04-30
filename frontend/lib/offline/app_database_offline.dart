@@ -14,6 +14,8 @@ class AppDatabaseOffline {
 
   static const String patientTable = 'patients';
   static const String taskTable = 'tasks';
+  static const String pendingFamilyTable = 'pending_families';
+  static const String cachedFamilyTable = 'cached_families';
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -27,7 +29,7 @@ class AppDatabaseOffline {
 
     return openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -79,6 +81,8 @@ class AppDatabaseOffline {
         updatedAt INTEGER NOT NULL
       )
     ''');
+
+    await _createFamilyTables(db);
   }
 
   // ================= MIGRATION =================
@@ -170,6 +174,30 @@ class AppDatabaseOffline {
         definition: 'TEXT',
       );
     }
+
+    if (oldVersion < 7) {
+      await _createFamilyTables(db);
+    }
+  }
+
+  Future<void> _createFamilyTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $pendingFamilyTable (
+        localId INTEGER PRIMARY KEY AUTOINCREMENT,
+        payload TEXT NOT NULL,
+        createdAt INTEGER NOT NULL,
+        syncAttempts INTEGER NOT NULL DEFAULT 0,
+        lastError TEXT
+      )
+    ''');
+
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS $cachedFamilyTable (
+        familyId INTEGER PRIMARY KEY,
+        payload TEXT NOT NULL,
+        updatedAt INTEGER NOT NULL
+      )
+    ''');
   }
 
   Future<void> _addColumnIfMissing(
@@ -189,5 +217,7 @@ class AppDatabaseOffline {
     final db = await database;
     await db.delete(patientTable);
     await db.delete(taskTable);
+    await db.delete(pendingFamilyTable);
+    await db.delete(cachedFamilyTable);
   }
 }

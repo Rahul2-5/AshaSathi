@@ -25,10 +25,11 @@ public class PatientPhotoService {
 
     public void uploadPatientPhoto(
             Long patientId,
-            MultipartFile file
+            MultipartFile file,
+            Long userId
     ) throws IOException {
 
-        Patient patient = patientRepository.findById(patientId)
+        Patient patient = patientRepository.findByIdAndUserId(patientId, userId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
         // Ensure directory exists
