@@ -1,10 +1,13 @@
 package com.Rahul.AshaSathi.DTO;
 
-import lombok.Getter;
-import lombok.Setter;
-
-@Getter
-@Setter
 public class GoogleLoginRequestDTO {
     private String idToken;
+
+    public String getIdToken() {
+        return idToken;
+    }
+
+    public void setIdToken(String idToken) {
+        this.idToken = idToken;
+    }
 }

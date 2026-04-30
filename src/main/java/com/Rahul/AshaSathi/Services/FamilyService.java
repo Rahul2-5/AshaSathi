@@ -12,23 +12,34 @@ import com.Rahul.AshaSathi.Repository.FamilyRepository;
 import com.Rahul.AshaSathi.Repository.PatientRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDate;
 
 @Service
-@RequiredArgsConstructor
-@Slf4j
 public class FamilyService {
+
+    private static final Logger log = LoggerFactory.getLogger(FamilyService.class);
 
     private final FamilyRepository familyRepository;
     private final FamilyPatientRepository patientRepository;
     private final PatientRepository mainPatientRepository;
     private final ObjectMapper objectMapper;
+
+    public FamilyService(FamilyRepository familyRepository,
+                         FamilyPatientRepository patientRepository,
+                         PatientRepository mainPatientRepository,
+                         ObjectMapper objectMapper) {
+        this.familyRepository = familyRepository;
+        this.patientRepository = patientRepository;
+        this.mainPatientRepository = mainPatientRepository;
+        this.objectMapper = objectMapper;
+    }
 
     @Transactional
     public FamilyRegistrationResponse registerFamily(FamilyRegistrationRequest request) {
@@ -79,7 +90,9 @@ public class FamilyService {
                     mainPatient.setCaste(patientDto.getCaste());
                     mainPatient.setIsPregnant(patientDto.getIsPregnant());
                     mainPatient.setMonthsOfPregnancy(patientDto.getMonthsOfPregnancy());
-                    mainPatient.setExpectedDeliveryDate(patientDto.getExpectedDeliveryDate());
+                    if (patientDto.getExpectedDeliveryDate() != null && !patientDto.getExpectedDeliveryDate().isBlank()) {
+                        mainPatient.setExpectedDeliveryDate(LocalDate.parse(patientDto.getExpectedDeliveryDate()));
+                    }
                     mainPatient.setDeclinedHealthInfo(patientDto.getDeclinedHealthInfo());
                     mainPatient.setDiseases(patientDto.getDiseases() == null ? "{}" : objectMapper.writeValueAsString(patientDto.getDiseases()));
                     mainPatient.setAddress(patientDto.getAddress());

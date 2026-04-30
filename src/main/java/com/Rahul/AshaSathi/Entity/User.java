@@ -17,16 +17,8 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    public Long getId() {
-        return id;
-    }
-
     @Column(nullable = false, unique = true)
     private String email;
-
-    public Long getId() {
-        return id;
-    }
 
     public void setId(Long id) {
         this.id = id;
@@ -64,6 +56,10 @@ public class User implements UserDetails {
         this.createdAt = createdAt;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     private String username;
     private String password;
     private String provider;
@@ -91,6 +87,14 @@ public class User implements UserDetails {
     @Override
     public String getPassword() {
         return password;
+    }
+
+    public String getStoredUsername() {
+        return username;
+    }
+
+    public void setStoredUsername(String username) {
+        this.username = username;
     }
 
     @Override public boolean isAccountNonExpired() { return true; }

@@ -11,4 +11,5 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     List<Patient> findByUserId(Long userId);
     Optional<Patient> findByIdAndUserId(Long id, Long userId);
     Optional<Patient> findByClientTempIdAndUserId(String clientTempId, Long userId);
+    long deleteByClientTempIdStartingWith(String clientTempIdPrefix);
 }
