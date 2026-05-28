@@ -73,7 +73,12 @@ class AuthService {
       final auth = await user.authentication;
       final idToken = auth.idToken;
       if (idToken == null || idToken.isEmpty) {
-        throw Exception('Google did not return an ID token');
+        throw Exception(
+          'Google did not return an ID token. This usually means Google Sign-In is not configured for this build.\n'
+          'For Android: add a valid google-services.json (matching your appId) and register OAuth client IDs with the correct package name and SHA-1/SHA-256 fingerprints.\n'
+          'For web: provide the web client ID via --dart-define=GOOGLE_WEB_CLIENT_ID=<YOUR_WEB_CLIENT_ID>.\n'
+          'If you use a custom build variant or debug keystore, ensure the fingerprints match the OAuth client. See project README for setup steps.'
+        );
       }
 
       final response = await http.post(
@@ -98,7 +103,11 @@ class AuthService {
 
       if (code == 'sign_in_failed' || code == '10') {
         throw Exception(
-          'Google Sign-In configuration error. Verify Android package name, SHA-1/SHA-256, and OAuth client ID. Details: $details',
+          'Google Sign-In configuration error. Common fixes:\n'
+          '- Ensure android/app/google-services.json is present and valid for this app id.\n'
+          "- Register an OAuth client for this app's package name and SHA-1/SHA-256 in Google Cloud Console.\n"
+          "- Provide the web client ID via --dart-define=GOOGLE_WEB_CLIENT_ID=your-web-client-id.apps.googleusercontent.com when running the app or set AppConfig accordingly.\n"
+          'Details: $details',
         );
       }
 
