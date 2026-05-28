@@ -1,0 +1,39 @@
+﻿Analyzing frontend...                                           
+
+warning - The value of the local variable 'messenger' isn't used - lib\auth\login_page.dart:470:25 - unused_local_variable
+warning - The value of the local variable 'messenger' isn't used - lib\auth\signup_page.dart:545:25 - unused_local_variable
+   info - Unnecessary use of multiple underscores - lib\home\home_page.dart:1644:53 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\navigation\main_navigation.dart:748:45 - curly_braces_in_flow_control_structures
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_multi_step_page.dart:770:53 - deprecated_member_use
+warning - The value of the local variable 'isDark' isn't used - lib\patient\add_patient_multi_step_page.dart:897:11 - unused_local_variable
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:199:58 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:199:90 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:219:70 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:285:46 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:287:59 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:337:64 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:484:82 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:527:52 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:527:84 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:665:62 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:681:46 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:683:59 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:774:40 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:776:53 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:854:70 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:889:70 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1027:74 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1067:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1067:82 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1119:54 - deprecated_member_use
+   info - 'MaterialStateProperty' is deprecated and shouldn't be used. Use WidgetStateProperty instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:1125:38 - deprecated_member_use
+   info - 'MaterialState' is deprecated and shouldn't be used. Use WidgetState instead. Moved to the Widgets layer to make code available outside of Material. This feature was deprecated after v3.19.0-0.3.pre - lib\patient\add_patient_page.dart:1127:51 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1234:61 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1287:50 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1287:82 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1337:62 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_page.dart:1363:62 - deprecated_member_use
+warning - The declaration '_formatMedicalConditions' isn't referenced - lib\patient\patient_detail_page.dart:790:10 - unused_element
+warning - The value of the local variable 'conditions' isn't used - lib\patient\patient_model.dart:72:11 - unused_local_variable
+warning - The value of the local variable 'conditions' isn't used - lib\patient\patient_model.dart:101:18 - unused_local_variable
+

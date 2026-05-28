@@ -4,10 +4,11 @@ import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/family_model.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
+import '../widgets/custom_bottom_nav_bar.dart';
 
 import '../home/home_page.dart';
-import '../main.dart';
+import '../app/app_settings_controller.dart';
 import '../patient/add_patient_models.dart';
 import '../patient/add_patient_page_new.dart';
 import '../patient/family_details_page.dart';
@@ -107,7 +108,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final themeModeNotifier = ThemeModeController.notifierOf(context);
+    final themeModeNotifier = ref.read(appThemeModeProvider.notifier);
     final l10n = context.l10n;
     const lightScaffoldBg = Color(0xFFF3F4F6);
     const darkScaffoldBg = Color(0xFF0F1419);
@@ -170,9 +171,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                     : lightScaffoldBg;
                                 _isThemeRevealActive = true;
                               });
-                              themeModeNotifier.value = isDark
-                                  ? ThemeMode.light
-                                  : ThemeMode.dark;
+                              themeModeNotifier.setThemeMode(
+                                isDark ? ThemeMode.light : ThemeMode.dark,
+                              );
                               _themeRevealController.forward(from: 0);
                               _lastThemeToggleTapPosition = null;
                             },
@@ -201,98 +202,29 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       ),
       drawer: _buildDrawer(context),
 
-      bottomNavigationBar: Container(
-        margin: const EdgeInsets.only(left: 16, right: 16, bottom: 6, top: 4),
-        child: GlassContainer(
-          borderRadius: BorderRadius.circular(30),
-          blur: 24,
-          child: NavigationBarTheme(
-            data: NavigationBarThemeData(
-              backgroundColor: Colors.transparent,
-              indicatorColor: isDark
-                  ? kTeal.withValues(alpha: 0.25)
-                  : kTeal.withValues(alpha: 0.15),
-              labelTextStyle: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isDark ? kAccentCyan : kTeal,
-                  );
-                }
-                return TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: isDark
-                      ? const Color(0xFF9AA7B3)
-                      : const Color(0xFF6A7480),
-                );
-              }),
-              iconTheme: WidgetStateProperty.resolveWith((states) {
-                if (states.contains(WidgetState.selected)) {
-                  return IconThemeData(
-                    color: isDark ? kAccentCyan : kTeal,
-                    size: 26,
-                  );
-                }
-                return IconThemeData(
-                  color: isDark
-                      ? const Color(0xFF8B99A6)
-                      : const Color(0xFF808B96),
-                  size: 24,
-                );
-              }),
-            ),
-            child: NavigationBar(
-              selectedIndex: _currentIndex,
-              elevation: 0,
-              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              onDestinationSelected: (index) async {
-                if (_currentIndex == index) return;
-                final token = ref.read(loginProvider).token;
-                final patientNotifier = ref.read(patientListProvider.notifier);
-                final taskNotifier = ref.read(taskListProvider.notifier);
+      bottomNavigationBar: CustomBottomNavBar(
+        currentIndex: _currentIndex,
+        onDestinationSelected: (index) async {
+          if (_currentIndex == index) return;
+          final token = await ref.read(loginProvider.notifier).getValidToken();
+          final patientNotifier = ref.read(patientListProvider.notifier);
+          final taskNotifier = ref.read(taskListProvider.notifier);
 
-                await _pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeOutCubic,
-                );
+          await _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
 
-                if (index == 0 && token != null) {
-                  patientNotifier.loadPatients(token);
-                  taskNotifier.loadTasks(token);
-                }
+          if (index == 0 && token != null) {
+            patientNotifier.loadPatients(token);
+            taskNotifier.loadTasks(token);
+          }
 
-                if (index == 2) {
-                  await _loadFamiliesWithValidToken();
-                }
-              },
-              destinations: [
-                NavigationDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: l10n.tr('nav.dashboard'),
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.person_add_alt_1_outlined),
-                  selectedIcon: const Icon(Icons.person_add_alt_1),
-                  label: l10n.tr('nav.addPatient'),
-                ),
-                const NavigationDestination(
-                  icon: Icon(Icons.groups_outlined),
-                  selectedIcon: Icon(Icons.groups_rounded),
-                  label: 'Family',
-                ),
-                NavigationDestination(
-                  icon: const Icon(Icons.insert_chart_outlined_rounded),
-                  selectedIcon: const Icon(Icons.insert_chart_rounded),
-                  label: l10n.tr('nav.phcPortal'),
-                ),
-              ],
-            ),
-          ),
-        ),
+          if (index == 2) {
+            await _loadFamiliesWithValidToken();
+          }
+        },
       ),
       child: PageView(
         controller: _pageController,
@@ -744,8 +676,9 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                                                 context,
                                                 family,
                                               );
-                                          if (!shouldDelete || !context.mounted)
+                                          if (!shouldDelete || !context.mounted) {
                                             return;
+                                          }
 
                                           final deleted = await ref
                                               .read(familyListProvider.notifier)

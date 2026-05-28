@@ -1,11 +1,12 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'dart:convert';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
-import 'package:frontend/utils/glass_widgets.dart';
+import 'package:frontend/widgets/common/common_widgets.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 
@@ -31,6 +32,7 @@ class PatientDetailPage extends ConsumerStatefulWidget {
 
 class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   late Patient _patient;
+  Map<String, String>? _imageHeaders;
 
   static String get baseUrl => AppConfig.apiBaseUrl;
 
@@ -38,6 +40,17 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   void initState() {
     super.initState();
     _patient = widget.patient;
+    _loadImageHeaders();
+  }
+
+  Future<void> _loadImageHeaders() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (!mounted) return;
+    setState(() {
+      _imageHeaders = (token != null && token.isNotEmpty)
+          ? <String, String>{'Authorization': 'Bearer $token'}
+          : null;
+    });
   }
 
   @override
@@ -136,7 +149,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                         child: Icon(
                           Icons.edit_rounded,
                           size: 20,
-                          color: isDark ? kAccentCyan : kTeal,
+                          color: isDark ? AppColors.accentCyan : AppColors.teal,
                         ),
                       ),
                     ),
@@ -170,7 +183,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    kTeal.withValues(alpha: isDark ? 0.22 : 0.18),
+                    AppColors.teal.withValues(alpha: isDark ? 0.22 : 0.18),
                     Colors.transparent,
                   ],
                 ),
@@ -198,13 +211,13 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                     ),
                     border: Border.all(
                       color: isDark
-                          ? kTeal.withValues(alpha: 0.35)
-                          : kTeal.withValues(alpha: 0.30),
+                          ? AppColors.teal.withValues(alpha: 0.35)
+                          : AppColors.teal.withValues(alpha: 0.30),
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: kTeal.withValues(alpha: 0.22),
+                        color: AppColors.teal.withValues(alpha: 0.22),
                         blurRadius: 20,
                         spreadRadius: 2,
                       ),
@@ -258,10 +271,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
   Widget _buildPatientImage() {
     final path = _patient.photoPath?.trim();
-    final token = ref.read(loginProvider).token;
-    final headers = (token != null && token.isNotEmpty)
-        ? <String, String>{'Authorization': 'Bearer $token'}
-        : null;
+    final headers = _imageHeaders;
 
     if (path == null || path.isEmpty) {
       return const Icon(Icons.person, size: 50, color: Colors.grey);
@@ -490,7 +500,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               Icon(
                 Icons.label_outline_rounded,
                 size: 14,
-                color: isDark ? kAccentCyan : kTeal,
+                color: isDark ? AppColors.accentCyan : AppColors.teal,
               ),
               const SizedBox(width: 6),
               Text(
@@ -498,7 +508,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? kAccentCyan : kTeal,
+                  color: isDark ? AppColors.accentCyan : AppColors.teal,
                   letterSpacing: 0.3,
                 ),
               ),
@@ -1071,7 +1081,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   }
 
   Future<void> _saveUpdatedPatient(Map<String, dynamic> updated) async {
-    final token = ref.read(loginProvider).token;
+    final token = await ref.read(loginProvider.notifier).getValidToken();
     final connectivity = ConnectivityService();
     final dao = PatientOfflineDao();
     final patientNotifier = ref.read(patientListProvider.notifier);
@@ -1265,7 +1275,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   }
 
   Future<bool> _deletePatient(BuildContext context) async {
-    final token = ref.read(loginProvider).token!;
+    final token = await ref.read(loginProvider.notifier).getValidToken();
     final dao = PatientOfflineDao();
     final connectivity = ConnectivityService();
     final patientNotifier = ref.read(patientListProvider.notifier);
@@ -1289,6 +1299,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       final url = "$baseUrl/api/patients/${_patient.id}";
       debugPrint("Attempting DELETE: $url");
       debugPrint("Patient ID: ${_patient.id}");
+      if (token == null || token.isEmpty) return false;
       debugPrint("Token: ${token.substring(0, 10)}...");
 
       final res = await http.delete(

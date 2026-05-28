@@ -41,9 +41,9 @@ class _PatientSyncConflictsPageState extends ConsumerState<PatientSyncConflictsP
   }
 
   Future<void> _keepLocal(PatientOfflineEntity entity) async {
-    final token = ref.read(loginProvider).token;
     final patientNotifier = ref.read(patientListProvider.notifier);
     final successMessage = context.l10n.tr('sync.conflictResolvedLocal');
+    final token = await ref.read(loginProvider.notifier).getValidToken();
     final localId = entity.localId;
     if (token == null || localId == null) return;
 
@@ -60,9 +60,9 @@ class _PatientSyncConflictsPageState extends ConsumerState<PatientSyncConflictsP
   }
 
   Future<void> _keepServer(PatientOfflineEntity entity) async {
-    final token = ref.read(loginProvider).token;
     final patientNotifier = ref.read(patientListProvider.notifier);
     final successMessage = context.l10n.tr('sync.conflictResolvedServer');
+    final token = await ref.read(loginProvider.notifier).getValidToken();
     final localId = entity.localId;
     if (localId == null) return;
 

@@ -22,7 +22,7 @@ class FamilyListState {
     return FamilyListState(
       loading: loading ?? this.loading,
       families: families ?? this.families,
-      error: error,
+      error: error ?? this.error,
     );
   }
 }
@@ -56,9 +56,8 @@ class FamilyListNotifier extends StateNotifier<FamilyListState> {
       final families = await patientService.getFamilies(token);
       state = FamilyListState(loading: false, families: families);
     } catch (e) {
-      state = FamilyListState(
+      state = state.copyWith(
         loading: false,
-        families: state.families,
         error: e.toString(),
       );
     }

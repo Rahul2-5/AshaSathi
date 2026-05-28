@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../services/auth_service.dart';
 import '../utils/app_validator.dart';
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
 import '../providers/login_provider.dart';
 import 'signup_page.dart';
 
@@ -467,7 +467,6 @@ class _LoginViewState extends ConsumerState<LoginView>
               ? null
               : () async {
                   setState(() => _isGoogleLoading = true);
-                  final messenger = ScaffoldMessenger.of(context);
                   final navigator = Navigator.of(context);
                   try {
                     final token = await AuthService().loginWithGoogle();

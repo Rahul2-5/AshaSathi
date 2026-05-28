@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/add_patient_models.dart';
+import 'package:frontend/patient/patient_model.dart';
 import 'package:frontend/navigation/main_navigation.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
 import 'package:frontend/providers/login_provider.dart';
 import 'package:frontend/providers/family_provider.dart';
+import 'package:frontend/providers/patient_provider.dart';
 import 'package:frontend/offline/family_sync_service.dart';
 import 'package:frontend/offline/connectivity_service.dart';
 import 'widgets/step1_family_info.dart';
 import 'widgets/step2_patient_details.dart';
 import 'widgets/step3_medical_info.dart';
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
 
 class AddPatientPageNew extends ConsumerWidget {
   const AddPatientPageNew({super.key});
@@ -307,6 +309,38 @@ class AddPatientPageNew extends ConsumerWidget {
         Navigator.pop(context); // Close loading dialog
 
         if (success) {
+          final now = DateTime.now().millisecondsSinceEpoch;
+          final patientNotifier = ref.read(patientListProvider.notifier);
+
+          for (var index = 0; index < state.patients.length; index++) {
+            final patient = state.patients[index];
+            final resolvedAddress = patient.sameAsFamilyAddress
+                ? state.familyInfo.familyAddress
+                : patient.address;
+
+            patientNotifier.upsertPatient(
+              Patient(
+                id: null,
+                uuid: '${state.familyInfo.headOfFamily}-$now-$index',
+                name: patient.patientName,
+                gender: patient.gender,
+                age: int.tryParse(patient.age) ?? 0,
+                dateOfBirth: patient.dateOfBirth,
+                address: resolvedAddress,
+                phoneNumber: patient.phoneNumber,
+                description: patient.notes,
+                caste: patient.caste,
+                isPregnant: patient.isPregnant,
+                monthsOfPregnancy: int.tryParse(patient.monthsOfPregnancy),
+                expectedDeliveryDate: patient.expectedDeliveryDate,
+                declinedHealthInfo: patient.declinedHealthInfo,
+                diseases: patient.diseases,
+                photoPath: patient.photoPath,
+                updatedAt: now + index,
+              ),
+            );
+          }
+
           // 🔄 If online, try to sync pending families (those registered offline)
           final isOnline = await ConnectivityService().isOnline();
           if (isOnline) {

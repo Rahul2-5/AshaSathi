@@ -84,11 +84,12 @@ class _SplashPageState extends ConsumerState<SplashPage>
       await ref.read(loginProvider.notifier).initializeAuth();
     } catch (_) {}
 
-    await Future.delayed(const Duration(milliseconds: 1400));
+    await Future.delayed(const Duration(milliseconds: 400));
 
     if (!mounted) return;
 
-    final token = ref.read(loginProvider).token;
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (!mounted) return;
     if (token != null) {
       Navigator.pushReplacementNamed(context, '/main');
     } else {

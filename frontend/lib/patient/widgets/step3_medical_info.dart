@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/add_patient_models.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
-import '../../utils/glass_widgets.dart';
+import '../../widgets/common/common_widgets.dart';
 
 class Step3MedicalInfo extends ConsumerWidget {
   const Step3MedicalInfo({super.key});

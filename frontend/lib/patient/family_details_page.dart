@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
 import 'add_patient_models.dart';
 
 class FamilyDetailsPage extends StatelessWidget {

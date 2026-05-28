@@ -8,14 +8,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:frontend/localization/app_localizations.dart';
-import 'package:frontend/localization/language_controller.dart';
-import 'package:frontend/utils/glass_widgets.dart';
+import 'package:frontend/widgets/common/common_widgets.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../app/app_settings_controller.dart';
+import '../app/dashboard_bootstrap_controller.dart';
 import '../offline/patient_sync_service.dart';
 import '../offline/task_sync_service.dart';
-import '../offline/family_sync_service.dart';
 import '../offline/connectivity_service.dart';
 import '../offline/patient_sync_conflicts_page.dart';
 
@@ -39,84 +40,37 @@ class HomePage extends ConsumerStatefulWidget {
 class _HomePageState extends ConsumerState<HomePage> {
   late final PatientSyncService _patientSyncService;
   late final TaskSyncService _taskSyncService;
-  late final FamilySyncService _familySyncService;
   late final ConnectivityService _connectivityService;
   late final StreamSubscription _connectivitySub;
+  Timer? _syncDebounceTimer;
   bool _isOnline = false;
+  String _welcomeName = 'Asha Worker';
 
   @override
   void initState() {
     super.initState();
 
-    // Sync service - lightweight setup
     _patientSyncService = PatientSyncService();
     _taskSyncService = TaskSyncService();
-    _familySyncService = FamilySyncService();
     _connectivityService = ConnectivityService();
     _refreshConnectivityStatus();
     _patientSyncService.refreshSyncStatus();
+    _loadWelcomeName();
 
     // Auto-sync when network comes back (setup listener only)
-    _connectivitySub = Connectivity().onConnectivityChanged.listen((_) async {
-      await _refreshConnectivityStatus();
-      final token = await ref.read(loginProvider.notifier).getValidToken();
-      if (token == null || !mounted) return;
-
-      // Try patient, task, and family sync when network state changes
-      final patientSynced = await _patientSyncService.sync(token);
-      final taskSynced = await _taskSyncService.sync(token);
-      final familySynced = await _familySyncService.syncPendingFamilies(token);
-
-      if (patientSynced && mounted) {
-        ref.read(patientListProvider.notifier).loadPatients(token);
-      }
-
-      if (taskSynced && mounted) {
-        ref.read(taskListProvider.notifier).loadTasks(token);
-      }
-
-      if (familySynced > 0 && mounted) {
-        // Trigger family list reload if families were synced
-        ref.read(familyListProvider.notifier).loadFamilies(token);
-      }
+    _connectivitySub = Connectivity().onConnectivityChanged.listen((_) {
+      _syncDebounceTimer?.cancel();
+      _syncDebounceTimer = Timer(const Duration(milliseconds: 500), () async {
+        await _refreshConnectivityStatus();
+        if (!mounted) return;
+        await ref.read(dashboardBootstrapProvider.notifier).syncAllIfPossible();
+      });
     });
 
     // Load data with valid token after frame build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadPatientAndTaskData();
+      ref.read(dashboardBootstrapProvider.notifier).bootstrapDashboard();
     });
-  }
-
-  Future<void> _loadPatientAndTaskData() async {
-    final token = await ref.read(loginProvider.notifier).getValidToken();
-    if (token == null || !mounted) return;
-
-    // Initial load (always load to show cached data even if offline)
-    ref.read(taskListProvider.notifier).loadTasks(token);
-    ref.read(patientListProvider.notifier).loadPatients(token);
-    ref.read(familyListProvider.notifier).loadFamilies(token);
-
-    // Try an initial sync once on startup (useful after regaining connectivity)
-    try {
-      final initialPatientSynced = await _patientSyncService.sync(token);
-      final initialTaskSynced = await _taskSyncService.sync(token);
-      final initialFamilySynced = await _familySyncService.syncPendingFamilies(
-        token,
-      );
-
-      if (initialPatientSynced && mounted) {
-        ref.read(patientListProvider.notifier).loadPatients(token);
-      }
-      if (initialTaskSynced && mounted) {
-        ref.read(taskListProvider.notifier).loadTasks(token);
-      }
-      if (initialFamilySynced > 0 && mounted) {
-        ref.read(familyListProvider.notifier).loadFamilies(token);
-      }
-    } catch (e) {
-      // Sync attempt failed, but data may have loaded from cache
-      debugPrint('Initial sync error: $e');
-    }
   }
 
   Future<void> _refreshConnectivityStatus() async {
@@ -125,8 +79,39 @@ class _HomePageState extends ConsumerState<HomePage> {
     setState(() => _isOnline = online);
   }
 
+  Future<void> _loadWelcomeName() async {
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (!mounted || token == null || token.isEmpty) return;
+
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return;
+
+      var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
+      switch (payload.length % 4) {
+        case 2:
+          payload += '==';
+          break;
+        case 3:
+          payload += '=';
+          break;
+      }
+
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final map = jsonDecode(decoded) as Map<String, dynamic>;
+      final raw = (map['username'] ?? map['name'] ?? map['email'] ?? '') as String;
+      if (raw.isEmpty) return;
+
+      final username = raw.contains('@') ? raw.split('@')[0] : raw;
+      final displayName = username[0].toUpperCase() + username.substring(1);
+      if (!mounted) return;
+      setState(() => _welcomeName = displayName);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _syncDebounceTimer?.cancel();
     _connectivitySub.cancel();
     super.dispose();
   }
@@ -175,7 +160,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    kTeal.withValues(alpha: isDark ? 0.10 : 0.16),
+                    AppColors.teal.withValues(alpha: isDark ? 0.10 : 0.16),
                     Colors.transparent,
                   ],
                 ),
@@ -192,7 +177,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    kAccentCyan.withValues(alpha: isDark ? 0.06 : 0.10),
+                    AppColors.accentCyan.withValues(alpha: isDark ? 0.06 : 0.10),
                     Colors.transparent,
                   ],
                 ),
@@ -257,7 +242,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         child: Text(
                           l10n.tr('common.viewAll'),
                           style: TextStyle(
-                            color: isDark ? kAccentCyan : kTeal,
+                            color: isDark ? AppColors.accentCyan : AppColors.teal,
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                           ),
@@ -285,34 +270,6 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _welcomeHeader() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final token = ref.read(loginProvider).token;
-
-    // Decode username from JWT payload
-    String username = 'Asha Worker';
-    if (token != null && token.isNotEmpty) {
-      try {
-        final parts = token.split('.');
-        if (parts.length == 3) {
-          var payload = parts[1].replaceAll('-', '+').replaceAll('_', '/');
-          switch (payload.length % 4) {
-            case 2:
-              payload += '==';
-              break;
-            case 3:
-              payload += '=';
-              break;
-          }
-          final decoded = utf8.decode(base64Url.decode(payload));
-          final map = jsonDecode(decoded) as Map<String, dynamic>;
-          final raw =
-              (map['username'] ?? map['name'] ?? map['email'] ?? '') as String;
-          if (raw.isNotEmpty) {
-            username = raw.contains('@') ? raw.split('@')[0] : raw;
-            username = username[0].toUpperCase() + username.substring(1);
-          }
-        }
-      } catch (_) {}
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,11 +289,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
               TextSpan(
-                text: username,
+                text: _welcomeName,
                 style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? kAccentCyan : kTeal,
+                  color: isDark ? AppColors.accentCyan : AppColors.teal,
                   height: 1.15,
                 ),
               ),
@@ -376,18 +333,18 @@ class _HomePageState extends ConsumerState<HomePage> {
             end: Alignment.bottomRight,
             colors: isDark
                 ? [
-                    kTeal.withValues(alpha: 0.15),
-                    kAccentCyan.withValues(alpha: 0.05),
+                    AppColors.teal.withValues(alpha: 0.15),
+                    AppColors.accentCyan.withValues(alpha: 0.05),
                   ]
                 : [
-                    kTeal.withValues(alpha: 0.15),
+                    AppColors.teal.withValues(alpha: 0.15),
                     Colors.white.withValues(alpha: 0.60),
                   ],
           ),
           border: Border.all(
             color: isDark
-                ? kTeal.withValues(alpha: 0.3)
-                : kTeal.withValues(alpha: 0.4),
+                ? AppColors.teal.withValues(alpha: 0.3)
+                : AppColors.teal.withValues(alpha: 0.4),
             width: 1.5,
           ),
           child: Column(
@@ -489,15 +446,15 @@ class _HomePageState extends ConsumerState<HomePage> {
                   shape: BoxShape.circle,
                   gradient: LinearGradient(
                     colors: [
-                      kTeal.withValues(alpha: 0.20),
-                      kAccentCyan.withValues(alpha: 0.10),
+                      AppColors.teal.withValues(alpha: 0.20),
+                      AppColors.accentCyan.withValues(alpha: 0.10),
                     ],
                   ),
                 ),
                 child: Icon(
                   icon,
                   size: 16,
-                  color: isDark ? kAccentCyan : kTeal,
+                  color: isDark ? AppColors.accentCyan : AppColors.teal,
                 ),
               ),
               const SizedBox(height: 12),
@@ -611,10 +568,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             height: 38,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(colors: [kTeal, kAccentCyan]),
+              gradient: const LinearGradient(colors: [AppColors.teal, AppColors.accentCyan]),
               boxShadow: [
                 BoxShadow(
-                  color: kTeal.withValues(alpha: 0.35),
+                  color: AppColors.teal.withValues(alpha: 0.35),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -1324,12 +1281,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: kTeal.withValues(alpha: isDark ? 0.15 : 0.12),
+              backgroundColor: AppColors.teal.withValues(alpha: isDark ? 0.15 : 0.12),
               backgroundImage: imageProvider,
               child: imageProvider == null
                   ? Icon(
                       Icons.person_rounded,
-                      color: isDark ? kAccentCyan : kTeal,
+                      color: isDark ? AppColors.accentCyan : AppColors.teal,
                     )
                   : null,
             ),
@@ -1421,7 +1378,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               width: double.infinity,
               height: 32,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [kTeal, kAccentCyan]),
+                gradient: const LinearGradient(colors: [AppColors.teal, AppColors.accentCyan]),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -1464,9 +1421,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _languageSettingsCard() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = context.l10n;
-    final currentCode = LanguageController.notifierOf(
-      context,
-    ).value.languageCode;
+    final currentCode =
+        ref.watch(appLocaleProvider).valueOrNull?.languageCode ?? 'en';
 
     return GlassContainer(
       padding: EdgeInsets.zero,
@@ -1489,7 +1445,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.translate, color: isDark ? kAccentCyan : kTeal),
+            leading: Icon(Icons.translate, color: isDark ? AppColors.accentCyan : AppColors.teal),
             title: Text(l10n.tr('home.language')),
             trailing: Text(
               AppLocalizations.nativeLanguageNames[currentCode] ?? 'Hindi',
@@ -1507,7 +1463,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Future<void> _showLanguageSelector() async {
-    final currentLocale = LanguageController.notifierOf(context).value;
+    final currentLocale =
+        ref.read(appLocaleProvider).valueOrNull ?? const Locale('en');
     String selectedCode = currentLocale.languageCode;
     final l10n = context.l10n;
 
@@ -1554,8 +1511,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                       border: Border(
                         top: BorderSide(
                           color: isDarkSheet
-                              ? kTeal.withValues(alpha: 0.30)
-                              : kTeal.withValues(alpha: 0.45),
+                              ? AppColors.teal.withValues(alpha: 0.30)
+                              : AppColors.teal.withValues(alpha: 0.45),
                           width: 1.5,
                         ),
                       ),
@@ -1582,7 +1539,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               decoration: BoxDecoration(
                                 color: isDarkSheet
                                     ? Colors.white.withValues(alpha: 0.20)
-                                    : kTeal.withValues(alpha: 0.35),
+                                    : AppColors.teal.withValues(alpha: 0.35),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
@@ -1594,7 +1551,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                               children: [
                                 ShaderMask(
                                   shaderCallback: (bounds) => LinearGradient(
-                                    colors: [kTeal, kAccentCyan],
+                                    colors: [AppColors.teal, AppColors.accentCyan],
                                   ).createShader(bounds),
                                   child: Text(
                                     l10n.tr('common.selectLanguage'),
@@ -1628,8 +1585,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                 colors: [
                                   Colors.transparent,
                                   isDarkSheet
-                                      ? kTeal.withValues(alpha: 0.35)
-                                      : kTeal.withValues(alpha: 0.30),
+                                      ? AppColors.teal.withValues(alpha: 0.35)
+                                      : AppColors.teal.withValues(alpha: 0.30),
                                   Colors.transparent,
                                 ],
                               ),
@@ -1640,12 +1597,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                           Expanded(
                             child: ListView.separated(
                               itemCount:
-                                  LanguageStorage.supportedLanguageCodes.length,
-                              separatorBuilder: (_, __) =>
+                                  supportedLanguageCodes.length,
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (listContext, index) {
-                                final code = LanguageStorage
-                                    .supportedLanguageCodes[index];
+                                final code = supportedLanguageCodes[index];
                                 final isSelected = selectedCode == code;
                                 return GestureDetector(
                                   onTap: () =>
@@ -1662,12 +1618,12 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       gradient: LinearGradient(
                                         colors: isSelected
                                             ? [
-                                                kTeal.withValues(
+                                                AppColors.teal.withValues(
                                                   alpha: isDarkSheet
                                                       ? 0.30
                                                       : 0.18,
                                                 ),
-                                                kAccentCyan.withValues(
+                                                AppColors.accentCyan.withValues(
                                                   alpha: isDarkSheet
                                                       ? 0.15
                                                       : 0.10,
@@ -1688,7 +1644,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                       ),
                                       border: Border.all(
                                         color: isSelected
-                                            ? kTeal.withValues(
+                                            ? AppColors.teal.withValues(
                                                 alpha: isDarkSheet
                                                     ? 0.55
                                                     : 0.65,
@@ -1697,7 +1653,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                   ? Colors.white.withValues(
                                                       alpha: 0.07,
                                                     )
-                                                  : kTeal.withValues(
+                                                  : AppColors.teal.withValues(
                                                       alpha: 0.15,
                                                     )),
                                         width: isSelected ? 1.5 : 1.0,
@@ -1714,11 +1670,11 @@ class _HomePageState extends ConsumerState<HomePage> {
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             color: isSelected
-                                                ? kTeal
+                                                ? AppColors.teal
                                                 : Colors.transparent,
                                             border: Border.all(
                                               color: isSelected
-                                                  ? kTeal
+                                                  ? AppColors.teal
                                                   : (isDarkSheet
                                                         ? const Color(
                                                             0xFF6A7D8A,
@@ -1754,8 +1710,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                       : FontWeight.w500,
                                                   color: isSelected
                                                       ? (isDarkSheet
-                                                            ? kAccentCyan
-                                                            : kTeal)
+                                                            ? AppColors.accentCyan
+                                                            : AppColors.teal)
                                                       : (isDarkSheet
                                                             ? const Color(
                                                                 0xFFD2DDE8,
@@ -1803,7 +1759,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                             ? Colors.white.withValues(
                                                 alpha: 0.15,
                                               )
-                                            : kTeal.withValues(alpha: 0.35),
+                                            : AppColors.teal.withValues(alpha: 0.35),
                                       ),
                                       color: isDarkSheet
                                           ? Colors.white.withValues(alpha: 0.06)
@@ -1851,10 +1807,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     if (confirmed == true) {
       if (!mounted) return;
-      final notifier = LanguageController.notifierOf(context);
       final locale = Locale(selectedCode);
-      notifier.value = locale;
-      await LanguageStorage.saveLocale(locale);
+      await ref.read(appLocaleProvider.notifier).setLocale(locale);
     }
   }
 }

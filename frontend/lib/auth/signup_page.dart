@@ -9,7 +9,7 @@ import '../home/home_page.dart';
 import '../services/auth_service.dart';
 import '../providers/signup_provider.dart';
 import '../utils/app_validator.dart';
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
 import 'login_page.dart';
 
 class SignUpView extends ConsumerStatefulWidget {
@@ -542,7 +542,6 @@ class _SignUpViewState extends ConsumerState<SignUpView>
               ? null
               : () async {
                   setState(() => _isGoogleLoading = true);
-                  final messenger = ScaffoldMessenger.of(context);
                   final navigator = Navigator.of(context);
                   try {
                     final token = await AuthService().loginWithGoogle();

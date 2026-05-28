@@ -10,7 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import '../../utils/glass_widgets.dart';
+import '../../widgets/common/common_widgets.dart';
 
 class Step2PatientDetails extends ConsumerWidget {
   const Step2PatientDetails({super.key});
@@ -421,7 +421,6 @@ class Step2PatientDetails extends ConsumerWidget {
     int maxLines = 1,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +456,6 @@ class Step2PatientDetails extends ConsumerWidget {
     bool allowFutureDates = false,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -662,7 +660,6 @@ class Step2PatientDetails extends ConsumerWidget {
     PatientDataModel patient,
   ) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final currentMonths = int.tryParse(patient.monthsOfPregnancy) ?? 1;
     final safeMonths = currentMonths.clamp(1, 9);
 

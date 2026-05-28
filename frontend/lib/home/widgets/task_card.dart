@@ -528,8 +528,11 @@ class TaskCard extends ConsumerWidget {
                 ),
               );
 
-              if (edited == true && context.mounted) {
-                final token = ref.read(loginProvider).token!;
+              if (!mounted) return;
+              if (edited == true) {
+                final token = await ref.read(loginProvider.notifier).getValidToken();
+                if (token == null || token.isEmpty) return;
+                if (!mounted) return;
                 await ref.read(taskListProvider.notifier).loadTasks(token);
               }
             },
@@ -547,17 +550,29 @@ class TaskCard extends ConsumerWidget {
               if (!context.mounted) return;
 
               if (confirm == true) {
-                final token = ref.read(loginProvider).token!;
+                final token = await ref.read(loginProvider.notifier).getValidToken();
+                if (token == null || token.isEmpty) return;
                 _showLoadingDialog(context);
 
-                try {
-                  final deleted = await ref
-                      .read(taskListProvider.notifier)
-                      .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
+                // Fire deletion in background so UI is not blocked by network latency.
+                final deleteFuture = ref
+                    .read(taskListProvider.notifier)
+                    .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
 
+                // Immediately hide the modal so user can continue interacting.
+                if (context.mounted) _hideLoadingDialog(context);
+
+                // Give immediate feedback that deletion started.
+                _showStyledSnackBar(
+                  context,
+                  message: 'Deleting...',
+                  accent: const Color(0xFFDD8A2A),
+                  icon: Icons.delete_outline,
+                );
+
+                // When the background delete completes, show final status.
+                deleteFuture.then((deleted) {
                   if (!context.mounted) return;
-                  _hideLoadingDialog(context);
-
                   if (deleted) {
                     _showStyledSnackBar(
                       context,
@@ -573,9 +588,8 @@ class TaskCard extends ConsumerWidget {
                       icon: Icons.cloud_off_outlined,
                     );
                   }
-                } catch (e) {
+                }).catchError((e) {
                   if (!context.mounted) return;
-                  _hideLoadingDialog(context);
                   _showStyledSnackBar(
                     context,
                     message: context
@@ -584,7 +598,7 @@ class TaskCard extends ConsumerWidget {
                     accent: const Color(0xFFD64242),
                     icon: Icons.error_outline,
                   );
-                }
+                });
               }
             },
             splashRadius: 18,

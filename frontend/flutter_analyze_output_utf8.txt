@@ -1,0 +1,320 @@
+﻿Analyzing frontend...                                           
+
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - lib\auth\cubit\login_cubit.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - lib\auth\cubit\login_cubit.dart:1:8 - uri_does_not_exist
+  error - Classes can only extend other classes - lib\auth\cubit\login_cubit.dart:6:26 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\auth\cubit\login_cubit.dart:9:40 - extra_positional_arguments
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:16:3 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:16:8 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:26:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:26:10 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:46:9 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:46:14 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:49:9 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:49:14 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:57:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:57:10 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:66:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:67:7 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:79:5 - undefined_method
+  error - The method 'emit' isn't defined for the type 'LoginCubit' - lib\auth\cubit\login_cubit.dart:104:7 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\login_cubit.dart:104:12 - undefined_identifier
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - lib\auth\cubit\patient_cubit.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - lib\auth\cubit\patient_cubit.dart:1:8 - uri_does_not_exist
+  error - Classes can only extend other classes - lib\auth\cubit\patient_cubit.dart:18:28 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\auth\cubit\patient_cubit.dart:21:38 - extra_positional_arguments
+  error - The method 'emit' isn't defined for the type 'PatientCubit' - lib\auth\cubit\patient_cubit.dart:24:5 - undefined_method
+  error - The method 'emit' isn't defined for the type 'PatientCubit' - lib\auth\cubit\patient_cubit.dart:26:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\patient_cubit.dart:30:40 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'PatientCubit' - lib\auth\cubit\patient_cubit.dart:37:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\patient_cubit.dart:41:21 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'PatientCubit' - lib\auth\cubit\patient_cubit.dart:42:5 - undefined_method
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - lib\auth\cubit\signup_cubit.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - lib\auth\cubit\signup_cubit.dart:1:8 - uri_does_not_exist
+  error - Classes can only extend other classes - lib\auth\cubit\signup_cubit.dart:5:27 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\auth\cubit\signup_cubit.dart:8:41 - extra_positional_arguments
+  error - The method 'emit' isn't defined for the type 'SignupCubit' - lib\auth\cubit\signup_cubit.dart:11:5 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\signup_cubit.dart:11:10 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'SignupCubit' - lib\auth\cubit\signup_cubit.dart:15:7 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\signup_cubit.dart:15:12 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'SignupCubit' - lib\auth\cubit\signup_cubit.dart:17:7 - undefined_method
+  error - Undefined name 'state' - lib\auth\cubit\signup_cubit.dart:18:9 - undefined_identifier
+warning - The value of the local variable 'messenger' isn't used - lib\auth\login_page.dart:470:25 - unused_local_variable
+warning - The value of the local variable 'messenger' isn't used - lib\auth\signup_page.dart:545:25 - unused_local_variable
+   info - Unnecessary use of multiple underscores - lib\home\home_page.dart:1644:53 - unnecessary_underscores
+   info - Statements in an if should be enclosed in a block - lib\navigation\main_navigation.dart:748:45 - curly_braces_in_flow_control_structures
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - lib\patient\add_patient_multi_step_page.dart:2:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - lib\patient\add_patient_multi_step_page.dart:2:8 - uri_does_not_exist
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\patient\add_patient_multi_step_page.dart:770:53 - deprecated_member_use
+warning - The value of the local variable 'isDark' isn't used - lib\patient\add_patient_multi_step_page.dart:897:11 - unused_local_variable
+  error - The method 'read' isn't defined for the type 'BuildContext' - lib\patient\add_patient_multi_step_page.dart:1118:32 - undefined_method
+  error - The method 'read' isn't defined for the type 'BuildContext' - lib\patient\add_patient_multi_step_page.dart:1119:34 - undefined_method
+   info - The private field _isSyncingAgeDob could be 'final' - lib\patient\add_patient_page.dart:39:8 - prefer_final_fields
+   info - The private field _isLoading could be 'final' - lib\patient\add_patient_page.dart:41:8 - prefer_final_fields
+warning - The declaration '_showSnackBar' isn't referenced - lib\patient\add_patient_page.dart:48:8 - unused_element
+warning - The declaration '_validateName' isn't referenced - lib\patient\add_patient_page.dart:89:11 - unused_element
+warning - The declaration '_validateNumberOfMembers' isn't referenced - lib\patient\add_patient_page.dart:96:11 - unused_element
+warning - The declaration '_validateAddress' isn't referenced - lib\patient\add_patient_page.dart:122:11 - unused_element
+warning - The declaration '_validatePatientName' isn't referenced - lib\patient\add_patient_page.dart:129:11 - unused_element
+warning - The declaration '_validateAge' isn't referenced - lib\patient\add_patient_page.dart:136:11 - unused_element
+  error - The method '_profilePhoto' isn't defined for the type '_AddPatientPageState' - lib\patient\add_patient_page.dart:196:17 - undefined_method
+  error - The method '_patientForm' isn't defined for the type '_AddPatientPageState' - lib\patient\add_patient_page.dart:198:17 - undefined_method
+  error - Expected to find ')' - lib\patient\add_patient_page.dart:205:8 - expected_token
+  error - Expected a class member - lib\patient\add_patient_page.dart:208:5 - expected_class_member
+   info - Missing type annotation - lib\patient\add_patient_page.dart:208:12 - strict_top_level_inference
+   info - The variable name 'Container' isn't a lowerCamelCase identifier - lib\patient\add_patient_page.dart:208:12 - non_constant_identifier_names
+  error - 'Container' must have a method body because '_AddPatientPageState' isn't abstract - lib\patient\add_patient_page.dart:208:12 - concrete_class_with_abstract_member
+   info - Missing type annotation - lib\patient\add_patient_page.dart:209:7 - strict_top_level_inference
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\patient\add_patient_page.dart:209:14 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\patient\add_patient_page.dart:209:14 - obsolete_colon_for_default_value
+   info - Missing type annotation - lib\patient\add_patient_page.dart:210:7 - strict_top_level_inference
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\patient\add_patient_page.dart:210:17 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\patient\add_patient_page.dart:210:17 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\patient\add_patient_page.dart:210:19 - non_constant_default_value
+  error - Undefined name 'bgColor' - lib\patient\add_patient_page.dart:211:16 - undefined_identifier
+  error - Undefined name 'isDark' - lib\patient\add_patient_page.dart:214:20 - undefined_identifier
+   info - Missing type annotation - lib\patient\add_patient_page.dart:219:7 - strict_top_level_inference
+  error - Named parameters must be enclosed in curly braces ('{' and '}') - lib\patient\add_patient_page.dart:219:12 - named_parameter_outside_group
+  error - Using a colon as the separator before a default value is no longer supported - lib\patient\add_patient_page.dart:219:12 - obsolete_colon_for_default_value
+  error - The default value of an optional parameter must be constant - lib\patient\add_patient_page.dart:219:14 - non_constant_default_value
+  error - The method 'stepItem' isn't defined for the type '_AddPatientPageState' - lib\patient\add_patient_page.dart:221:11 - undefined_method
+  error - Undefined name '_currentStep' - lib\patient\add_patient_page.dart:221:30 - undefined_identifier
+  error - The method 'stepItem' isn't defined for the type '_AddPatientPageState' - lib\patient\add_patient_page.dart:223:11 - undefined_method
+  error - Undefined name '_currentStep' - lib\patient\add_patient_page.dart:223:31 - undefined_identifier
+  error - The method 'stepItem' isn't defined for the type '_AddPatientPageState' - lib\patient\add_patient_page.dart:225:11 - undefined_method
+  error - Undefined name '_currentStep' - lib\patient\add_patient_page.dart:225:31 - undefined_identifier
+warning - The declaration '_buildPatientStep' isn't referenced - lib\patient\add_patient_page.dart:232:10 - unused_element
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:233:9 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:235:21 - undefined_identifier
+warning - The value of the local variable 'currentPatient' isn't used - lib\patient\add_patient_page.dart:239:11 - unused_local_variable
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:239:28 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:239:38 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:240:29 - undefined_identifier
+warning - The value of the local variable 'bgColor' isn't used - lib\patient\add_patient_page.dart:241:11 - unused_local_variable
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:252:26 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:269:36 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:270:37 - undefined_identifier
+  error - Undefined name '_selectedImage' - lib\patient\add_patient_page.dart:271:26 - undefined_identifier
+  error - Undefined name '_selectedImage' - lib\patient\add_patient_page.dart:272:39 - undefined_identifier
+  error - Undefined name '_selectedImage' - lib\patient\add_patient_page.dart:274:26 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:274:52 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:298:11 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:299:17 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:300:17 - undefined_identifier
+  error - Expected to find ';' - lib\patient\add_patient_page.dart:307:7 - expected_token
+  error - Expected to find ']' - lib\patient\add_patient_page.dart:307:7 - expected_token
+warning - Dead code - lib\patient\add_patient_page.dart:307:8 - dead_code
+  error - Expected an identifier - lib\patient\add_patient_page.dart:307:8 - missing_identifier
+  error - Expected to find ';' - lib\patient\add_patient_page.dart:307:8 - expected_token
+  error - Unexpected text ';' - lib\patient\add_patient_page.dart:307:8 - unexpected_token
+  error - Expected an identifier - lib\patient\add_patient_page.dart:308:5 - missing_identifier
+  error - Unexpected text ';' - lib\patient\add_patient_page.dart:308:5 - unexpected_token
+   info - Unnecessary empty statement - lib\patient\add_patient_page.dart:308:6 - empty_statements
+warning - The declaration '_buildNumberFieldForPregnancy' isn't referenced - lib\patient\add_patient_page.dart:312:10 - unused_element
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:316:29 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:372:27 - undefined_function
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:396:27 - undefined_function
+warning - The declaration '_buildNumberField' isn't referenced - lib\patient\add_patient_page.dart:415:10 - unused_element
+warning - A value for optional parameter 'validator' isn't ever given - lib\patient\add_patient_page.dart:418:32 - unused_element_parameter
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:420:29 - undefined_identifier
+warning - The value of the local variable 'fillColor' isn't used - lib\patient\add_patient_page.dart:421:11 - unused_local_variable
+warning - The value of the local variable 'borderColor' isn't used - lib\patient\add_patient_page.dart:422:11 - unused_local_variable
+warning - The value of the local variable 'textColor' isn't used - lib\patient\add_patient_page.dart:423:11 - unused_local_variable
+warning - The value of the local variable 'hintColor' isn't used - lib\patient\add_patient_page.dart:424:11 - unused_local_variable
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:432:13 - undefined_identifier
+  error - Undefined name '_nameController' - lib\patient\add_patient_page.dart:433:13 - undefined_identifier
+  error - Undefined name '_validateName' - lib\patient\add_patient_page.dart:434:24 - undefined_identifier
+  error - The function '_dobField' isn't defined - lib\patient\add_patient_page.dart:438:11 - undefined_function
+  error - The function '_genderDropdown' isn't defined - lib\patient\add_patient_page.dart:439:11 - undefined_function
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:441:13 - undefined_identifier
+  error - Undefined name '_addressController' - lib\patient\add_patient_page.dart:442:13 - undefined_identifier
+  error - Undefined name '_validateAddress' - lib\patient\add_patient_page.dart:443:24 - undefined_identifier
+  error - Undefined name '_descriptionController' - lib\patient\add_patient_page.dart:449:13 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:455:13 - undefined_identifier
+  error - Undefined name '_phoneController' - lib\patient\add_patient_page.dart:456:13 - undefined_identifier
+  error - Undefined name '_validatePhone' - lib\patient\add_patient_page.dart:458:24 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:472:29 - undefined_identifier
+  error - Undefined name '_ageController' - lib\patient\add_patient_page.dart:475:24 - undefined_identifier
+  error - Undefined name '_ageController' - lib\patient\add_patient_page.dart:489:29 - undefined_identifier
+  error - Undefined name '_validateAge' - lib\patient\add_patient_page.dart:495:28 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:555:29 - undefined_identifier
+warning - The value of the local variable 'textColor' isn't used - lib\patient\add_patient_page.dart:556:11 - unused_local_variable
+warning - The value of the local variable 'ctrl' isn't used - lib\patient\add_patient_page.dart:557:11 - unused_local_variable
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:591:27 - undefined_identifier
+warning - The declaration '_buildDateField' isn't referenced - lib\patient\add_patient_page.dart:610:10 - unused_element
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:615:29 - undefined_identifier
+warning - The value of the local variable 'controller' isn't used - lib\patient\add_patient_page.dart:616:11 - unused_local_variable
+warning - The value of the local variable 'isDeliveryDate' isn't used - lib\patient\add_patient_page.dart:617:11 - unused_local_variable
+warning - The value of the local variable 'fillColor' isn't used - lib\patient\add_patient_page.dart:618:11 - unused_local_variable
+warning - The value of the local variable 'hintColor' isn't used - lib\patient\add_patient_page.dart:619:11 - unused_local_variable
+warning - The value of the local variable 'textColor' isn't used - lib\patient\add_patient_page.dart:620:11 - unused_local_variable
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:623:24 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:634:29 - undefined_identifier
+  error - Undefined name '_validateDob' - lib\patient\add_patient_page.dart:637:28 - undefined_identifier
+warning - The declaration '_buildDeliveryDateField' isn't referenced - lib\patient\add_patient_page.dart:684:10 - unused_element
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:689:29 - undefined_identifier
+warning - The value of the local variable 'controller' isn't used - lib\patient\add_patient_page.dart:690:11 - unused_local_variable
+warning - The value of the local variable 'fillColor' isn't used - lib\patient\add_patient_page.dart:691:11 - unused_local_variable
+warning - The value of the local variable 'hintColor' isn't used - lib\patient\add_patient_page.dart:692:11 - unused_local_variable
+warning - The value of the local variable 'textColor' isn't used - lib\patient\add_patient_page.dart:693:11 - unused_local_variable
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:700:23 - undefined_identifier
+  error - Undefined name '_gender' - lib\patient\add_patient_page.dart:703:27 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:707:31 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:710:31 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:713:31 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:715:31 - undefined_function
+  error - Undefined name '_gender' - lib\patient\add_patient_page.dart:715:46 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:716:42 - undefined_identifier
+  error - Undefined name '_gender' - lib\patient\add_patient_page.dart:718:17 - undefined_identifier
+  error - Undefined name '_gender' - lib\patient\add_patient_page.dart:720:23 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:736:29 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:749:29 - undefined_identifier
+  error - A value of type 'Text' can't be returned from the function '_inputDecoration' because it has a return type of 'InputDecoration' - lib\patient\add_patient_page.dart:752:12 - return_of_invalid_type
+  error - Undefined name 'label' - lib\patient\add_patient_page.dart:753:7 - undefined_identifier
+warning - The declaration '_inputDecoration' isn't referenced - lib\patient\add_patient_page.dart:762:19 - unused_element
+  error - The name '_inputDecoration' is already defined - lib\patient\add_patient_page.dart:762:19 - duplicate_definition
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:763:29 - undefined_identifier
+warning - The value of the local variable 'hintColor' isn't used - lib\patient\add_patient_page.dart:766:11 - unused_local_variable
+  error - The argument for the named parameter 'filled' was already specified - lib\patient\add_patient_page.dart:783:7 - duplicate_named_argument
+  error - The argument for the named parameter 'fillColor' was already specified - lib\patient\add_patient_page.dart:784:7 - duplicate_named_argument
+  error - The argument for the named parameter 'contentPadding' was already specified - lib\patient\add_patient_page.dart:785:7 - duplicate_named_argument
+  error - The argument for the named parameter 'border' was already specified - lib\patient\add_patient_page.dart:786:7 - duplicate_named_argument
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:809:29 - undefined_identifier
+  error - Undefined name '_isLoading' - lib\patient\add_patient_page.dart:818:22 - undefined_identifier
+  error - Undefined name '_isLoading' - lib\patient\add_patient_page.dart:829:22 - undefined_identifier
+  error - Undefined name '_isLoading' - lib\patient\add_patient_page.dart:839:18 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:854:23 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:872:41 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:877:16 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:884:7 - undefined_identifier
+  error - The argument type 'DateTime' can't be assigned to the parameter type 'String'.  - lib\patient\add_patient_page.dart:886:23 - argument_type_not_assignable
+  error - Undefined name '_isSyncingAgeDob' - lib\patient\add_patient_page.dart:891:9 - undefined_identifier
+  error - Undefined name '_ageController' - lib\patient\add_patient_page.dart:893:20 - undefined_identifier
+  error - Undefined name '_isSyncingAgeDob' - lib\patient\add_patient_page.dart:896:7 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:897:24 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:898:7 - undefined_identifier
+  error - Undefined name '_isSyncingAgeDob' - lib\patient\add_patient_page.dart:899:7 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:901:9 - undefined_function
+warning - The value of the local variable 'formatted' isn't used - lib\patient\add_patient_page.dart:914:11 - unused_local_variable
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:917:9 - undefined_identifier
+  error - Undefined name 'formattedDob' - lib\patient\add_patient_page.dart:917:32 - undefined_identifier
+  error - Undefined name '_isSyncingAgeDob' - lib\patient\add_patient_page.dart:919:5 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:920:5 - undefined_identifier
+  error - Undefined name 'formattedDob' - lib\patient\add_patient_page.dart:920:27 - undefined_identifier
+  error - Undefined name '_isSyncingAgeDob' - lib\patient\add_patient_page.dart:921:5 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:923:5 - undefined_function
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:941:9 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:941:19 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:942:7 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:942:17 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:943:11 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:943:21 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:944:7 - undefined_function
+warning - The declaration '_calculateExpectedDeliveryDate' isn't referenced - lib\patient\add_patient_page.dart:948:8 - unused_element
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:954:9 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:954:19 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:955:7 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:955:17 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:955:41 - undefined_identifier
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:955:51 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:957:7 - undefined_function
+  error - Undefined name '_formKey' - lib\patient\add_patient_page.dart:962:10 - undefined_identifier
+  error - The function '_showSnackBar' isn't defined - lib\patient\add_patient_page.dart:963:7 - undefined_function
+warning - The value of the local variable 'l10n' isn't used - lib\patient\add_patient_page.dart:967:11 - unused_local_variable
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:967:18 - undefined_identifier
+  error - Undefined name 'ref' - lib\patient\add_patient_page.dart:968:29 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:969:36 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:972:25 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:973:12 - undefined_identifier
+  error - The function '_showSnackBar' isn't defined - lib\patient\add_patient_page.dart:974:9 - undefined_function
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:975:9 - undefined_function
+  error - Undefined name '_currentPatientIndex' - lib\patient\add_patient_page.dart:975:24 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:980:5 - undefined_function
+  error - Undefined name '_isLoading' - lib\patient\add_patient_page.dart:980:20 - undefined_identifier
+  error - Undefined name '_patients' - lib\patient\add_patient_page.dart:986:29 - undefined_identifier
+  error - Undefined name '_familyAddressController' - lib\patient\add_patient_page.dart:999:17 - undefined_identifier
+  error - Undefined name '_familyAddressController' - lib\patient\add_patient_page.dart:1000:37 - undefined_identifier
+  error - The named parameter 'medicalConditions' isn't defined - lib\patient\add_patient_page.dart:1008:11 - undefined_named_parameter
+  error - Undefined name 'ref' - lib\patient\add_patient_page.dart:1015:21 - undefined_identifier
+  error - Undefined name 'mounted' - lib\patient\add_patient_page.dart:1021:12 - undefined_identifier
+  error - Undefined name 'mounted' - lib\patient\add_patient_page.dart:1027:12 - undefined_identifier
+  error - The function '_showSnackBar' isn't defined - lib\patient\add_patient_page.dart:1029:7 - undefined_function
+  error - Undefined name 'mounted' - lib\patient\add_patient_page.dart:1039:12 - undefined_identifier
+  error - The function '_showSnackBar' isn't defined - lib\patient\add_patient_page.dart:1040:7 - undefined_function
+  error - Undefined name 'mounted' - lib\patient\add_patient_page.dart:1042:11 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:1043:9 - undefined_function
+  error - Undefined name '_isLoading' - lib\patient\add_patient_page.dart:1043:24 - undefined_identifier
+  error - Undefined name '_picker' - lib\patient\add_patient_page.dart:1049:25 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:1058:9 - undefined_function
+  error - Undefined name '_selectedImage' - lib\patient\add_patient_page.dart:1059:11 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:1060:11 - undefined_identifier
+  error - Undefined name '_photoAnimController' - lib\patient\add_patient_page.dart:1062:9 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\patient\add_patient_page.dart:1066:9 - undefined_function
+  error - Undefined name '_selectedImage' - lib\patient\add_patient_page.dart:1067:11 - undefined_identifier
+  error - Undefined name '_selectedImageBytes' - lib\patient\add_patient_page.dart:1068:11 - undefined_identifier
+  error - Undefined name '_photoAnimController' - lib\patient\add_patient_page.dart:1070:9 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1091:29 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1094:16 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1127:31 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1129:35 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1143:31 - undefined_identifier
+  error - Undefined name 'context' - lib\patient\add_patient_page.dart:1145:35 - undefined_identifier
+  error - Undefined name '_nameController' - lib\patient\add_patient_page.dart:1159:5 - undefined_identifier
+  error - Undefined name '_ageController' - lib\patient\add_patient_page.dart:1160:5 - undefined_identifier
+  error - Undefined name '_dobController' - lib\patient\add_patient_page.dart:1161:5 - undefined_identifier
+  error - Undefined name '_addressController' - lib\patient\add_patient_page.dart:1162:5 - undefined_identifier
+  error - Undefined name '_descriptionController' - lib\patient\add_patient_page.dart:1163:5 - undefined_identifier
+  error - Undefined name '_phoneController' - lib\patient\add_patient_page.dart:1164:5 - undefined_identifier
+  error - Undefined name '_photoAnimController' - lib\patient\add_patient_page.dart:1165:5 - undefined_identifier
+  error - Invalid context for 'super' invocation - lib\patient\add_patient_page.dart:1166:5 - super_in_invalid_context
+  error - Expected a method, getter, setter or operator declaration - lib\patient\add_patient_page.dart:1169:1 - expected_executable
+  error - The named parameter 'child' is required, but there's no corresponding argument - lib\patient\family_details_page.dart:72:14 - missing_required_argument
+  error - The named parameter 'body' isn't defined - lib\patient\family_details_page.dart:73:9 - undefined_named_parameter
+  error - The named parameter 'child' is required, but there's no corresponding argument - lib\patient\family_details_page.dart:77:12 - missing_required_argument
+  error - The named parameter 'body' isn't defined - lib\patient\family_details_page.dart:83:7 - undefined_named_parameter
+  error - Expected to find ';' - lib\patient\family_details_page.dart:160:7 - expected_token
+warning - Dead code - lib\patient\family_details_page.dart:160:8 - dead_code
+  error - Expected an identifier - lib\patient\family_details_page.dart:160:8 - missing_identifier
+  error - Expected to find ';' - lib\patient\family_details_page.dart:160:8 - expected_token
+  error - Unexpected text ';' - lib\patient\family_details_page.dart:160:8 - unexpected_token
+  error - Expected an identifier - lib\patient\family_details_page.dart:161:5 - missing_identifier
+  error - Unexpected text ';' - lib\patient\family_details_page.dart:161:5 - unexpected_token
+   info - Unnecessary empty statement - lib\patient\family_details_page.dart:161:6 - empty_statements
+  error - Expected to find ';' - lib\patient\family_details_page.dart:297:7 - expected_token
+warning - Dead code - lib\patient\family_details_page.dart:297:8 - dead_code
+  error - Expected an identifier - lib\patient\family_details_page.dart:297:8 - missing_identifier
+  error - Expected to find ';' - lib\patient\family_details_page.dart:297:8 - expected_token
+  error - Unexpected text ';' - lib\patient\family_details_page.dart:297:8 - unexpected_token
+  error - Expected an identifier - lib\patient\family_details_page.dart:298:5 - missing_identifier
+  error - Unexpected text ';' - lib\patient\family_details_page.dart:298:5 - unexpected_token
+   info - Unnecessary empty statement - lib\patient\family_details_page.dart:298:6 - empty_statements
+warning - The declaration '_formatMedicalConditions' isn't referenced - lib\patient\patient_detail_page.dart:790:10 - unused_element
+warning - The value of the local variable 'conditions' isn't used - lib\patient\patient_model.dart:72:11 - unused_local_variable
+warning - The value of the local variable 'conditions' isn't used - lib\patient\patient_model.dart:101:18 - unused_local_variable
+  error - The named parameter 'child' is required, but there's no corresponding argument - lib\screens\add_patient\add_patient_wizard_screen.dart:26:14 - missing_required_argument
+  error - The named parameter 'body' isn't defined - lib\screens\add_patient\add_patient_wizard_screen.dart:27:9 - undefined_named_parameter
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - lib\task\task_cubit.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - lib\task\task_cubit.dart:1:8 - uri_does_not_exist
+  error - Classes can only extend other classes - lib\task\task_cubit.dart:21:25 - extends_non_class
+  error - Too many positional arguments: 0 expected, but 1 found - lib\task\task_cubit.dart:24:39 - extra_positional_arguments
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:27:3 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:27:40 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:30:5 - undefined_method
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:33:5 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:33:27 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:45:7 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:45:50 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:54:7 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:54:50 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:63:7 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:63:50 - undefined_identifier
+  error - The method 'emit' isn't defined for the type 'TaskCubit' - lib\task\task_cubit.dart:73:7 - undefined_method
+  error - Undefined name 'state' - lib\task\task_cubit.dart:73:50 - undefined_identifier
+   info - The imported package 'flutter_bloc' isn't a dependency of the importing package - test\widget_test.dart:2:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:flutter_bloc/flutter_bloc.dart' - test\widget_test.dart:2:8 - uri_does_not_exist
+  error - The function 'MultiBlocProvider' isn't defined - test\widget_test.dart:17:7 - undefined_function
+  error - The function 'BlocProvider' isn't defined - test\widget_test.dart:19:11 - undefined_function
+  error - The function 'BlocProvider' isn't defined - test\widget_test.dart:20:11 - undefined_function
+  error - The function 'BlocProvider' isn't defined - test\widget_test.dart:21:11 - undefined_function
+  error - The function 'BlocProvider' isn't defined - test\widget_test.dart:22:11 - undefined_function
+

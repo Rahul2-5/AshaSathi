@@ -5,7 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:frontend/localization/app_localizations.dart';
-import 'package:frontend/utils/glass_widgets.dart';
+import 'package:frontend/widgets/common/common_widgets.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -41,10 +42,12 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
   @override
   void initState() {
     super.initState();
-    final token = ref.read(loginProvider).token;
-    if (token != null) {
-      ref.read(patientListProvider.notifier).loadPatients(token);
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final token = await ref.read(loginProvider.notifier).getValidToken();
+      if (token != null && mounted) {
+        ref.read(patientListProvider.notifier).loadPatients(token);
+      }
+    });
   }
 
   @override
@@ -81,8 +84,8 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
             child: _buildOrb(
               240,
               isDark
-                  ? kTeal.withValues(alpha: 0.10)
-                  : kTeal.withValues(alpha: 0.16),
+                  ? AppColors.teal.withValues(alpha: 0.10)
+                  : AppColors.teal.withValues(alpha: 0.16),
             ),
           ),
           Positioned(
@@ -91,8 +94,8 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
             child: _buildOrb(
               280,
               isDark
-                  ? kAccentCyan.withValues(alpha: 0.06)
-                  : kAccentCyan.withValues(alpha: 0.12),
+                  ? AppColors.accentCyan.withValues(alpha: 0.06)
+                  : AppColors.accentCyan.withValues(alpha: 0.12),
             ),
           ),
           // Main scaffold
@@ -213,12 +216,12 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                   gradient: const LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [kTeal, kAccentCyan],
+                    colors: [AppColors.teal, AppColors.accentCyan],
                   ),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: kTeal.withValues(alpha: 0.35),
+                      color: AppColors.teal.withValues(alpha: 0.35),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -287,7 +290,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
           child: Text(
             context.l10n.tr('common.clear'),
             style: TextStyle(
-              color: isDark ? kAccentCyan : kTeal,
+              color: isDark ? AppColors.accentCyan : AppColors.teal,
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -381,7 +384,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                 context.l10n.tr('patients.sortBy',
                     args: {'sort': _sortLabel()}),
                 style: TextStyle(
-                  color: isDark ? kAccentCyan : kTeal,
+                  color: isDark ? AppColors.accentCyan : AppColors.teal,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -390,7 +393,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
               Icon(
                 Icons.keyboard_arrow_down,
                 size: 18,
-                color: isDark ? kAccentCyan : kTeal,
+                color: isDark ? AppColors.accentCyan : AppColors.teal,
               ),
             ],
           ),
@@ -416,14 +419,14 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                 fontSize: 14,
                 fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
-                    ? kTeal
+                    ? AppColors.teal
                     : (isDark
                         ? const Color(0xFFC6D2DC)
                         : const Color(0xFF2E3742)),
               ),
             ),
           ),
-          if (selected) Icon(Icons.check_rounded, size: 16, color: kTeal),
+          if (selected) Icon(Icons.check_rounded, size: 16, color: AppColors.teal),
         ],
       ),
     );
@@ -536,7 +539,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
         if (!mounted) return;
 
         if (deleted == true) {
-          final token = ref.read(loginProvider).token;
+          final token = await ref.read(loginProvider.notifier).getValidToken();
           if (token != null) {
             ref.read(patientListProvider.notifier).loadPatients(token);
           }
@@ -559,14 +562,14 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
                   colors: [
-                    kTeal.withValues(alpha: 0.20),
-                    kAccentCyan.withValues(alpha: 0.10),
+                    AppColors.teal.withValues(alpha: 0.20),
+                    AppColors.accentCyan.withValues(alpha: 0.10),
                   ],
                 ),
                 border: Border.all(
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.12)
-                      : kTeal.withValues(alpha: 0.25),
+                      : AppColors.teal.withValues(alpha: 0.25),
                   width: 1.5,
                 ),
               ),
@@ -579,7 +582,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                     : Icon(
                         Icons.person_rounded,
                         size: 22,
-                        color: isDark ? kAccentCyan : kTeal,
+                        color: isDark ? AppColors.accentCyan : AppColors.teal,
                       ),
               ),
             ),
@@ -646,11 +649,11 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                 shape: BoxShape.circle,
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.06)
-                    : kTeal.withValues(alpha: 0.08),
+                    : AppColors.teal.withValues(alpha: 0.08),
               ),
               child: Icon(
                 Icons.chevron_right_rounded,
-                color: isDark ? kAccentCyan : kTeal,
+                color: isDark ? AppColors.accentCyan : AppColors.teal,
                 size: 18,
               ),
             ),
@@ -668,7 +671,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
         Icon(
           icon,
           size: 11,
-          color: isDark ? const Color(0xFF9CA9B5) : kTeal.withValues(alpha: 0.65),
+          color: isDark ? const Color(0xFF9CA9B5) : AppColors.teal.withValues(alpha: 0.65),
         ),
         const SizedBox(width: 3),
         Text(
@@ -700,15 +703,15 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
               shape: BoxShape.circle,
               gradient: LinearGradient(
                 colors: [
-                  kTeal.withValues(alpha: isDark ? 0.20 : 0.14),
-                  kAccentCyan.withValues(alpha: isDark ? 0.10 : 0.07),
+                  AppColors.teal.withValues(alpha: isDark ? 0.20 : 0.14),
+                  AppColors.accentCyan.withValues(alpha: isDark ? 0.10 : 0.07),
                 ],
               ),
             ),
             child: Icon(
               Icons.people_outline_rounded,
               size: 44,
-              color: isDark ? kAccentCyan : kTeal,
+              color: isDark ? AppColors.accentCyan : AppColors.teal,
             ),
           ),
           const SizedBox(height: 18),

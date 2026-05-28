@@ -1,7 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:frontend/localization/app_localizations.dart';
-import 'package:frontend/utils/glass_widgets.dart';
+import 'package:frontend/widgets/common/common_widgets.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PatientSuccessPage extends StatefulWidget {
@@ -109,7 +110,7 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  kTeal.withValues(alpha: isDark ? 0.14 : 0.20),
+                  AppColors.teal.withValues(alpha: isDark ? 0.14 : 0.20),
                   Colors.transparent,
                 ]),
               ),
@@ -124,7 +125,7 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(colors: [
-                  kAccentCyan.withValues(alpha: isDark ? 0.08 : 0.14),
+                  AppColors.accentCyan.withValues(alpha: isDark ? 0.08 : 0.14),
                   Colors.transparent,
                 ]),
               ),
@@ -156,7 +157,7 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: RadialGradient(colors: [
-                              kTeal.withValues(alpha: 0.20),
+                              AppColors.teal.withValues(alpha: 0.20),
                               Colors.transparent,
                             ]),
                           ),
@@ -186,13 +187,13 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
                                 ),
                                 border: Border.all(
                                   color: isDark
-                                      ? kTeal.withValues(alpha: 0.40)
-                                      : kTeal.withValues(alpha: 0.35),
+                                      ? AppColors.teal.withValues(alpha: 0.40)
+                                      : AppColors.teal.withValues(alpha: 0.35),
                                   width: 2,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: kTeal.withValues(alpha: 0.30),
+                                    color: AppColors.teal.withValues(alpha: 0.30),
                                     blurRadius: 28,
                                     spreadRadius: 4,
                                   ),
@@ -204,8 +205,8 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
                                   return Icon(
                                     Icons.check_rounded,
                                     color: Color.lerp(
-                                      kTeal.withValues(alpha: 0),
-                                      kTeal,
+                                      AppColors.teal.withValues(alpha: 0),
+                                      AppColors.teal,
                                       _checkAnimation.value,
                                     ),
                                     size: 58,
@@ -273,7 +274,7 @@ class _PatientSuccessPageState extends State<PatientSuccessPage>
                         return CircularProgressIndicator(
                           value: value,
                           strokeWidth: 3,
-                          color: kTeal.withValues(alpha: 0.6),
+                          color: AppColors.teal.withValues(alpha: 0.6),
                           backgroundColor: isDark
                               ? Colors.white.withValues(alpha: 0.08)
                               : Colors.black.withValues(alpha: 0.06),

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
-import '../providers/login_provider.dart';
+import '../app/dashboard_bootstrap_controller.dart';
 import '../providers/patient_provider.dart';
-import '../utils/glass_widgets.dart';
+import '../widgets/common/common_widgets.dart';
 
 class PhcDashboardPage extends ConsumerStatefulWidget {
   const PhcDashboardPage({super.key});
@@ -25,9 +25,8 @@ class _PhcDashboardPageState extends ConsumerState<PhcDashboardPage> {
   }
 
   Future<void> _loadPatientData() async {
-    final token = await ref.read(loginProvider.notifier).getValidToken();
-    if (token == null || !mounted) return;
-    ref.read(patientListProvider.notifier).loadPatients(token);
+    if (!mounted) return;
+    await ref.read(dashboardBootstrapProvider.notifier).refreshPatients();
   }
 
   @override

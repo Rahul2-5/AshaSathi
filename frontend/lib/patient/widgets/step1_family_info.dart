@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/providers/add_patient_provider.dart';
-import '../../utils/glass_widgets.dart';
+import '../../widgets/common/common_widgets.dart';
 
 class Step1FamilyInfo extends ConsumerWidget {
   const Step1FamilyInfo({super.key});

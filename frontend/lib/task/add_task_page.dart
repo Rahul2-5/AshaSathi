@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/providers/login_provider.dart';
 import 'package:frontend/providers/task_provider.dart';
+import 'package:frontend/widgets/common/common_widgets.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:uuid/uuid.dart';
 import 'task_model.dart';
-import '../utils/glass_widgets.dart';
 
 class AddTaskPage extends ConsumerStatefulWidget {
   final TaskModel? initialTask;
@@ -163,7 +163,8 @@ class _AddTaskPageState extends ConsumerState<AddTaskPage> {
                   return;
                 }
 
-                final token = ref.read(loginProvider).token!;
+                final token = await ref.read(loginProvider.notifier).getValidToken();
+                if (token == null || token.isEmpty) return;
                 final task = TaskModel(
                   id: widget.initialTask?.id,
                   uuid: widget.initialTask?.uuid ?? const Uuid().v4(),

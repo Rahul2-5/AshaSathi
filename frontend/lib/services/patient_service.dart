@@ -266,12 +266,50 @@ class PatientService {
   ) async {
     try {
       debugPrint('Submitting family registration: ${payload.toString()}');
+      final familyInfo = payload['familyInfo'] as Map<String, dynamic>?;
+      final patients = payload['patients'] as List<dynamic>?;
+
+      // Persist each member in the patient table so Recent Patients can read it.
+      if (familyInfo != null && patients != null) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        for (var index = 0; index < patients.length; index++) {
+          final rawPatient = patients[index];
+          if (rawPatient is! Map<String, dynamic>) {
+            continue;
+          }
+
+          await _offlineDao.upsert(
+            PatientOfflineEntity(
+              uuid: 'local-$now-$index',
+              name: (rawPatient['patientName'] ?? '').toString(),
+              gender: (rawPatient['gender'] ?? '').toString(),
+              age: int.tryParse((rawPatient['age'] ?? 0).toString()) ?? 0,
+              dateOfBirth: (rawPatient['dateOfBirth'] ?? '').toString(),
+              address: (rawPatient['address'] ?? '').toString(),
+              description: (rawPatient['notes'] ?? '').toString(),
+              phoneNumber: (rawPatient['phoneNumber'] ?? '').toString(),
+              photoPath: rawPatient['photoPath']?.toString(),
+              caste: (rawPatient['caste'] ?? '').toString(),
+              isPregnant: rawPatient['isPregnant'] == true,
+              monthsOfPregnancy: rawPatient['monthsOfPregnancy'] is int
+                  ? rawPatient['monthsOfPregnancy'] as int
+                  : int.tryParse((rawPatient['monthsOfPregnancy'] ?? '').toString()),
+              expectedDeliveryDate: (rawPatient['expectedDeliveryDate'] ?? '').toString(),
+              declinedHealthInfo: rawPatient['declinedHealthInfo'] == true,
+              diseases: rawPatient['diseases'] is Map
+                  ? Map<String, bool>.from(
+                      (rawPatient['diseases'] as Map).map(
+                        (key, value) => MapEntry(key.toString(), value == true),
+                      ),
+                    )
+                  : const {},
+            ),
+          );
+        }
+      }
       
       // 🔴 OFFLINE-FIRST: Save to local storage using FamilyOfflineService
       try {
-        final familyInfo = payload['familyInfo'] as Map<String, dynamic>?;
-        final patients = payload['patients'] as List<dynamic>?;
-        
         if (familyInfo != null && patients != null) {
           // Convert to proper format for FamilyOfflineService
           final patientsMap = List<Map<String, dynamic>>.from(
