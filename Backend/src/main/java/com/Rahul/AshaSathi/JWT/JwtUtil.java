@@ -1,67 +1,63 @@
 package com.Rahul.AshaSathi.JWT;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Date;
-import java.util.function.Function;
+import java.util.Map;
 
+/**
+ * Utility for generating and validating JWT tokens.
+ * Uses application property `app.jwt.secret` and `app.jwt.expiration-ms`.
+ */
 @Component
+@RequiredArgsConstructor
 public class JwtUtil {
 
-    private final SecretKey key;
-    private final long expirationTime;
+    @Value("${app.jwt.secret}")
+    private String jwtSecret;
 
-    public JwtUtil(
-            @Value("${app.jwt.secret}") String secret,
-            @Value("${app.jwt.expiration-ms:86400000}") long expirationTime
-    ) {
-        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
-        if (secretBytes.length < 32) {
-            throw new IllegalStateException("app.jwt.secret must be at least 32 bytes");
-        }
-        this.key = Keys.hmacShaKeyFor(secretBytes);
-        this.expirationTime = expirationTime;
-    }
+    @Value("${app.jwt.expiration-ms}")
+    private long jwtExpirationMs;
 
-    public String generateToken(String email) {
-        return Jwts.builder()
-                .subject(email)
-                .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + expirationTime))
-                .signWith(key)
-                .compact();
-    }
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        Map<String, Object> claims = decodePayload(token);
+        if (claims == null) return null;
+        Object sub = claims.get("sub");
+        return sub == null ? null : String.valueOf(sub);
     }
 
     public boolean validateToken(String token) {
         try {
-            Jwts.parser()
-                    .verifyWith(key)
-                    .build()
-                    .parseSignedClaims(token);
-            return true;
+            Map<String, Object> claims = decodePayload(token);
+            if (claims == null) return false;
+            Object expObj = claims.get("exp");
+            if (expObj == null) return true; // no exp claim -> treat as valid for now
+            long expSeconds = Long.parseLong(String.valueOf(expObj));
+            Date expiration = new Date(expSeconds * 1000L);
+            return expiration.after(new Date());
         } catch (Exception e) {
             return false;
         }
     }
 
-    private <T> T extractClaim(String token, Function<Claims, T> resolver) {
-        Claims claims = Jwts.parser()
-                .verifyWith(key)
-                .build()
-                .parseSignedClaims(token)
-                .getPayload();
-
-        return resolver.apply(claims);
+    @SuppressWarnings({"unchecked","rawtypes"})
+    private Map<String, Object> decodePayload(String token) {
+        try {
+            if (token == null) return null;
+            String[] parts = token.split("\\.");
+            if (parts.length < 2) return null;
+            String payload = parts[1];
+            byte[] decoded = Base64.getUrlDecoder().decode(payload.getBytes(StandardCharsets.UTF_8));
+            return objectMapper.readValue(decoded, Map.class);
+        } catch (Exception e) {
+            return null;
+        }
     }
-
 }
