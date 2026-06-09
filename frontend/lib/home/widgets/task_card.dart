@@ -528,11 +528,11 @@ class TaskCard extends ConsumerWidget {
                 ),
               );
 
-              if (!mounted) return;
+              if (!context.mounted) return;
               if (edited == true) {
                 final token = await ref.read(loginProvider.notifier).getValidToken();
                 if (token == null || token.isEmpty) return;
-                if (!mounted) return;
+                if (!context.mounted) return;
                 await ref.read(taskListProvider.notifier).loadTasks(token);
               }
             },
@@ -552,6 +552,7 @@ class TaskCard extends ConsumerWidget {
               if (confirm == true) {
                 final token = await ref.read(loginProvider.notifier).getValidToken();
                 if (token == null || token.isEmpty) return;
+                if (!context.mounted) return;
                 _showLoadingDialog(context);
 
                 // Fire deletion in background so UI is not blocked by network latency.
@@ -563,12 +564,14 @@ class TaskCard extends ConsumerWidget {
                 if (context.mounted) _hideLoadingDialog(context);
 
                 // Give immediate feedback that deletion started.
-                _showStyledSnackBar(
-                  context,
-                  message: 'Deleting...',
-                  accent: const Color(0xFFDD8A2A),
-                  icon: Icons.delete_outline,
-                );
+                if (context.mounted) {
+                  _showStyledSnackBar(
+                    context,
+                    message: 'Deleting...',
+                    accent: const Color(0xFFDD8A2A),
+                    icon: Icons.delete_outline,
+                  );
+                }
 
                 // When the background delete completes, show final status.
                 deleteFuture.then((deleted) {

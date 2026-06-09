@@ -1,6 +1,5 @@
 package com.Rahul.AshaSathi.config;
 
-import com.Rahul.AshaSathi.JWT.JwtUtil;
 import com.Rahul.AshaSathi.security.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
