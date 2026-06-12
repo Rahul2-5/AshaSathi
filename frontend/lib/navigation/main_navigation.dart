@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/patient/family_model.dart';
 import 'package:shimmer/shimmer.dart';
@@ -132,9 +133,11 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       },
       appBar: GlassAppBar(
         centerTitle: true,
-        title: _buildAppBarTitle(isDark),
+        title: _currentIndex == 0
+            ? _buildAppBarTitleWithLogout(isDark)
+            : _buildAppBarTitle(isDark),
         actions: _currentIndex == 0
-            ? [
+          ? [
                 Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: Container(
@@ -1036,6 +1039,60 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
     );
   }
 
+  Widget _buildAppBarTitleWithLogout(bool isDark) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: 'Logout',
+          style: IconButton.styleFrom(
+            backgroundColor: isDark
+                ? Colors.white.withValues(alpha: 0.08)
+                : Colors.white.withValues(alpha: 0.55),
+            shape: const CircleBorder(),
+          ),
+          icon: Icon(
+            Icons.logout_rounded,
+            color: isDark ? AppColors.accentCyan : AppColors.teal,
+          ),
+          onPressed: () async {
+            await ref.read(loginProvider.notifier).logout();
+            if (!mounted) return;
+            Navigator.pushNamedAndRemoveUntil(
+              context,
+              '/login',
+              (route) => false,
+            );
+          },
+        ),
+        const SizedBox(width: 8),
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1E2228),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            Icons.monitor_heart_outlined,
+            size: 18,
+            color: isDark ? const Color(0xFF1E2228) : Colors.white,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          context.l10n.tr('nav.dashboard').toUpperCase(),
+          style: TextStyle(
+            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1F2329),
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            fontSize: 14,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildDrawer(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1124,13 +1181,12 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                   onTap: () async {
                     Navigator.pop(context);
                     await ref.read(loginProvider.notifier).logout();
-                    if (context.mounted) {
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/login',
-                        (route) => false,
-                      );
-                    }
+                    if (!mounted) return;
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/login',
+                      (route) => false,
+                    );
                   },
                 ),
               ],

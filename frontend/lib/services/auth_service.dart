@@ -63,6 +63,48 @@ class AuthService {
     );
   }
 
+  bool _isLocalBackendHost(String host) {
+    return host == 'localhost' ||
+        host == '127.0.0.1' ||
+        host == '::1' ||
+        host == '10.0.2.2';
+  }
+
+  Uri? _googleLoginFallbackUri() {
+    final currentBaseUri = Uri.parse(AppConfig.apiBaseUrl);
+    if (!_isLocalBackendHost(currentBaseUri.host)) {
+      return null;
+    }
+
+    return Uri.parse('${AppConfig.productionApiBaseUrl}/api/auth/google');
+  }
+
+  Future<http.Response> _postJsonWithFallback({
+    required Uri requestUri,
+    required Map<String, dynamic> body,
+    Uri? fallbackUri,
+  }) async {
+    final headers = {'Content-Type': 'application/json'};
+
+    try {
+      return await http.post(
+        requestUri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+    } catch (_) {
+      if (fallbackUri == null || fallbackUri == requestUri) {
+        rethrow;
+      }
+
+      return http.post(
+        fallbackUri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+    }
+  }
+
   Future<String> loginWithGoogle() async {
     try {
       final user = await _googleSignIn.signIn();
@@ -81,10 +123,12 @@ class AuthService {
         );
       }
 
-      final response = await http.post(
-        Uri.parse('$baseUrl/google'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'idToken': idToken}),
+      final requestUri = Uri.parse('$baseUrl/google');
+      final fallbackUri = _googleLoginFallbackUri();
+      final response = await _postJsonWithFallback(
+        requestUri: requestUri,
+        body: {'idToken': idToken},
+        fallbackUri: fallbackUri,
       );
 
       if (response.statusCode == 200) {

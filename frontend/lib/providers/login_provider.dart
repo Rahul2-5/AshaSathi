@@ -69,6 +69,7 @@ class LoginNotifier extends StateNotifier<LoginState> {
   }
 
   Future<void> logout() async {
+    await authService.logout();
     await _clearToken();
     state = LoginState();
   }
