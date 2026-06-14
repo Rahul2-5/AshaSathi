@@ -85,6 +85,8 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                   const SizedBox(height: 32),
                   _infoCard(context),
                   const SizedBox(height: 32),
+                  _medicalDocumentsSection(context),
+                  const SizedBox(height: 32),
                   _deleteButton(context),
                   const SizedBox(height: 20),
                 ],
@@ -478,6 +480,63 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _medicalDocumentsSection(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return _sectionCard(
+      context,
+      title: '📁 Medical Documents',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Scan or upload prescription/lab reports to automatically extract health data for this patient.',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+              height: 1.3,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark
+                  ? const Color(0xFF14B8A6).withValues(alpha: 0.15)
+                  : const Color(0xFFE6F8F6),
+              foregroundColor: isDark ? AppColors.accentCyan : AppColors.teal,
+              side: BorderSide(
+                color: isDark
+                    ? const Color(0xFF14B8A6).withValues(alpha: 0.4)
+                    : const Color(0xFFBFECE6),
+                width: 1,
+              ),
+              minimumSize: const Size(double.infinity, 48),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            icon: const Icon(Icons.document_scanner_rounded, size: 20),
+            label: Text(
+              'Scan Medical Document',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+            onPressed: () {
+              Navigator.pushNamed(
+                context,
+                '/medical-vision',
+                arguments: _patient.id,
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 

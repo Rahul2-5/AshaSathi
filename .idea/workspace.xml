@@ -5,10 +5,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee158d9a-beb3-4543-ad53-57baddc8886b" name="Changes" comment="File Changes">
+      <change beforePath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/caches/deviceStreaming.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/widgets/task_card.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page_new.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/add_patient_page_new.dart" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/lib/services/patient_service.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/services/patient_service.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/Backend/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/.metadata" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/.metadata" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/app/app_shell.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/app/app_shell.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/home/home_page.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/navigation/main_navigation.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/navigation/main_navigation.dart" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/lib/patient/patient_detail_page.dart" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/lib/patient/patient_detail_page.dart" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

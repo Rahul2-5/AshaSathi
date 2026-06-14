@@ -3,10 +3,12 @@ class AppConfig {
       'https://ashasathi-backend-44448212683b.herokuapp.com';
 
   // Override in build/run using:
-  // --dart-define=API_BASE_URL=http://10.0.2.2:8080
+  // --dart-define=API_BASE_URL=http://10.0.2.2:8080   (Android emulator)
+  // --dart-define=API_BASE_URL=http://192.168.x.x:8080 (physical device)
+  // --dart-define=API_BASE_URL=https://ashasathi-backend-44448212683b.herokuapp.com (production)
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: productionApiBaseUrl,
+    defaultValue: 'http://10.0.2.2:8080',
   );
 
   static String get authBaseUrl => '$apiBaseUrl/api/auth';

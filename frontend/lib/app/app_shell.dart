@@ -8,6 +8,8 @@ import 'package:frontend/localization/app_localizations.dart';
 import 'package:frontend/navigation/main_navigation.dart';
 import 'package:frontend/splash/splash_page.dart';
 
+import 'package:frontend/screens/medical_vision/medical_document_screen.dart';
+
 class AshaSathiApp extends ConsumerWidget {
   const AshaSathiApp({super.key});
 
@@ -49,6 +51,16 @@ class AshaSathiApp extends ConsumerWidget {
         if (settings.name == '/login') {
           return MaterialPageRoute(
             builder: (_) => const LoginView(),
+            settings: settings,
+          );
+        }
+
+        if (settings.name == '/medical-vision') {
+          final patientId = settings.arguments is int
+              ? settings.arguments as int
+              : null;
+          return MaterialPageRoute(
+            builder: (_) => MedicalDocumentScreen(patientId: patientId),
             settings: settings,
           );
         }

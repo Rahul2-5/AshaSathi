@@ -201,6 +201,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     _overviewHero(),
                     const SizedBox(height: 12),
                     _syncStatusCard(),
+                    _medicalVisionCard(isDark),
                     const SizedBox(height: 28),
                     _tasksHeader(),
                     const SizedBox(height: 12),
@@ -991,6 +992,122 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _medicalVisionCard(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: GestureDetector(
+        onTap: () => Navigator.pushNamed(context, '/medical-vision'),
+        child: GlassContainer(
+          width: double.infinity,
+          padding: const EdgeInsets.all(16),
+          borderRadius: BorderRadius.circular(18),
+          blur: 18,
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF14B8A6).withValues(alpha: 0.12),
+                    const Color(0xFF0EA5E9).withValues(alpha: 0.06),
+                  ]
+                : [
+                    const Color(0xFF14B8A6).withValues(alpha: 0.12),
+                    Colors.white.withValues(alpha: 0.55),
+                  ],
+          ),
+          border: Border.all(
+            color: const Color(0xFF14B8A6).withValues(alpha: 0.35),
+            width: 1.5,
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF14B8A6), Color(0xFF0EA5E9)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF14B8A6).withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                    )
+                  ],
+                ),
+                child: const Icon(
+                  Icons.document_scanner_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'AI Medical Vision',
+                          style: GoogleFonts.outfit(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: isDark
+                                ? const Color(0xFFE6EDF3)
+                                : const Color(0xFF1F252B),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'NEW',
+                            style: GoogleFonts.outfit(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: isDark
+                                  ? const Color(0xFF38BDF8)
+                                  : const Color(0xFF0284C7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Scan prescriptions & lab reports to extract medicines, values & summaries',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark
+                            ? const Color(0xFF9EABB7)
+                            : const Color(0xFF6C7580),
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                size: 16,
+                color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF6C7580),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

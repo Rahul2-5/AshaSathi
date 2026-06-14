@@ -1181,7 +1181,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                   onTap: () async {
                     Navigator.pop(context);
                     await ref.read(loginProvider.notifier).logout();
-                    if (!mounted) return;
+                    if (!context.mounted) return;
                     Navigator.pushNamedAndRemoveUntil(
                       context,
                       '/login',
