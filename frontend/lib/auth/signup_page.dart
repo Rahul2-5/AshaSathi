@@ -6,7 +6,6 @@ import 'package:frontend/providers/login_provider.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../home/home_page.dart';
-import '../services/auth_service.dart';
 import '../providers/signup_provider.dart';
 import '../utils/app_validator.dart';
 import '../widgets/common/common_widgets.dart';
@@ -544,7 +543,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                   setState(() => _isGoogleLoading = true);
                   final navigator = Navigator.of(context);
                   try {
-                    final token = await AuthService().loginWithGoogle();
+                    final token = await ref.read(authServiceProvider).loginWithGoogle();
                     if (!mounted) return;
                     await ref.read(loginProvider.notifier).setToken(token);
                     if (!mounted) return;

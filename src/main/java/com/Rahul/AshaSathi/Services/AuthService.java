@@ -75,28 +75,56 @@ public class AuthService {
 
 
     public AuthResponse googleLogin(GoogleLoginRequestDTO request) {
-        if (request == null || request.getIdToken() == null || request.getIdToken().isBlank()) {
-            throw new RuntimeException("GOOGLE_ID_TOKEN_REQUIRED");
+        if (request == null) {
+            throw new RuntimeException("GOOGLE_TOKEN_REQUIRED");
         }
 
-        Map<String, Object> tokenInfo = googleTokenClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/tokeninfo")
-                        .queryParam("id_token", request.getIdToken())
-                        .build())
-                .retrieve()
-                .body(new ParameterizedTypeReference<>() {});
+        Map<String, Object> tokenInfo;
+        try {
+            String idToken = request.getIdToken();
+            String accessToken = request.getAccessToken();
+
+            if (idToken != null && !idToken.isBlank()) {
+                tokenInfo = googleTokenClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/tokeninfo")
+                                .queryParam("id_token", idToken)
+                                .build())
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<>() {});
+            } else if (accessToken != null && !accessToken.isBlank()) {
+                tokenInfo = googleTokenClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/tokeninfo")
+                                .queryParam("access_token", accessToken)
+                                .build())
+                        .retrieve()
+                        .body(new ParameterizedTypeReference<>() {});
+            } else {
+                throw new RuntimeException("GOOGLE_TOKEN_REQUIRED");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("GOOGLE_TOKEN_INVALID: " + e.getMessage());
+        }
 
         if (tokenInfo == null) {
             throw new RuntimeException("GOOGLE_TOKEN_INVALID");
         }
 
-        String audience = asString(tokenInfo.get("aud"));
+        String audience = firstNonBlank(
+                asString(tokenInfo.get("aud")),
+                asString(tokenInfo.get("audience")),
+                asString(tokenInfo.get("issued_to")),
+                asString(tokenInfo.get("client_id"))
+        );
         if (googleClientId != null && !googleClientId.isBlank() && !googleClientId.equals(audience)) {
             throw new RuntimeException("GOOGLE_TOKEN_AUDIENCE_INVALID");
         }
 
-        String emailVerified = asString(tokenInfo.get("email_verified"));
+        String emailVerified = firstNonBlank(
+                asString(tokenInfo.get("email_verified")),
+                asString(tokenInfo.get("verified_email"))
+        );
         if (!"true".equalsIgnoreCase(emailVerified)) {
             throw new RuntimeException("GOOGLE_EMAIL_NOT_VERIFIED");
         }
@@ -133,8 +161,22 @@ public class AuthService {
 
     }
 
+    public String getGoogleClientId() {
+        return googleClientId == null ? "" : googleClientId.trim();
+    }
+
     private String asString(Object value) {
         return value == null ? "" : value.toString();
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+
+        return "";
     }
 
 }

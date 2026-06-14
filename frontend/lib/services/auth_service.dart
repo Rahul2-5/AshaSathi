@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:frontend/config/app_config.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -9,7 +10,8 @@ import 'package:url_launcher/url_launcher.dart';
 class AuthService {
   final String baseUrl = AppConfig.authBaseUrl;
 
-  late final GoogleSignIn _googleSignIn = _buildGoogleSignIn();
+  String? _cachedGoogleClientId;
+  GoogleSignIn? _googleSignIn;
 
   Future<String> login(Map<String, dynamic> data) async {
     final response = await http.post(
@@ -50,85 +52,111 @@ class AuthService {
     }
   }
 
-  GoogleSignIn _buildGoogleSignIn() {
-    final webClientId = AppConfig.googleWebClientId.trim();
-    if (webClientId.isEmpty) {
+  Uri get _googleLoginUri =>
+      Uri.parse('${AppConfig.googleAuthBaseUrl}/api/auth/google');
+
+  Uri get _googleClientIdUri =>
+      Uri.parse('${AppConfig.googleAuthBaseUrl}/api/auth/google/client-id');
+
+  Future<String?> _fetchGoogleClientId() async {
+    if (_cachedGoogleClientId != null) {
+      return _cachedGoogleClientId!.trim().isEmpty
+          ? null
+          : _cachedGoogleClientId!.trim();
+    }
+
+    final fallbackClientId = AppConfig.googleWebClientId.trim();
+    if (fallbackClientId.isNotEmpty) {
+      _cachedGoogleClientId = fallbackClientId;
+      return fallbackClientId;
+    }
+
+    try {
+      final response = await http.get(_googleClientIdUri);
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final clientId = decoded is Map<String, dynamic>
+            ? (decoded['clientId']?.toString().trim() ?? '')
+            : '';
+        _cachedGoogleClientId = clientId;
+        return clientId.isEmpty ? null : clientId;
+      }
+    } catch (_) {}
+
+    _cachedGoogleClientId = '';
+    return null;
+  }
+
+  GoogleSignIn _buildGoogleSignIn({String? clientId}) {
+    final trimmedClientId = clientId?.trim() ?? '';
+    if (trimmedClientId.isEmpty) {
       return GoogleSignIn(scopes: ['email', 'profile']);
+    }
+
+    if (kIsWeb) {
+      return GoogleSignIn(
+        scopes: ['email', 'profile'],
+        clientId: trimmedClientId,
+        serverClientId: trimmedClientId,
+      );
     }
 
     return GoogleSignIn(
       scopes: ['email', 'profile'],
-      clientId: webClientId,
-      serverClientId: webClientId,
+      serverClientId: trimmedClientId,
     );
   }
 
-  bool _isLocalBackendHost(String host) {
-    return host == 'localhost' ||
-        host == '127.0.0.1' ||
-        host == '::1' ||
-        host == '10.0.2.2';
-  }
-
-  Uri? _googleLoginFallbackUri() {
-    final currentBaseUri = Uri.parse(AppConfig.apiBaseUrl);
-    if (!_isLocalBackendHost(currentBaseUri.host)) {
-      return null;
+  Future<GoogleSignIn> _googleSignInInstance() async {
+    final clientId = await _fetchGoogleClientId();
+    final current = _googleSignIn;
+    if (current != null && _cachedGoogleClientId == clientId) {
+      return current;
     }
 
-    return Uri.parse('${AppConfig.productionApiBaseUrl}/api/auth/google');
-  }
-
-  Future<http.Response> _postJsonWithFallback({
-    required Uri requestUri,
-    required Map<String, dynamic> body,
-    Uri? fallbackUri,
-  }) async {
-    final headers = {'Content-Type': 'application/json'};
-
-    try {
-      return await http.post(
-        requestUri,
-        headers: headers,
-        body: jsonEncode(body),
-      );
-    } catch (_) {
-      if (fallbackUri == null || fallbackUri == requestUri) {
-        rethrow;
-      }
-
-      return http.post(
-        fallbackUri,
-        headers: headers,
-        body: jsonEncode(body),
-      );
-    }
+    final signIn = _buildGoogleSignIn(clientId: clientId);
+    _googleSignIn = signIn;
+    return signIn;
   }
 
   Future<String> loginWithGoogle() async {
     try {
-      final user = await _googleSignIn.signIn();
+      final googleSignIn = await _googleSignInInstance();
+      final user = await googleSignIn.signIn();
       if (user == null) {
         throw Exception('Google login cancelled');
       }
 
       final auth = await user.authentication;
       final idToken = auth.idToken;
-      if (idToken == null || idToken.isEmpty) {
+      final accessToken = auth.accessToken;
+      if ((idToken == null || idToken.isEmpty) &&
+          (accessToken == null || accessToken.isEmpty)) {
+        final backendClientId = await _fetchGoogleClientId();
+        final backendHint = backendClientId == null
+            ? ' Heroku is missing GOOGLE_CLIENT_ID for the Google OAuth backend.'
+            : '';
         throw Exception(
-          'Google did not return an ID token. This usually means Google Sign-In is not configured for this build.\n'
-          'For Android: add a valid google-services.json (matching your appId) and register OAuth client IDs with the correct package name and SHA-1/SHA-256 fingerprints.\n'
-          'For web: provide the web client ID via --dart-define=GOOGLE_WEB_CLIENT_ID=<YOUR_WEB_CLIENT_ID>.\n'
-          'If you use a custom build variant or debug keystore, ensure the fingerprints match the OAuth client. See project README for setup steps.'
+          'Google did not return an ID token or access token.$backendHint\n'
+          'Most likely missing Android Google Sign-In setup:\n'
+          '- `frontend/android/app/google-services.json` is empty or not the real file.\n'
+          '- The Android `applicationId` should be `com.ashasathi.frontend` and must match the OAuth client.\n'
+          '- The OAuth client package name / SHA-1 / SHA-256 in Google Cloud does not match this build.\n'
+          'The Android client ID from Google Cloud is not the same as the web/server client ID used for `serverClientId` and backend token validation.\n'
+          'If you are running web, provide `GOOGLE_WEB_CLIENT_ID` or set `GOOGLE_AUTH_BASE_URL` to the Heroku backend.'
         );
       }
 
-      final requestUri = Uri.parse('$baseUrl/google');
-      final fallbackUri = _googleLoginFallbackUri();
-      final response = await _postJsonWithFallback(
-        requestUri: requestUri,
-        body: {'idToken': idToken},
-        fallbackUri: fallbackUri,
+      final payload = <String, dynamic>{
+        if (idToken != null && idToken.isNotEmpty) 'idToken': idToken,
+        if (accessToken != null && accessToken.isNotEmpty)
+          'accessToken': accessToken,
+      };
+
+      final response = await http.post(
+        _googleLoginUri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
       );
 
       if (response.statusCode == 200) {
@@ -184,7 +212,9 @@ class AuthService {
 
   Future<void> logout() async {
     try {
-      await _googleSignIn.signOut();
+      if (_googleSignIn != null) {
+        await _googleSignIn!.signOut();
+      }
     } catch (_) {}
   }
 }

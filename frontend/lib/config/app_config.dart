@@ -10,6 +10,11 @@ class AppConfig {
   );
 
   static String get authBaseUrl => '$apiBaseUrl/api/auth';
+  static String get googleAuthBaseUrl =>
+      String.fromEnvironment(
+        'GOOGLE_AUTH_BASE_URL',
+        defaultValue: productionApiBaseUrl,
+      );
   static String get patientsBaseUrl => '$apiBaseUrl/api/patients';
   static String get tasksBaseUrl => '$apiBaseUrl/api/tasks';
 
@@ -18,7 +23,7 @@ class AppConfig {
   // --dart-define=GOOGLE_WEB_CLIENT_ID=xxx.apps.googleusercontent.com
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '',
+    defaultValue: '343345849482-6tepsl4rnfr2st7jlea7qh79q2j56no3.apps.googleusercontent.com',
   );
 
   static const String githubClientId = String.fromEnvironment(

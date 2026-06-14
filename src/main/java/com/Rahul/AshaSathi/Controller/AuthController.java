@@ -59,4 +59,11 @@ public class AuthController {
                     .body(e.getMessage());
         }
     }
+
+    @GetMapping("/google/client-id")
+    public ResponseEntity<?> googleClientId() {
+        return ResponseEntity.ok(
+                java.util.Map.of("clientId", authService.getGoogleClientId())
+        );
+    }
 }

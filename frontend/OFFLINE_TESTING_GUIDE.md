@@ -169,8 +169,8 @@ Offline mode: → Offline operations
 
 ### Kill and Restart App
 ```bash
-adb shell am force-stop com.example.frontend
-adb shell am start -n com.example.frontend/.MainActivity
+adb shell am force-stop com.ashasathi.frontend
+adb shell am start -n com.ashasathi.frontend/.MainActivity
 ```
 
 ### Force Sync
@@ -181,7 +181,7 @@ adb shell am start -n com.example.frontend/.MainActivity
 ```bash
 # This would require code changes to add a "Clear All" button
 # For now, uninstall and reinstall the app
-adb uninstall com.example.frontend
+adb uninstall com.ashasathi.frontend
 ```
 
 ## Common Issues & Fixes

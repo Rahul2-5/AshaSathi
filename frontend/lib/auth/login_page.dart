@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../services/auth_service.dart';
 import '../utils/app_validator.dart';
 import '../widgets/common/common_widgets.dart';
 import '../providers/login_provider.dart';
@@ -469,7 +468,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                   setState(() => _isGoogleLoading = true);
                   final navigator = Navigator.of(context);
                   try {
-                    final token = await AuthService().loginWithGoogle();
+                    final token = await ref.read(authServiceProvider).loginWithGoogle();
                     if (!mounted) return;
                     await ref.read(loginProvider.notifier).setToken(token);
                     if (!mounted) return;
