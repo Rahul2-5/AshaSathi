@@ -203,7 +203,9 @@ public class MedicalDocumentController {
 
     private String saveUploadedFile(MultipartFile file) {
         try {
-            Path dir = Paths.get(uploadDir);
+            // Resolve to an absolute path so the destination never depends on the
+            // process working directory (important on Heroku's ephemeral dyno).
+            Path dir = Paths.get(uploadDir).toAbsolutePath();
             Files.createDirectories(dir);
 
             String ext = "";
@@ -213,9 +215,16 @@ public class MedicalDocumentController {
             }
             String filename = UUID.randomUUID() + ext;
             Path target = dir.resolve(filename);
-            file.transferTo(target.toFile());
+            // Write via the input stream rather than transferTo(File): transferTo can
+            // throw IllegalStateException (a RuntimeException) when the temp file has
+            // already been moved, which would otherwise escape uncaught.
+            try (var in = file.getInputStream()) {
+                Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
             return target.toString();
-        } catch (IOException e) {
+        } catch (Exception e) {
+            log.error("Failed to save uploaded file '{}': {}",
+                file.getOriginalFilename(), e.toString(), e);
             throw new ResponseStatusException(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "Failed to save uploaded file: " + e.getMessage()
