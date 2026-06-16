@@ -68,10 +68,14 @@ public class MedicalDocumentController {
         if (file.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Uploaded file is empty.");
         }
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
+        // Accept if the declared content type is an image OR the filename has an
+        // image extension. Mobile multipart clients often send
+        // "application/octet-stream" (or no type) even for valid images, so the
+        // filename extension is a reliable secondary signal.
+        if (!isImageUpload(file)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                "Only image files are accepted. Received: " + contentType);
+                "Only image files are accepted. Received contentType="
+                    + file.getContentType() + ", filename=" + file.getOriginalFilename());
         }
 
         // Save image to disk
@@ -230,6 +234,25 @@ public class MedicalDocumentController {
                 "Failed to save uploaded file: " + e.getMessage()
             );
         }
+    }
+
+    /**
+     * True if the upload is an image, judged by content type OR filename
+     * extension. Mobile clients frequently send application/octet-stream for
+     * valid images, so we fall back to the extension.
+     */
+    private boolean isImageUpload(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType != null && contentType.toLowerCase().startsWith("image/")) {
+            return true;
+        }
+        String name = file.getOriginalFilename();
+        if (name == null) return false;
+        String lower = name.toLowerCase();
+        return lower.endsWith(".jpg")  || lower.endsWith(".jpeg")
+            || lower.endsWith(".png")  || lower.endsWith(".webp")
+            || lower.endsWith(".bmp")  || lower.endsWith(".heic")
+            || lower.endsWith(".heif") || lower.endsWith(".tiff");
     }
 
     private double toDouble(Object value) {
