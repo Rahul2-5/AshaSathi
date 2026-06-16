@@ -68,8 +68,49 @@ public class GeminiService {
      * Send a text prompt to Gemini 2.5 Flash and return the raw text response.
      * Applies retry with exponential backoff and a hard timeout.
      */
+    private String getEffectiveApiKey() {
+        String key = this.apiKey;
+        if (key == null || key.isBlank() || "AIzaSyBbjSFuewpKa_yf8FLl-AZ75tuSHirv_CE".equals(key.strip())) {
+            log.info("Expired or missing environment API key detected. Attempting to load from secrets file.");
+            List<String> paths = List.of(
+                "src/main/resources/application-secrets.properties",
+                "Backend/src/main/resources/application-secrets.properties",
+                "./config/application-secrets.properties"
+            );
+            for (String p : paths) {
+                java.io.File file = new java.io.File(p);
+                if (file.exists()) {
+                    try {
+                        java.util.Properties props = new java.util.Properties();
+                        try (java.io.FileInputStream fis = new java.io.FileInputStream(file)) {
+                            props.load(fis);
+                            String fileKey = props.getProperty("GEMINI_API_KEY");
+                            if (fileKey == null || fileKey.isBlank()) {
+                                fileKey = props.getProperty("gemini.api.key");
+                            }
+                            if (fileKey != null && !fileKey.isBlank() && !"AIzaSyBbjSFuewpKa_yf8FLl-AZ75tuSHirv_CE".equals(fileKey.strip())) {
+                                log.info("Successfully loaded fresh API key from secrets file: {}", p);
+                                return fileKey.strip();
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Failed to load secrets from {}: {}", p, e.getMessage());
+                    }
+                }
+            }
+        }
+        return key != null ? key.strip() : "";
+    }
+
+    // ── Core API call ─────────────────────────────────────────────────────────
+
+    /**
+     * Send a text prompt to Gemini 2.5 Flash and return the raw text response.
+     * Applies retry with exponential backoff and a hard timeout.
+     */
     public String callGemini(String promptText) {
-        if (apiKey == null || apiKey.isBlank()) {
+        String activeKey = getEffectiveApiKey();
+        if (activeKey == null || activeKey.isBlank()) {
             throw new IllegalStateException(
                 "GEMINI_API_KEY is not configured. Set it as an environment variable.");
         }
@@ -84,7 +125,7 @@ public class GeminiService {
             )
         );
 
-        String url = ENDPOINT_PATH + "?key=" + apiKey;
+        String url = ENDPOINT_PATH + "?key=" + activeKey;
 
         return geminiWebClient.post()
                 .uri(url)

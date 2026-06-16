@@ -17,6 +17,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.core.io.FileSystemResource;
+import java.io.File;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -193,26 +197,23 @@ public class MedicalDocumentService {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> callOcrService(String imagePath) {
-        // Build multipart form with the image file path
-        // The Spring Boot server uploads the image to the OCR service
         try {
-            var body = BodyInserters.fromFormData("file_path", imagePath);
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            body.add("file", new FileSystemResource(new File(imagePath)));
 
-            // Use extract-text for server-side image extraction
-            // The OCR service /extract-text accepts a file upload; here we call
-            // /parse-and-summarize with just the file path as a workaround for
-            // server-to-server communication. The real file upload goes through
-            // the controller which streams it to OCR.
-            // This internal call is for when imagePath is locally accessible.
-            return ocrWebClient.get()
-                .uri("/health")
+            Map<String, Object> result = ocrWebClient.post()
+                .uri("/extract-text")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(body))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
                 .block();
+
+            return result != null ? result : Map.of("success", false, "raw_text", "", "confidence", 0.0, "segments", List.of());
         } catch (Exception e) {
-            log.warn("OCR health check failed: {}", e.getMessage());
+            log.error("OCR service call failed: {}", e.getMessage());
+            return Map.of("success", false, "raw_text", "", "confidence", 0.0, "segments", List.of(), "error", e.getMessage());
         }
-        return Map.of("raw_text", "", "confidence", 0.0, "segments", List.of());
     }
 
     /**

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -164,6 +165,7 @@ public class MedicalDocumentController {
      * Poll endpoint used by Flutter every 3 seconds.
      * Returns the full document with processingStatus, medicines, lab results, summary.
      */
+    @Transactional(readOnly = true)
     @GetMapping("/{id}")
     public ResponseEntity<MedicalDocumentResponse> getDocument(@PathVariable Long id) {
         MedicalDocument doc = findDocOrThrow(id);
@@ -180,6 +182,7 @@ public class MedicalDocumentController {
     /**
      * List all medical documents for a specific patient, newest first.
      */
+    @Transactional(readOnly = true)
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<MedicalDocumentResponse>> getPatientDocuments(
             @PathVariable Long patientId) {
