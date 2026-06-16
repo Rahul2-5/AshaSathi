@@ -182,8 +182,9 @@ async def parse_and_summarize(request: ParseTextRequest):
         raise HTTPException(status_code=400, detail="OCR text cannot be empty.")
 
     try:
-        extracted = await gemini_service.extract_medical_data(request.raw_text)
-        summary = await gemini_service.generate_summary(extracted)
+        # Single Gemini call returns both the structured data and the summary
+        # (halves latency and rate-limit usage vs. two sequential calls).
+        extracted, summary = await gemini_service.extract_and_summarize(request.raw_text)
 
         data = MedicalDataExtraction(
             diagnosis=extracted.get("diagnosis"),
@@ -201,3 +202,16 @@ async def parse_and_summarize(request: ParseTextRequest):
     except Exception as e:
         logger.error(f"Parse-and-summarize error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"Pipeline error: {e}")
+
+
+# ── Entry point ───────────────────────────────────────────────────────────────
+# IMPORTANT: The Spring Boot backend calls this service at http://localhost:8001
+# (see `ocr.service.url` in application.properties). Pinning the port here ensures
+# `python main.py` always binds 8001 and never the uvicorn default of 8000, which
+# would make the OCR call fail and the document pipeline abort before generating
+# the AI summary.
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("OCR_SERVICE_PORT", "8001"))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)

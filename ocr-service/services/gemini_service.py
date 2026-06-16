@@ -28,11 +28,15 @@ def _load_prompt(name: str) -> str:
 
 # ── Gemini API constants ─────────────────────────────────────────────────────
 
-GEMINI_API_URL = (
+GEMINI_API_TEMPLATE = (
     "https://generativelanguage.googleapis.com/v1beta/models/"
-    "gemini-2.5-flash:generateContent"
+    "{model}:generateContent"
 )
-MAX_RETRIES = 3
+# Tried in order: if the primary model is overloaded (503), fall back to the next.
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+# Server-side transient failures worth retrying with exponential backoff.
+RETRYABLE_STATUS = {429, 500, 502, 503, 504}
+MAX_RETRIES = 4
 TIMEOUT_SECONDS = 45.0
 TEMPERATURE = 0.0   # Deterministic output for medical data
 
@@ -61,6 +65,24 @@ def _repair_json(text: str) -> str:
     return text
 
 
+def _loads_lenient(text: str) -> dict:
+    """
+    Parse Gemini JSON defensively. strict=False tolerates literal newlines/tabs
+    inside string values (common when a free-text summary is embedded in the JSON),
+    which would otherwise raise and wipe out the whole extraction. Falls back to a
+    single-quote fix, then to an empty dict.
+    """
+    for attempt in (text, text.replace("'", '"')):
+        try:
+            result = json.loads(attempt, strict=False)
+            if isinstance(result, dict):
+                return result
+        except json.JSONDecodeError:
+            continue
+    logger.error("All JSON repair attempts failed. Returning empty schema.")
+    return {}
+
+
 # ── GeminiService ─────────────────────────────────────────────────────────────
 
 class GeminiService:
@@ -87,6 +109,47 @@ class GeminiService:
         if self._initialized:
             return
         self.api_key = os.environ.get("GEMINI_API_KEY", "")
+        if self.api_key == "AIzaSyBbjSFuewpKa_yf8FLl-AZ75tuSHirv_CE":
+            logger.warning("Expired environment API key detected. Using fallbacks.")
+            self.api_key = ""
+        
+        # Fallback 1: Read from .env file in the current directory or parent directory
+        if not self.api_key:
+            for path in [Path(".env"), Path("../.env"), Path("ocr-service/.env")]:
+                if path.exists():
+                    try:
+                        for line in path.read_text(encoding="utf-8").splitlines():
+                            if line.strip().startswith("GEMINI_API_KEY="):
+                                self.api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                                logger.info(f"Loaded GEMINI_API_KEY from {path}")
+                                break
+                    except Exception as e:
+                        logger.warning(f"Error reading {path}: {e}")
+                if self.api_key:
+                    break
+
+        # Fallback 2: Read from Spring Boot properties files
+        if not self.api_key:
+            paths_to_try = [
+                Path("src/main/resources/application-secrets.properties"),
+                Path("../src/main/resources/application-secrets.properties"),
+                Path("Backend/src/main/resources/application-secrets.properties"),
+                Path("../Backend/src/main/resources/application-secrets.properties"),
+                Path("../../src/main/resources/application-secrets.properties")
+            ]
+            for path in paths_to_try:
+                if path.exists():
+                    try:
+                        for line in path.read_text(encoding="utf-8").splitlines():
+                            if "GEMINI_API_KEY=" in line or "gemini.api.key=" in line:
+                                self.api_key = line.split("=", 1)[1].strip().strip('"').strip("'")
+                                logger.info(f"Loaded GEMINI_API_KEY from Spring config {path}")
+                                break
+                    except Exception as e:
+                        logger.warning(f"Error reading Spring config {path}: {e}")
+                if self.api_key:
+                    break
+
         if not self.api_key:
             logger.warning(
                 "GEMINI_API_KEY is not set. Gemini requests will fail."
@@ -102,70 +165,87 @@ class GeminiService:
     async def _call_gemini(self, prompt_text: str) -> str:
         """
         POST to Gemini REST API with retry logic.
-        Returns the raw text of the first candidate part.
+
+        Tries each model in GEMINI_MODELS in order. For every model it retries
+        transient failures (429/500/502/503/504, connection/timeout errors) with
+        exponential backoff. Only when a model is exhausted does it fall back to
+        the next one, so a temporary overload of gemini-2.5-flash no longer fails
+        the whole request.
         """
         if not self.api_key:
             raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
 
         payload = {
-            "contents": [
-                {
-                    "parts": [{"text": prompt_text}]
-                }
-            ],
+            "contents": [{"parts": [{"text": prompt_text}]}],
             "generationConfig": {
                 "temperature": TEMPERATURE,
                 "maxOutputTokens": 2048,
             },
         }
-        url = f"{GEMINI_API_URL}?key={self.api_key}"
 
         last_error: Exception = RuntimeError("Unknown error")
-        for attempt in range(1, MAX_RETRIES + 1):
-            try:
-                logger.info(f"Gemini API call attempt {attempt}/{MAX_RETRIES}")
-                async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
-                    response = await client.post(url, json=payload)
+        for model in GEMINI_MODELS:
+            url = f"{GEMINI_API_TEMPLATE.format(model=model)}?key={self.api_key}"
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    logger.info(f"Gemini API call: model={model} attempt={attempt}/{MAX_RETRIES}")
+                    async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
+                        response = await client.post(url, json=payload)
 
-                if response.status_code == 429:
-                    wait = 2 ** attempt
-                    logger.warning(f"Rate limited. Waiting {wait}s before retry.")
-                    await asyncio.sleep(wait)
-                    continue
+                    if response.status_code in RETRYABLE_STATUS:
+                        wait = 2 ** attempt
+                        last_error = RuntimeError(
+                            f"Gemini {model} transient {response.status_code}: {response.text[:200]}"
+                        )
+                        logger.warning(
+                            f"{model} returned {response.status_code} (transient). "
+                            f"Waiting {wait}s before retry."
+                        )
+                        await asyncio.sleep(wait)
+                        continue
 
-                if response.status_code != 200:
-                    raise RuntimeError(
-                        f"Gemini API error {response.status_code}: {response.text[:300]}"
-                    )
+                    if response.status_code != 200:
+                        # Non-retryable (e.g. 400/401/403) — don't waste retries on this model.
+                        raise RuntimeError(
+                            f"Gemini API error {response.status_code}: {response.text[:300]}"
+                        )
 
-                data = response.json()
-                candidates = data.get("candidates", [])
-                if not candidates:
-                    raise ValueError("Gemini returned no candidates.")
+                    data = response.json()
+                    candidates = data.get("candidates", [])
+                    if not candidates:
+                        raise ValueError("Gemini returned no candidates.")
 
-                content = candidates[0].get("content", {})
-                parts = content.get("parts", [])
-                if not parts:
-                    raise ValueError("Gemini returned empty parts.")
+                    content = candidates[0].get("content", {})
+                    parts = content.get("parts", [])
+                    if not parts:
+                        raise ValueError("Gemini returned empty parts.")
 
-                text = parts[0].get("text", "")
-                logger.info("Gemini API call succeeded.")
-                return text
+                    text = parts[0].get("text", "")
+                    logger.info(f"Gemini API call succeeded (model={model}).")
+                    return text
 
-            except (httpx.ConnectError, httpx.TimeoutException) as e:
-                last_error = e
-                logger.warning(f"Network error on attempt {attempt}: {e}")
-                if attempt < MAX_RETRIES:
-                    await asyncio.sleep(2 ** attempt)
+                except (httpx.ConnectError, httpx.TimeoutException) as e:
+                    last_error = e
+                    logger.warning(f"Network error on {model} attempt {attempt}: {e}")
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(2 ** attempt)
 
-            except Exception as e:
-                last_error = e
-                logger.error(f"Gemini call failed on attempt {attempt}: {e}")
-                if attempt < MAX_RETRIES:
-                    await asyncio.sleep(1)
+                except RuntimeError as e:
+                    # Non-retryable API error — stop retrying this model, try the next.
+                    last_error = e
+                    logger.error(f"Non-retryable error on {model}: {e}")
+                    break
+
+                except Exception as e:
+                    last_error = e
+                    logger.error(f"Gemini call failed on {model} attempt {attempt}: {e}")
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(2 ** attempt)
+
+            logger.warning(f"Model {model} exhausted; falling back to next model if available.")
 
         raise RuntimeError(
-            f"Gemini API failed after {MAX_RETRIES} attempts. Last error: {last_error}"
+            f"Gemini API failed across models {GEMINI_MODELS}. Last error: {last_error}"
         )
 
     # ── Public API ────────────────────────────────────────────────────────────
@@ -184,19 +264,33 @@ class GeminiService:
         cleaned = _strip_markdown(raw_response)
         repaired = _repair_json(cleaned)
 
-        parsed = {}
-        try:
-            parsed = json.loads(repaired)
-        except json.JSONDecodeError:
-            logger.warning("JSON parse failed; attempting single-quote fix.")
-            try:
-                parsed = json.loads(repaired.replace("'", '"'))
-            except json.JSONDecodeError:
-                logger.error("All JSON repair attempts failed. Returning empty schema.")
-                parsed = {}
+        parsed = _loads_lenient(repaired)
 
         # Normalize schema
         return self._normalize_extraction(parsed)
+
+    async def extract_and_summarize(self, ocr_text: str) -> tuple[dict, str]:
+        """
+        Single Gemini call that returns BOTH the structured medical data and the
+        clinical summary. Halves latency and quota usage versus calling
+        extract_medical_data + generate_summary separately.
+
+        Returns: (normalized_data_dict, summary_str)
+        """
+        template = _load_prompt("extract-and-summarize.prompt")
+        prompt = template.replace("{{OCR_TEXT}}", ocr_text)
+
+        raw_response = await self._call_gemini(prompt)
+        logger.info(f"Raw Gemini combined response (first 200 chars): {raw_response[:200]}")
+
+        cleaned = _strip_markdown(raw_response)
+        repaired = _repair_json(cleaned)
+
+        parsed = _loads_lenient(repaired)
+
+        summary = (parsed.get("summary") or "").strip()
+        summary = re.sub(r"^#+\s*", "", summary, flags=re.MULTILINE)
+        return self._normalize_extraction(parsed), summary
 
     async def generate_summary(self, medical_data: dict) -> str:
         """

@@ -746,12 +746,8 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
   }
 
   Widget _buildFamilyLoadingSkeleton(bool isDark) {
-    final baseColor = isDark
-        ? Colors.white.withValues(alpha: 0.1)
-        : Colors.black.withValues(alpha: 0.05);
-    final highlightColor = isDark
-        ? Colors.white.withValues(alpha: 0.05)
-        : Colors.black.withValues(alpha: 0.02);
+    final baseColor = AppColors.shimmerBase(context);
+    final highlightColor = AppColors.shimmerHighlight(context);
 
     return Shimmer.fromColors(
       baseColor: baseColor,

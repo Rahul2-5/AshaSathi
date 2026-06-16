@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:frontend/localization/app_localizations.dart';
 import 'package:shimmer/shimmer.dart';
 import '../app/dashboard_bootstrap_controller.dart';
@@ -227,9 +228,8 @@ class _PhcDashboardPageState extends ConsumerState<PhcDashboardPage> {
   }
 
   Widget _buildSkeletonContent() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05);
-    final highlightColor = isDark ? Colors.white.withValues(alpha: 0.05) : Colors.black.withValues(alpha: 0.02);
+    final baseColor = AppColors.shimmerBase(context);
+    final highlightColor = AppColors.shimmerHighlight(context);
 
     return Shimmer.fromColors(
       key: const ValueKey('phc-skeleton'),

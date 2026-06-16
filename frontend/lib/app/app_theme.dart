@@ -68,6 +68,35 @@ ThemeData buildLightTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF14A7A0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF14A7A0),
+        side: const BorderSide(color: Color(0xFF14A7A0)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFFE9EDF0),
+      thickness: 1,
+      space: 1,
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: Color(0xFF14A7A0),
+    ),
+    iconTheme: const IconThemeData(color: Color(0xFF1F252B)),
     navigationBarTheme: NavigationBarThemeData(
       height: 32,
       elevation: 0,
@@ -92,9 +121,7 @@ ThemeData buildLightTheme() {
         TargetPlatform.fuchsia: AppPageTransitionsBuilder(),
       },
     ),
-    snackBarTheme: const SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-    ),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }
 
@@ -103,9 +130,7 @@ ThemeData buildDarkTheme() {
     seedColor: const Color(0xFF14A7A0),
     brightness: Brightness.dark,
   );
-  final baseTextTheme = GoogleFonts.outfitTextTheme(
-    ThemeData.dark().textTheme,
-  );
+  final baseTextTheme = GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme);
 
   return ThemeData(
     useMaterial3: true,
@@ -174,6 +199,35 @@ ThemeData buildDarkTheme() {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF2ED1B0),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF2ED1B0),
+        side: const BorderSide(color: Color(0xFF2ED1B0)),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+    ),
+    dialogTheme: DialogThemeData(
+      backgroundColor: const Color(0xFF1A232C),
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+    ),
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFF2A3642),
+      thickness: 1,
+      space: 1,
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: Color(0xFF2ED1B0),
+    ),
+    iconTheme: const IconThemeData(color: Color(0xFFEAF2F8)),
     navigationBarTheme: NavigationBarThemeData(
       height: 60,
       elevation: 0,
@@ -188,9 +242,7 @@ ThemeData buildDarkTheme() {
         ),
       ),
     ),
-    snackBarTheme: const SnackBarThemeData(
-      behavior: SnackBarBehavior.floating,
-    ),
+    snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }
 
@@ -233,8 +285,10 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
       reverseCurve: curve,
     );
 
-    final offsetTween = Tween<Offset>(begin: beginOffset, end: endOffset)
-        .chain(CurveTween(curve: curve));
+    final offsetTween = Tween<Offset>(
+      begin: beginOffset,
+      end: endOffset,
+    ).chain(CurveTween(curve: curve));
 
     return FadeTransition(
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),

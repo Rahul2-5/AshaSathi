@@ -45,8 +45,8 @@ class _GradientScaffoldState extends State<GradientScaffold>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final bgStart = isDark ? AppColors.darkBg1 : AppColors.lightBg1;
-    final bgMid   = isDark ? AppColors.darkBg2 : AppColors.lightBg2;
-    final bgEnd   = isDark ? AppColors.darkBg3 : AppColors.lightBg3;
+    final bgMid = isDark ? AppColors.darkBg2 : AppColors.lightBg2;
+    final bgEnd = isDark ? AppColors.darkBg3 : AppColors.lightBg3;
 
     final orb1Color = isDark
         ? AppColors.teal.withValues(alpha: 0.12)
@@ -151,9 +151,7 @@ class _AnimatedGlowOrb extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [c, Colors.transparent],
-            ),
+            gradient: RadialGradient(colors: [c, Colors.transparent]),
           ),
         );
       },
@@ -173,6 +171,7 @@ class GlassContainer extends StatelessWidget {
     this.margin,
     this.borderRadius,
     this.blur = 14.0,
+    this.enableBlur = false,
     this.border,
     this.gradient,
     this.boxShadow,
@@ -187,6 +186,12 @@ class GlassContainer extends StatelessWidget {
   final EdgeInsetsGeometry? margin;
   final BorderRadius? borderRadius;
   final double blur;
+
+  /// When true, renders a live [BackdropFilter] (expensive — re-blurs the
+  /// background every frame). Off by default: the translucent gradient surface
+  /// already reads as frosted glass over the app's gradient background, so
+  /// cards in lists stay at 60fps. Enable only for overlays/sticky surfaces.
+  final bool enableBlur;
   final BoxBorder? border;
   final Gradient? gradient;
   final List<BoxShadow>? boxShadow;
@@ -243,6 +248,19 @@ class GlassContainer extends StatelessWidget {
             ),
           ];
 
+    final surface = Container(
+      width: width,
+      height: height,
+      alignment: alignment,
+      padding: padding,
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        gradient: gradient ?? defaultGradient,
+        border: border ?? defaultBorder,
+      ),
+      child: child,
+    );
+
     return Container(
       margin: margin,
       width: width,
@@ -254,21 +272,12 @@ class GlassContainer extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         clipBehavior: clipBehavior,
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-          child: Container(
-            width: width,
-            height: height,
-            alignment: alignment,
-            padding: padding,
-            decoration: BoxDecoration(
-              borderRadius: radius,
-              gradient: gradient ?? defaultGradient,
-              border: border ?? defaultBorder,
-            ),
-            child: child,
-          ),
-        ),
+        child: enableBlur
+            ? BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                child: surface,
+              )
+            : surface,
       ),
     );
   }
@@ -378,63 +387,50 @@ class _GlassAppBarState extends State<GlassAppBar> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Target colors for this theme
-    final topColor    = isDark ? AppColors.darkBg1.withValues(alpha: 0.85) : AppColors.lightBg1.withValues(alpha: 0.55);
-    final bottomColor = isDark ? AppColors.darkBg1.withValues(alpha: 0.70) : AppColors.white.withValues(alpha: 0.38);
-    final borderColor = isDark ? AppColors.white.withValues(alpha: 0.08) : AppColors.teal.withValues(alpha: 0.15);
+    final topColor = isDark
+        ? AppColors.darkBg1.withValues(alpha: 0.85)
+        : AppColors.lightBg1.withValues(alpha: 0.55);
+    final bottomColor = isDark
+        ? AppColors.darkBg1.withValues(alpha: 0.70)
+        : AppColors.white.withValues(alpha: 0.38);
+    final borderColor = isDark
+        ? AppColors.white.withValues(alpha: 0.08)
+        : AppColors.teal.withValues(alpha: 0.15);
+    final topPadding = MediaQuery.of(context).padding.top;
 
+    // A single AnimatedContainer smoothly interpolates the gradient/border on
+    // theme change — replacing three nested TweenAnimationBuilders that rebuilt
+    // every frame. One BackdropFilter is kept: the bar sits over scrolling
+    // content, so the blur is meaningful here.
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
-        child: TweenAnimationBuilder<Color?>(
-          tween: ColorTween(end: topColor),
+        child: AnimatedContainer(
           duration: _kDuration,
           curve: _kCurve,
-          builder: (context, animTop, _) {
-            return TweenAnimationBuilder<Color?>(
-              tween: ColorTween(end: bottomColor),
-              duration: _kDuration,
-              curve: _kCurve,
-              builder: (context, animBottom, _) {
-                return TweenAnimationBuilder<Color?>(
-                  tween: ColorTween(end: borderColor),
-                  duration: _kDuration,
-                  curve: _kCurve,
-                  builder: (context, animBorder, _) {
-                    return Container(
-                      height: widget.height + MediaQuery.of(context).padding.top,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            animTop    ?? topColor,
-                            animBottom ?? bottomColor,
-                          ],
-                        ),
-                        border: Border(
-                          bottom: BorderSide(
-                            color: animBorder ?? borderColor,
-                            width: 0.5,
-                          ),
-                        ),
-                      ),
-                      child: SafeArea(
-                        bottom: false,
-                        child: NavigationToolbar(
-                          leading: widget.leading,
-                          middle: widget.title,
-                          trailing: widget.actions != null
-                              ? Row(mainAxisSize: MainAxisSize.min, children: widget.actions!)
-                              : null,
-                          centerMiddle: widget.centerTitle,
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            );
-          },
+          height: widget.height + topPadding,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [topColor, bottomColor],
+            ),
+            border: Border(bottom: BorderSide(color: borderColor, width: 0.5)),
+          ),
+          child: SafeArea(
+            bottom: false,
+            child: NavigationToolbar(
+              leading: widget.leading,
+              middle: widget.title,
+              trailing: widget.actions != null
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: widget.actions!,
+                    )
+                  : null,
+              centerMiddle: widget.centerTitle,
+            ),
+          ),
         ),
       ),
     );
@@ -469,48 +465,42 @@ class GlassChip extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
-        child: ClipRRect(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+        decoration: BoxDecoration(
+          gradient: selected
+              ? LinearGradient(
+                  colors: [activeColor, activeColor.withValues(alpha: 0.75)],
+                )
+              : LinearGradient(
+                  colors: isDark
+                      ? [
+                          Colors.white.withValues(alpha: 0.08),
+                          Colors.white.withValues(alpha: 0.04),
+                        ]
+                      : [
+                          Colors.white.withValues(alpha: 0.38),
+                          Colors.white.withValues(alpha: 0.22),
+                        ],
+                ),
           borderRadius: BorderRadius.circular(14),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                gradient: selected
-                    ? LinearGradient(
-                        colors: [activeColor, activeColor.withValues(alpha: 0.75)],
-                      )
-                    : LinearGradient(
-                        colors: isDark
-                            ? [
-                                Colors.white.withValues(alpha: 0.08),
-                                Colors.white.withValues(alpha: 0.04),
-                              ]
-                            : [
-                                Colors.white.withValues(alpha: 0.38),
-                                Colors.white.withValues(alpha: 0.22),
-                              ],
-                      ),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: selected
-                       ? activeColor.withValues(alpha: 0.60)
-                       : (isDark
-                           ? AppColors.white.withValues(alpha: 0.12)
-                           : AppColors.teal.withValues(alpha: 0.25)),
-                ),
-              ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  color: selected
-                      ? AppColors.white
-                      : (isDark ? AppColors.lightTextSecondary : AppColors.darkTextSecondary),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
+          border: Border.all(
+            color: selected
+                ? activeColor.withValues(alpha: 0.60)
+                : (isDark
+                      ? AppColors.white.withValues(alpha: 0.12)
+                      : AppColors.teal.withValues(alpha: 0.25)),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: selected
+                ? AppColors.white
+                : (isDark
+                      ? AppColors.lightTextSecondary
+                      : AppColors.darkTextSecondary),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ),
@@ -540,51 +530,54 @@ class GlassSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(24),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          height: height,
-          decoration: BoxDecoration(
-            gradient: isDark
-                ? LinearGradient(colors: [
-                    Colors.white.withValues(alpha: 0.08),
-                    Colors.white.withValues(alpha: 0.05),
-                  ])
-                : LinearGradient(colors: [
-                    Colors.white.withValues(alpha: 0.42),
-                    Colors.white.withValues(alpha: 0.26),
-                  ]),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isDark
-                  ? AppColors.white.withValues(alpha: 0.12)
-                  : AppColors.teal.withValues(alpha: 0.25),
-            ),
-          ),
-          child: TextField(
-            controller: controller,
-            onChanged: onChanged,
-            style: TextStyle(
-              fontSize: 13,
-              color: isDark ? AppColors.lightText : AppColors.darkText,
-            ),
-            decoration: InputDecoration(
-              border: InputBorder.none,
-              prefixIcon: Icon(
-                Icons.search,
-                size: 18,
-                color: isDark ? AppColors.lightTextTertiary : AppColors.teal.withValues(alpha: 0.7),
+    return Container(
+      height: height,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        gradient: isDark
+            ? LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.white.withValues(alpha: 0.05),
+                ],
+              )
+            : LinearGradient(
+                colors: [
+                  Colors.white.withValues(alpha: 0.42),
+                  Colors.white.withValues(alpha: 0.26),
+                ],
               ),
-              hintText: hintText,
-              hintStyle: TextStyle(
-                fontSize: 13,
-                color: isDark ? AppColors.lightTextQuaternary : AppColors.darkTextTertiary,
-              ),
-              contentPadding: EdgeInsets.symmetric(vertical: (height - 24) / 2),
-            ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: isDark
+              ? AppColors.white.withValues(alpha: 0.12)
+              : AppColors.teal.withValues(alpha: 0.25),
+        ),
+      ),
+      child: TextField(
+        controller: controller,
+        onChanged: onChanged,
+        style: TextStyle(
+          fontSize: 13,
+          color: isDark ? AppColors.lightText : AppColors.darkText,
+        ),
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          prefixIcon: Icon(
+            Icons.search,
+            size: 18,
+            color: isDark
+                ? AppColors.lightTextTertiary
+                : AppColors.teal.withValues(alpha: 0.7),
           ),
+          hintText: hintText,
+          hintStyle: TextStyle(
+            fontSize: 13,
+            color: isDark
+                ? AppColors.lightTextQuaternary
+                : AppColors.darkTextTertiary,
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: (height - 24) / 2),
         ),
       ),
     );
@@ -729,47 +722,43 @@ class GlassStatBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: color.withValues(alpha: isDark ? 0.12 : 0.10),
-            border: Border.all(color: color.withValues(alpha: 0.25)),
-          ),
-          child: Row(
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: color.withValues(alpha: isDark ? 0.12 : 0.10),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 14, color: color),
-              const SizedBox(width: 6),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    value.toString(),
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF6C7580),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+              Text(
+                value.toString(),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: color,
+                ),
+              ),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 10,
+                  color: isDark
+                      ? const Color(0xFF9EABB7)
+                      : const Color(0xFF6C7580),
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
-        ),
+        ],
       ),
     );
   }
@@ -779,10 +768,14 @@ class GlassStatBadge extends StatelessWidget {
 // GLASS SNACKBAR
 // ─────────────────────────────────────────────────────────────────────────────
 
-void showGlassSnackBar(BuildContext context, String message, {bool isError = false}) {
+void showGlassSnackBar(
+  BuildContext context,
+  String message, {
+  bool isError = false,
+}) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   final iconColor = isError ? AppColors.redAccent : AppColors.teal;
-  
+
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       backgroundColor: Colors.transparent,
@@ -814,14 +807,16 @@ void showGlassSnackBar(BuildContext context, String message, {bool isError = fal
                 color: isError
                     ? AppColors.redAccent.withValues(alpha: 0.4)
                     : (isDark
-                        ? AppColors.white.withValues(alpha: 0.15)
-                        : AppColors.white.withValues(alpha: 0.90)),
+                          ? AppColors.white.withValues(alpha: 0.15)
+                          : AppColors.white.withValues(alpha: 0.90)),
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
+                  isError
+                      ? Icons.error_outline_rounded
+                      : Icons.info_outline_rounded,
                   color: iconColor,
                   size: 22,
                 ),

@@ -9,6 +9,7 @@ import 'package:frontend/config/app_config.dart';
 import 'package:frontend/widgets/common/common_widgets.dart';
 import 'package:frontend/constants/app_colors.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:frontend/providers/login_provider.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
@@ -164,6 +165,19 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
 
   // ─── Upload & Process ──────────────────────────────────────────────────────
 
+  /// Maps a file path to an image MIME subtype (e.g. "jpeg", "png") for the
+  /// multipart upload's Content-Type. Defaults to "jpeg".
+  String _imageSubtype(String path) {
+    final lower = path.toLowerCase();
+    if (lower.endsWith('.png')) return 'png';
+    if (lower.endsWith('.webp')) return 'webp';
+    if (lower.endsWith('.bmp')) return 'bmp';
+    if (lower.endsWith('.heic')) return 'heic';
+    if (lower.endsWith('.heif')) return 'heif';
+    if (lower.endsWith('.tiff') || lower.endsWith('.tif')) return 'tiff';
+    return 'jpeg'; // covers .jpg/.jpeg and unknown
+  }
+
   Future<void> _uploadAndProcess() async {
     if (_selectedImage == null) return;
     final token = await ref.read(loginProvider.notifier).getValidToken();
@@ -184,7 +198,13 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
       final uploadUri = Uri.parse('$baseUrl/api/medical-documents/upload');
       final req = http.MultipartRequest('POST', uploadUri)
         ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(await http.MultipartFile.fromPath('file', _selectedImage!.path));
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          _selectedImage!.path,
+          // Explicit MIME type: MultipartFile.fromPath defaults to
+          // application/octet-stream, which the backend rejects as non-image.
+          contentType: MediaType('image', _imageSubtype(_selectedImage!.path)),
+        ));
       if (widget.patientId != null) {
         req.fields['patientId'] = widget.patientId.toString();
       }

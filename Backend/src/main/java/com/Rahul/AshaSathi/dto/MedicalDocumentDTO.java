@@ -103,6 +103,55 @@ public class MedicalDocumentDTO {
         }
     }
 
+    // ─── Gemini Parse + Summarize response (from Python service) ────────────
+    @Data
+    public static class GeminiParseResponse {
+        private boolean success;
+        private GeminiMedicalData data;
+        private String summary;
+        private String error;
+    }
+
+    @Data
+    public static class GeminiMedicalData {
+        private String diagnosis;
+
+        @JsonProperty("follow_up_date")
+        private String followUpDate;
+
+        private List<GeminiMedicine> medicines;
+
+        @JsonProperty("lab_tests")
+        private List<GeminiLabTest> labTests;
+
+        private String notes;
+
+        @Data
+        public static class GeminiMedicine {
+            private String name;
+            private String dosage;
+            private String frequency;
+            private String duration;
+        }
+
+        @Data
+        public static class GeminiLabTest {
+            @JsonProperty("test_name")
+            private String testName;
+            private String value;
+            private String unit;
+            @JsonProperty("reference_range")
+            private String referenceRange;
+        }
+    }
+
+    // ─── Gemini Parse request body ───────────────────────────────────────────
+    @Data
+    public static class GeminiParseRequest {
+        @JsonProperty("raw_text")
+        private String rawText;
+    }
+
     // ─── Asynchronous processing result ──────────────────────────────────────
     @Data
     public static class ProcessingStatusResponse {

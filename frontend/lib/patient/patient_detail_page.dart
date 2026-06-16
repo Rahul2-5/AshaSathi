@@ -21,10 +21,7 @@ import 'patient_model.dart';
 class PatientDetailPage extends ConsumerStatefulWidget {
   final Patient patient;
 
-  const PatientDetailPage({
-    super.key,
-    required this.patient,
-  });
+  const PatientDetailPage({super.key, required this.patient});
 
   @override
   ConsumerState<PatientDetailPage> createState() => _PatientDetailPageState();
@@ -69,7 +66,11 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 end: Alignment.bottomRight,
                 colors: isDark
                     ? const [Color(0xFF0B1120), Color(0xFF0E1A26)]
-                    : const [Color(0xFFE4F7F4), Color(0xFFEEF4FF), Color(0xFFF7FBFF)],
+                    : const [
+                        Color(0xFFE4F7F4),
+                        Color(0xFFEEF4FF),
+                        Color(0xFFF7FBFF),
+                      ],
               ),
             ),
           ),
@@ -193,45 +194,44 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             ),
             // Glass ring
             ClipOval(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
-                child: Container(
-                  width: 120,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: isDark
-                          ? [
-                              Colors.white.withValues(alpha: 0.10),
-                              Colors.white.withValues(alpha: 0.05),
-                            ]
-                          : [
-                              Colors.white.withValues(alpha: 0.75),
-                              Colors.white.withValues(alpha: 0.50),
-                            ],
-                    ),
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.teal.withValues(alpha: 0.35)
-                          : AppColors.teal.withValues(alpha: 0.30),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.teal.withValues(alpha: 0.22),
-                        blurRadius: 20,
-                        spreadRadius: 2,
-                      ),
-                    ],
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: isDark
+                        ? [
+                            Colors.white.withValues(alpha: 0.10),
+                            Colors.white.withValues(alpha: 0.05),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.75),
+                            Colors.white.withValues(alpha: 0.50),
+                          ],
                   ),
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.teal.withValues(alpha: 0.35)
+                        : AppColors.teal.withValues(alpha: 0.30),
+                    width: 1.5,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.teal.withValues(alpha: 0.22),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
                 ),
               ),
             ),
             // Avatar
             CircleAvatar(
               radius: 55,
-              backgroundColor: isDark ? const Color(0xFF2A3642) : Colors.grey.shade200,
+              backgroundColor: isDark
+                  ? const Color(0xFF2A3642)
+                  : Colors.grey.shade200,
               child: ClipOval(
                 child: SizedBox(
                   width: 110,
@@ -282,7 +282,8 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     final normalizedPath = path.replaceAll('\\', '/');
     final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(path);
 
-    if ((path.startsWith('/') || isWindowsAbsolutePath) && File(path).existsSync()) {
+    if ((path.startsWith('/') || isWindowsAbsolutePath) &&
+        File(path).existsSync()) {
       return Image.file(File(path), fit: BoxFit.cover);
     }
 
@@ -290,8 +291,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         normalizedPath.contains('/uploads/') ||
         normalizedPath.contains('uploads/')) {
       final uploadIndex = normalizedPath.indexOf('uploads/');
-      final uploadPath =
-          uploadIndex >= 0 ? '/${normalizedPath.substring(uploadIndex)}' : normalizedPath;
+      final uploadPath = uploadIndex >= 0
+          ? '/${normalizedPath.substring(uploadIndex)}'
+          : normalizedPath;
 
       return Image.network(
         "$baseUrl$uploadPath",
@@ -333,7 +335,10 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                     child: _infoField(
                       context,
                       label: context.l10n.tr('patient.age'),
-                      value: context.l10n.tr('patient.ageYears', args: {'age': _patient.age.toString()}),
+                      value: context.l10n.tr(
+                        'patient.ageYears',
+                        args: {'age': _patient.age.toString()},
+                      ),
                       icon: Icons.cake_outlined,
                     ),
                   ),
@@ -355,7 +360,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                     child: _infoField(
                       context,
                       label: 'Caste',
-                      value: _patient.caste.trim().isEmpty ? '-' : _patient.caste,
+                      value: _patient.caste.trim().isEmpty
+                          ? '-'
+                          : _patient.caste,
                       icon: Icons.people_outline,
                     ),
                   ),
@@ -425,7 +432,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                       child: _statusBadgeField(
                         context,
                         label: 'Health Info',
-                        value: _patient.declinedHealthInfo ? 'Declined' : 'Shared',
+                        value: _patient.declinedHealthInfo
+                            ? 'Declined'
+                            : 'Shared',
                         isActive: !_patient.declinedHealthInfo,
                         icon: Icons.check_circle_outline,
                       ),
@@ -439,14 +448,17 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                       child: _statusBadgeField(
                         context,
                         label: 'Health Info',
-                        value: _patient.declinedHealthInfo ? 'Declined' : 'Shared',
+                        value: _patient.declinedHealthInfo
+                            ? 'Declined'
+                            : 'Shared',
                         isActive: !_patient.declinedHealthInfo,
                         icon: Icons.check_circle_outline,
                       ),
                     ),
                   ],
                 ),
-              if (_patient.expectedDeliveryDate.trim().isNotEmpty && _patient.gender == 'Female') ...[
+              if (_patient.expectedDeliveryDate.trim().isNotEmpty &&
+                  _patient.gender == 'Female') ...[
                 const SizedBox(height: 12),
                 _infoField(
                   context,
@@ -456,10 +468,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 ),
               ],
               const SizedBox(height: 12),
-              _medicalConditionsDisplay(
-                context,
-                conditions: activeDiseases,
-              ),
+              _medicalConditionsDisplay(context, conditions: activeDiseases),
             ],
           ),
         ),
@@ -506,7 +515,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               backgroundColor: isDark
                   ? const Color(0xFF14B8A6).withValues(alpha: 0.15)
                   : const Color(0xFFE6F8F6),
-              foregroundColor: isDark ? AppColors.accentCyan : AppColors.teal,
+              foregroundColor: AppColors.brand(context),
               side: BorderSide(
                 color: isDark
                     ? const Color(0xFF14B8A6).withValues(alpha: 0.4)
@@ -545,8 +554,6 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     required String title,
     required Widget child,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return GlassContainer(
       borderRadius: BorderRadius.circular(20),
       padding: const EdgeInsets.all(16),
@@ -559,7 +566,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               Icon(
                 Icons.label_outline_rounded,
                 size: 14,
-                color: isDark ? AppColors.accentCyan : AppColors.teal,
+                color: AppColors.brand(context),
               ),
               const SizedBox(width: 6),
               Text(
@@ -567,7 +574,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? AppColors.accentCyan : AppColors.teal,
+                  color: AppColors.brand(context),
                   letterSpacing: 0.3,
                 ),
               ),
@@ -598,7 +605,13 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(
               children: [
-                Icon(icon, size: 16, color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+                Icon(
+                  icon,
+                  size: 16,
+                  color: isDark
+                      ? const Color(0xFF7FB3D5)
+                      : const Color(0xFF0BAEB4),
+                ),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
@@ -606,7 +619,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                      color: isDark
+                          ? const Color(0xFFA6B3BF)
+                          : const Color(0xFF6B7280),
                       letterSpacing: 0.2,
                     ),
                   ),
@@ -656,7 +671,13 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
           padding: const EdgeInsets.only(bottom: 6),
           child: Row(
             children: [
-              Icon(icon, size: 16, color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+              Icon(
+                icon,
+                size: 16,
+                color: isDark
+                    ? const Color(0xFF7FB3D5)
+                    : const Color(0xFF0BAEB4),
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
@@ -664,7 +685,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                    color: isDark
+                        ? const Color(0xFFA6B3BF)
+                        : const Color(0xFF6B7280),
                     letterSpacing: 0.2,
                   ),
                 ),
@@ -682,7 +705,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             border: Border.all(
               color: isActive
                   ? (isDark ? const Color(0xFF0BAEB4) : const Color(0xFF0BAEB4))
-                  : (isDark ? const Color(0xFFDC2626) : const Color(0xFFFCA5A5)),
+                  : (isDark
+                        ? const Color(0xFFDC2626)
+                        : const Color(0xFFFCA5A5)),
               width: 1,
             ),
           ),
@@ -694,7 +719,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               fontWeight: FontWeight.w600,
               color: isActive
                   ? (isDark ? const Color(0xFF4EEFD4) : const Color(0xFF047857))
-                  : (isDark ? const Color(0xFFFEA6A6) : const Color(0xFFDC2626)),
+                  : (isDark
+                        ? const Color(0xFFFEA6A6)
+                        : const Color(0xFFDC2626)),
             ),
           ),
         ),
@@ -718,8 +745,16 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     // Color palette for different conditions
     final conditionColors = {
       'Diabetes': {'bg': 0xFFDCF2FF, 'border': 0xFF4B9EFF, 'text': 0xFF0D47A1},
-      'Hypertension': {'bg': 0xFFFFDCDC, 'border': 0xFFFF6B6B, 'text': 0xFFAD0000},
-      'HeartDisease': {'bg': 0xFFFFDCDC, 'border': 0xFFF44336, 'text': 0xFFAD0000},
+      'Hypertension': {
+        'bg': 0xFFFFDCDC,
+        'border': 0xFFFF6B6B,
+        'text': 0xFFAD0000,
+      },
+      'HeartDisease': {
+        'bg': 0xFFFFDCDC,
+        'border': 0xFFF44336,
+        'text': 0xFFAD0000,
+      },
       'Asthma': {'bg': 0xFFE0F2D8, 'border': 0xFF52C41A, 'text': 0xFF254000},
       'Arthritis': {'bg': 0xFFFFEED2, 'border': 0xFFFFB84D, 'text': 0xFF663C00},
       'Kidney': {'bg': 0xFFFFDDC7, 'border': 0xFFFF7A45, 'text': 0xFFA23800},
@@ -728,14 +763,26 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       'Thyroid': {'bg': 0xFFDDEDFF, 'border': 0xFF1890FF, 'text': 0xFF001A5C},
       'Cancer': {'bg': 0xFFFFD4D0, 'border': 0xFFF5222D, 'text': 0xFF5C0A0A},
       'TB': {'bg': 0xFFDEE8D8, 'border': 0xFF95DE64, 'text': 0xFF274000},
-      'Elephantiasis': {'bg': 0xFFD8E4E8, 'border': 0xFF13C2C2, 'text': 0xFF003C3C},
+      'Elephantiasis': {
+        'bg': 0xFFD8E4E8,
+        'border': 0xFF13C2C2,
+        'text': 0xFF003C3C,
+      },
     };
 
     // Dark mode adjustments
     final darkConditionColors = {
       'Diabetes': {'bg': 0xFF1A3A4D, 'border': 0xFF177DFF, 'text': 0xFF91D5FF},
-      'Hypertension': {'bg': 0xFF4D1A1A, 'border': 0xFFFF7875, 'text': 0xFFFFB1B1},
-      'HeartDisease': {'bg': 0xFF4D1A1A, 'border': 0xFFFF7875, 'text': 0xFFFFB1B1},
+      'Hypertension': {
+        'bg': 0xFF4D1A1A,
+        'border': 0xFFFF7875,
+        'text': 0xFFFFB1B1,
+      },
+      'HeartDisease': {
+        'bg': 0xFF4D1A1A,
+        'border': 0xFFFF7875,
+        'text': 0xFFFFB1B1,
+      },
       'Asthma': {'bg': 0xFF1A3A2A, 'border': 0xFF95DE64, 'text': 0xFFC6E48B},
       'Arthritis': {'bg': 0xFF4D3A1A, 'border': 0xFFFFD591, 'text': 0xFFFFDD91},
       'Kidney': {'bg': 0xFF4D2A1A, 'border': 0xFFFFB373, 'text': 0xFFFFD591},
@@ -744,7 +791,11 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       'Thyroid': {'bg': 0xFF1A2A4D, 'border': 0xFF85A5FF, 'text': 0xFFB3D9FF},
       'Cancer': {'bg': 0xFF4D1A1A, 'border': 0xFFFF4D4F, 'text': 0xFFFFA8A8},
       'TB': {'bg': 0xFF1A3A1A, 'border': 0xFFB7EB8F, 'text': 0xFFDFEFD8},
-      'Elephantiasis': {'bg': 0xFF1A3A3A, 'border': 0xFF36CFC7, 'text': 0xFFB5EAE0},
+      'Elephantiasis': {
+        'bg': 0xFF1A3A3A,
+        'border': 0xFF36CFC7,
+        'text': 0xFFB5EAE0,
+      },
     };
 
     final colors = isDark ? darkConditionColors : conditionColors;
@@ -759,7 +810,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               Icon(
                 Icons.local_hospital_outlined,
                 size: 16,
-                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+                color: isDark
+                    ? const Color(0xFF7FB3D5)
+                    : const Color(0xFF0BAEB4),
               ),
               const SizedBox(width: 8),
               Text(
@@ -767,7 +820,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
-                  color: isDark ? const Color(0xFFA6B3BF) : const Color(0xFF6B7280),
+                  color: isDark
+                      ? const Color(0xFFA6B3BF)
+                      : const Color(0xFF6B7280),
                   letterSpacing: 0.2,
                 ),
               ),
@@ -782,7 +837,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               borderRadius: BorderRadius.circular(10),
               color: isDark ? const Color(0xFF0D1419) : const Color(0xFFF9FAFB),
               border: Border.all(
-                color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE5E7EB),
+                color: isDark
+                    ? const Color(0xFF2A3642)
+                    : const Color(0xFFE5E7EB),
                 width: 1,
               ),
             ),
@@ -791,7 +848,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                 Icon(
                   Icons.check_circle_outline,
                   size: 18,
-                  color: isDark ? const Color(0xFF4EEFD4) : const Color(0xFF22C55E),
+                  color: isDark
+                      ? const Color(0xFF4EEFD4)
+                      : const Color(0xFF22C55E),
                 ),
                 const SizedBox(width: 10),
                 Text(
@@ -799,7 +858,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: isDark ? const Color(0xFF9FB0BE) : const Color(0xFF6B7280),
+                    color: isDark
+                        ? const Color(0xFF9FB0BE)
+                        : const Color(0xFF6B7280),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -817,14 +878,14 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
               final textColor = Color(colorSet['text'] ?? 0xFF0D47A1);
 
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(20),
                   color: bgColor,
-                  border: Border.all(
-                    color: borderColor,
-                    width: 1.5,
-                  ),
+                  border: Border.all(color: borderColor, width: 1.5),
                   boxShadow: [
                     BoxShadow(
                       color: borderColor.withValues(alpha: 0.15),
@@ -868,8 +929,12 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final sheetBg = isDark ? const Color(0xFF1B232C) : Colors.white;
     final fieldBg = isDark ? const Color(0xFF24303B) : const Color(0xFFF5F7FA);
-    final labelColor = isDark ? const Color(0xFF9FB0BE) : const Color(0xFF637282);
-    final textColor = isDark ? const Color(0xFFE4EDF5) : const Color(0xFF1B2026);
+    final labelColor = isDark
+        ? const Color(0xFF9FB0BE)
+        : const Color(0xFF637282);
+    final textColor = isDark
+        ? const Color(0xFFE4EDF5)
+        : const Color(0xFF1B2026);
     const fieldGap = 12.0;
 
     InputDecoration sheetFieldDecoration(String label, {Widget? suffixIcon}) {
@@ -879,7 +944,10 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         floatingLabelStyle: TextStyle(color: labelColor),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         suffixIcon: suffixIcon,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         filled: true,
         fillColor: fieldBg,
         border: OutlineInputBorder(
@@ -916,7 +984,8 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
           builder: (ctx, setDialogState) {
             Future<void> pickDob() async {
               final now = DateTime.now();
-              final currentDob = DateTime.tryParse(dobController.text.trim()) ??
+              final currentDob =
+                  DateTime.tryParse(dobController.text.trim()) ??
                   DateTime(now.year - 20, now.month, now.day);
               final picked = await showDatePicker(
                 context: ctx,
@@ -969,10 +1038,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                         const SizedBox(height: 4),
                         Text(
                           'Update patient profile and notes',
-                          style: TextStyle(
-                            color: labelColor,
-                            fontSize: 13,
-                          ),
+                          style: TextStyle(color: labelColor, fontSize: 13),
                         ),
                         const SizedBox(height: 16),
                         sectionLabel('BASIC INFO'),
@@ -980,8 +1046,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                           controller: nameController,
                           style: TextStyle(color: textColor),
                           decoration: sheetFieldDecoration('Patient Name'),
-                          validator: (v) =>
-                              (v == null || v.trim().length < 2) ? 'Enter valid name' : null,
+                          validator: (v) => (v == null || v.trim().length < 2)
+                              ? 'Enter valid name'
+                              : null,
                         ),
                         const SizedBox(height: fieldGap),
                         Row(
@@ -1009,9 +1076,18 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                                 style: TextStyle(color: textColor),
                                 decoration: sheetFieldDecoration('Gender'),
                                 items: const [
-                                  DropdownMenuItem(value: 'Female', child: Text('Female')),
-                                  DropdownMenuItem(value: 'Male', child: Text('Male')),
-                                  DropdownMenuItem(value: 'Other', child: Text('Other')),
+                                  DropdownMenuItem(
+                                    value: 'Female',
+                                    child: Text('Female'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Male',
+                                    child: Text('Male'),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Other',
+                                    child: Text('Other'),
+                                  ),
                                 ],
                                 onChanged: (v) {
                                   if (v == null) return;
@@ -1040,8 +1116,11 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                                   ),
                                 ),
                                 validator: (v) {
-                                  final dt = DateTime.tryParse((v ?? '').trim());
-                                  if (dt == null || dt.isAfter(DateTime.now())) {
+                                  final dt = DateTime.tryParse(
+                                    (v ?? '').trim(),
+                                  );
+                                  if (dt == null ||
+                                      dt.isAfter(DateTime.now())) {
                                     return 'Invalid DOB';
                                   }
                                   return null;
@@ -1054,11 +1133,15 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                                 controller: phoneController,
                                 keyboardType: TextInputType.phone,
                                 style: TextStyle(color: textColor),
-                                decoration: sheetFieldDecoration('Phone Number'),
+                                decoration: sheetFieldDecoration(
+                                  'Phone Number',
+                                ),
                                 validator: (v) =>
-                                    RegExp(r'^\d{10}$').hasMatch((v ?? '').trim())
-                                        ? null
-                                        : 'Invalid phone',
+                                    RegExp(
+                                      r'^\d{10}$',
+                                    ).hasMatch((v ?? '').trim())
+                                    ? null
+                                    : 'Invalid phone',
                               ),
                             ),
                           ],
@@ -1070,8 +1153,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                           maxLines: 2,
                           style: TextStyle(color: textColor),
                           decoration: sheetFieldDecoration('Address'),
-                          validator: (v) =>
-                              (v == null || v.trim().length < 5) ? 'Enter valid address' : null,
+                          validator: (v) => (v == null || v.trim().length < 5)
+                              ? 'Enter valid address'
+                              : null,
                         ),
                         const SizedBox(height: 16),
                         sectionLabel('NOTES'),
@@ -1080,7 +1164,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
                           minLines: 3,
                           maxLines: 3,
                           style: TextStyle(color: textColor),
-                          decoration: sheetFieldDecoration('Description / Notes'),
+                          decoration: sheetFieldDecoration(
+                            'Description / Notes',
+                          ),
                         ),
                         const SizedBox(height: 22),
                         Row(
@@ -1147,7 +1233,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     var updatedOnline = false;
 
     try {
-      if (token != null && _patient.id != null && await connectivity.isOnline()) {
+      if (token != null &&
+          _patient.id != null &&
+          await connectivity.isOnline()) {
         final res = await http.put(
           Uri.parse('$baseUrl/api/patients/${_patient.id}'),
           headers: {
@@ -1224,9 +1312,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const Center(
-        child: CircularProgressIndicator(),
-      ),
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
   }
 
@@ -1242,9 +1328,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       style: ElevatedButton.styleFrom(
         backgroundColor: Colors.red.shade600,
         minimumSize: const Size(double.infinity, 52),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         elevation: 2,
       ),
       icon: const Icon(Icons.delete_outline, color: Colors.white, size: 22),
@@ -1270,7 +1354,11 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red.shade600, size: 28),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red.shade600,
+              size: 28,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -1300,7 +1388,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             child: Text(
               context.l10n.tr('common.cancel'),
               style: TextStyle(
-                color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4),
+                color: isDark
+                    ? const Color(0xFF7FB3D5)
+                    : const Color(0xFF0BAEB4),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1339,7 +1429,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
     final connectivity = ConnectivityService();
     final patientNotifier = ref.read(patientListProvider.notifier);
 
-    debugPrint("Delete patient: id=${_patient.id}, uuid=${_patient.uuid}, online=${await connectivity.isOnline()}");
+    debugPrint(
+      "Delete patient: id=${_patient.id}, uuid=${_patient.uuid}, online=${await connectivity.isOnline()}",
+    );
 
     // OFFLINE OR NOT YET SYNCED
     if (!await connectivity.isOnline() || _patient.id == null) {
@@ -1363,18 +1455,21 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
       final res = await http.delete(
         Uri.parse(url),
-        headers: {
-          "Authorization": "Bearer $token",
-        },
+        headers: {"Authorization": "Bearer $token"},
       );
 
       debugPrint("Delete response status: ${res.statusCode}");
       debugPrint("Delete response headers: ${res.headers}");
       debugPrint("Delete response body: ${res.body}");
 
-      if (res.statusCode == 200 || res.statusCode == 204 || res.statusCode == 201 || res.statusCode == 404) {
+      if (res.statusCode == 200 ||
+          res.statusCode == 204 ||
+          res.statusCode == 201 ||
+          res.statusCode == 404) {
         if (res.statusCode == 404) {
-          debugPrint("Delete returned 404 - treating as already deleted on server.");
+          debugPrint(
+            "Delete returned 404 - treating as already deleted on server.",
+          );
         } else {
           debugPrint("Delete successful! Removing from local storage...");
         }
@@ -1385,7 +1480,9 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
         if (!context.mounted) return false;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.tr('patient.deletedSuccessfully'))),
+          SnackBar(
+            content: Text(context.l10n.tr('patient.deletedSuccessfully')),
+          ),
         );
         debugPrint("Returning to previous page...");
         return true;
@@ -1421,12 +1518,14 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.l10n.tr('patient.errorDeleting', args: {'error': e.toString()}),
+            context.l10n.tr(
+              'patient.errorDeleting',
+              args: {'error': e.toString()},
+            ),
           ),
         ),
       );
       return true;
     }
   }
-
 }

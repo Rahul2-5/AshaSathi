@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../constants/app_colors.dart';
 import '../widgets/common/common_widgets.dart';
 import 'add_patient_models.dart';
 
@@ -367,9 +368,8 @@ class FamilyDetailsPage extends StatelessWidget {
   }
 
   Widget _loadingSkeleton(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark ? const Color(0xFF1A232C) : const Color(0xFFE9EDF1);
-    final highlightColor = isDark ? const Color(0xFF253240) : const Color(0xFFF7F9FB);
+    final baseColor = AppColors.shimmerBase(context);
+    final highlightColor = AppColors.shimmerHighlight(context);
 
     return Shimmer.fromColors(
       baseColor: baseColor,

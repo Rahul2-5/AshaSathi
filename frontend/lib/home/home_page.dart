@@ -99,7 +99,8 @@ class _HomePageState extends ConsumerState<HomePage> {
 
       final decoded = utf8.decode(base64Url.decode(payload));
       final map = jsonDecode(decoded) as Map<String, dynamic>;
-      final raw = (map['username'] ?? map['name'] ?? map['email'] ?? '') as String;
+      final raw =
+          (map['username'] ?? map['name'] ?? map['email'] ?? '') as String;
       if (raw.isEmpty) return;
 
       final username = raw.contains('@') ? raw.split('@')[0] : raw;
@@ -120,9 +121,7 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = context.l10n;
-    final titleColor = isDark
-        ? const Color(0xFFE8EEF3)
-        : const Color(0xFF171A1F);
+    final titleColor = AppColors.textPrimary(context);
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -177,7 +176,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.accentCyan.withValues(alpha: isDark ? 0.06 : 0.10),
+                    AppColors.accentCyan.withValues(
+                      alpha: isDark ? 0.06 : 0.10,
+                    ),
                     Colors.transparent,
                   ],
                 ),
@@ -188,12 +189,7 @@ class _HomePageState extends ConsumerState<HomePage> {
           CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: EdgeInsets.fromLTRB(
-                  16,
-                  16,
-                  1,
-                  0,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _welcomeHeader(),
@@ -243,7 +239,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                         child: Text(
                           l10n.tr('common.viewAll'),
                           style: TextStyle(
-                            color: isDark ? AppColors.accentCyan : AppColors.teal,
+                            color: AppColors.brand(context),
                             fontWeight: FontWeight.w700,
                             fontSize: 16,
                           ),
@@ -283,9 +279,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.w700,
-                  color: isDark
-                      ? const Color(0xFFE8EEF3)
-                      : const Color(0xFF0E1822),
+                  color: AppColors.textPrimary(context),
                   height: 1.15,
                 ),
               ),
@@ -294,7 +288,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: GoogleFonts.outfit(
                   fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? AppColors.accentCyan : AppColors.teal,
+                  color: AppColors.brand(context),
                   height: 1.15,
                 ),
               ),
@@ -321,9 +315,17 @@ class _HomePageState extends ConsumerState<HomePage> {
 
     return Consumer(
       builder: (context, ref, _) {
-        final patientState = ref.watch(patientListProvider);
-        final taskState = ref.watch(taskListProvider);
-        final familyState = ref.watch(familyListProvider);
+        // Narrow subscriptions: the hero only shows counts, so rebuild only
+        // when a count changes rather than on every list/loading mutation.
+        final patientCount = ref.watch(
+          patientListProvider.select((s) => s.patients.length),
+        );
+        final taskCount = ref.watch(
+          taskListProvider.select((s) => s.tasks.length),
+        );
+        final familyCount = ref.watch(
+          familyListProvider.select((s) => s.families.length),
+        );
 
         return GlassContainer(
           padding: const EdgeInsets.all(20),
@@ -374,7 +376,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Expanded(
                     child: _overviewMetric(
                       label: l10n.tr('home.recentPatients'),
-                      value: patientState.patients.length.toString(),
+                      value: patientCount.toString(),
                       icon: Icons.people_alt_outlined,
                     ),
                   ),
@@ -382,7 +384,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Expanded(
                     child: _overviewMetric(
                       label: l10n.tr('home.dailyTasks'),
-                      value: taskState.tasks.length.toString(),
+                      value: taskCount.toString(),
                       icon: Icons.assignment_outlined,
                     ),
                   ),
@@ -390,7 +392,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                   Expanded(
                     child: _overviewMetric(
                       label: 'Families',
-                      value: familyState.families.length.toString(),
+                      value: familyCount.toString(),
                       icon: Icons.groups_2_outlined,
                     ),
                   ),
@@ -410,80 +412,70 @@ class _HomePageState extends ConsumerState<HomePage> {
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(18),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [
-                      Colors.white.withValues(alpha: 0.08),
-                      Colors.white.withValues(alpha: 0.04),
-                    ]
-                  : [
-                      Colors.white.withValues(alpha: 0.50),
-                      Colors.white.withValues(alpha: 0.30),
-                    ],
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(18),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark
+              ? [
+                  Colors.white.withValues(alpha: 0.08),
+                  Colors.white.withValues(alpha: 0.04),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.50),
+                  Colors.white.withValues(alpha: 0.30),
+                ],
+        ),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.10)
+              : Colors.white.withValues(alpha: 0.40),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.teal.withValues(alpha: 0.20),
+                    AppColors.accentCyan.withValues(alpha: 0.10),
+                  ],
+                ),
+              ),
+              child: Icon(icon, size: 16, color: AppColors.brand(context)),
             ),
-            border: Border.all(
-              color: isDark
-                  ? Colors.white.withValues(alpha: 0.10)
-                  : Colors.white.withValues(alpha: 0.40),
+            const SizedBox(height: 12),
+            Text(
+              value,
+              style: GoogleFonts.outfit(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary(context),
+              ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.teal.withValues(alpha: 0.20),
-                      AppColors.accentCyan.withValues(alpha: 0.10),
-                    ],
-                  ),
-                ),
-                child: Icon(
-                  icon,
-                  size: 16,
-                  color: isDark ? AppColors.accentCyan : AppColors.teal,
-                ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark
+                    ? const Color(0xFF9FB0BC)
+                    : const Color(0xFF6A7480),
               ),
-              const SizedBox(height: 12),
-              Text(
-                value,
-                style: GoogleFonts.outfit(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w800,
-                  color: isDark
-                      ? const Color(0xFFE8EEF3)
-                      : const Color(0xFF171A1F),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark
-                      ? const Color(0xFF9FB0BC)
-                      : const Color(0xFF6A7480),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -527,8 +519,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _tasksHeader() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -540,7 +530,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             style: GoogleFonts.outfit(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFFE8EEF3) : const Color(0xFF171A1F),
+              color: AppColors.textPrimary(context),
             ),
           ),
         ),
@@ -569,7 +559,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             height: 38,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
-              gradient: const LinearGradient(colors: [AppColors.teal, AppColors.accentCyan]),
+              gradient: const LinearGradient(
+                colors: [AppColors.teal, AppColors.accentCyan],
+              ),
               boxShadow: [
                 BoxShadow(
                   color: AppColors.teal.withValues(alpha: 0.35),
@@ -634,16 +626,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Row(
                 children: [
                   if (snapshot.isSyncing)
-                    RotationTransition(
-                      turns: AlwaysStoppedAnimation(
-                        DateTime.now().millisecondsSinceEpoch / 1500 % 1,
-                      ),
-                      child: Icon(
-                        Icons.sync,
-                        color: const Color(0xFF0EA5E9),
-                        size: 20,
-                      ),
-                    )
+                    const _SpinningSyncIcon(color: Color(0xFF0EA5E9), size: 20)
                   else
                     Icon(
                       isSynced ? Icons.check_circle : Icons.sync_alt,
@@ -651,9 +634,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           ? const Color(0xFF14B8A6)
                           : hasConflicts
                           ? const Color(0xFFE67E22)
-                          : (isDark
-                                ? const Color(0xFF9EABB7)
-                                : const Color(0xFF6C7580)),
+                          : AppColors.textSecondary(context),
                       size: 20,
                     ),
                   const SizedBox(width: 10),
@@ -673,9 +654,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                             letterSpacing: -0.3,
-                            color: isDark
-                                ? const Color(0xFFE6EDF3)
-                                : const Color(0xFF1F252B),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(height: 2),
@@ -688,9 +667,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w500,
-                            color: isDark
-                                ? const Color(0xFF9EABB7)
-                                : const Color(0xFF6C7580),
+                            color: AppColors.textSecondary(context),
                           ),
                         ),
                       ],
@@ -904,9 +881,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                     PopupMenuButton<String>(
                       icon: Icon(
                         Icons.more_vert,
-                        color: isDark
-                            ? const Color(0xFF9EABB7)
-                            : const Color(0xFF6C7580),
+                        color: AppColors.textSecondary(context),
                       ),
                       itemBuilder: (BuildContext context) => [
                         PopupMenuItem<String>(
@@ -925,23 +900,17 @@ class _HomePageState extends ConsumerState<HomePage> {
                           final didConfirm = await showDialog<bool>(
                             context: context,
                             builder: (dialogContext) => AlertDialog(
-                              backgroundColor: isDark
-                                  ? const Color(0xFF1A232C)
-                                  : Colors.white,
+                              backgroundColor: AppColors.surface(context),
                               title: Text(
                                 'Clear all sync data?',
                                 style: TextStyle(
-                                  color: isDark
-                                      ? const Color(0xFFE6EDF3)
-                                      : const Color(0xFF1F252B),
+                                  color: AppColors.textPrimary(context),
                                 ),
                               ),
                               content: Text(
                                 'This will delete all offline queue items, conflicts, and sync history. This action cannot be undone.',
                                 style: TextStyle(
-                                  color: isDark
-                                      ? const Color(0xFF9EABB7)
-                                      : const Color(0xFF6C7580),
+                                  color: AppColors.textSecondary(context),
                                 ),
                               ),
                               actions: [
@@ -1037,7 +1006,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       color: const Color(0xFF14B8A6).withValues(alpha: 0.3),
                       blurRadius: 8,
                       offset: const Offset(0, 3),
-                    )
+                    ),
                   ],
                 ),
                 child: const Icon(
@@ -1058,17 +1027,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                           style: GoogleFonts.outfit(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: isDark
-                                ? const Color(0xFFE6EDF3)
-                                : const Color(0xFF1F252B),
+                            color: AppColors.textPrimary(context),
                           ),
                         ),
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0EA5E9).withValues(alpha: 0.2),
+                            color: const Color(
+                              0xFF0EA5E9,
+                            ).withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
@@ -1089,9 +1060,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                       'Scan prescriptions & lab reports to extract medicines, values & summaries',
                       style: TextStyle(
                         fontSize: 12,
-                        color: isDark
-                            ? const Color(0xFF9EABB7)
-                            : const Color(0xFF6C7580),
+                        color: AppColors.textSecondary(context),
                         height: 1.25,
                       ),
                     ),
@@ -1102,7 +1071,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               Icon(
                 Icons.arrow_forward_ios_rounded,
                 size: 16,
-                color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF6C7580),
+                color: AppColors.textSecondary(context),
               ),
             ],
           ),
@@ -1143,7 +1112,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF6C7580),
+              color: AppColors.textSecondary(context),
             ),
           ),
         ],
@@ -1183,24 +1152,19 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _recentPatientsList() {
     return Consumer(
       builder: (context, ref, child) {
-        final state = ref.watch(patientListProvider);
-        if (state.loading && state.patients.isEmpty) {
+        final loading = ref.watch(patientListProvider.select((s) => s.loading));
+        final allEmpty = ref.watch(
+          patientListProvider.select((s) => s.patients.isEmpty),
+        );
+        final visiblePatients = ref.watch(recentPatientsProvider);
+
+        if (loading && allEmpty) {
           return _buildRecentPatientsSkeleton();
         }
 
-        if (state.patients.isEmpty) {
+        if (allEmpty) {
           return Center(child: Text(context.l10n.tr('home.noPatientsFound')));
         }
-
-        // ✅ SORT BY RECENCY: Most recently updated/created first
-        final recentPatients = [...state.patients]
-          ..sort((a, b) {
-            // Use updatedAt for sorting (most recent first)
-            final aTime = a.updatedAt ?? (a.id ?? -1);
-            final bTime = b.updatedAt ?? (b.id ?? -1);
-            return bTime.compareTo(aTime); // Descending: newest first
-          });
-        final visiblePatients = recentPatients.take(5).toList();
 
         return ListView.separated(
           scrollDirection: Axis.horizontal,
@@ -1216,13 +1180,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   SliverToBoxAdapter _buildTaskSkeletonSliver() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark
-        ? const Color(0xFF1A232C)
-        : const Color(0xFFE9EDF1);
-    final highlightColor = isDark
-        ? const Color(0xFF2A3642)
-        : const Color(0xFFF6F8FA);
+    final baseColor = AppColors.shimmerBase(context);
+    final highlightColor = AppColors.shimmerHighlight(context);
 
     return SliverToBoxAdapter(
       child: Shimmer.fromColors(
@@ -1235,13 +1194,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               margin: const EdgeInsets.only(bottom: 12),
               padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1A232C) : Colors.white,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isDark
-                      ? const Color(0xFF2A3642)
-                      : const Color(0xFFE9EDF0),
-                ),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Row(
                 children: [
@@ -1269,13 +1224,8 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _buildRecentPatientsSkeleton() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final baseColor = isDark
-        ? const Color(0xFF1A232C)
-        : const Color(0xFFE9EDF1);
-    final highlightColor = isDark
-        ? const Color(0xFF2A3642)
-        : const Color(0xFFF6F8FA);
+    final baseColor = AppColors.shimmerBase(context);
+    final highlightColor = AppColors.shimmerHighlight(context);
 
     return Shimmer.fromColors(
       baseColor: baseColor,
@@ -1291,13 +1241,9 @@ class _HomePageState extends ConsumerState<HomePage> {
             width: 150,
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
             decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1A232C) : Colors.white,
+              color: AppColors.surface(context),
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isDark
-                    ? const Color(0xFF2A3642)
-                    : const Color(0xFFE5E8EC),
-              ),
+              border: Border.all(color: AppColors.border(context)),
             ),
             child: Column(
               children: [
@@ -1398,13 +1344,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           children: [
             CircleAvatar(
               radius: 28,
-              backgroundColor: AppColors.teal.withValues(alpha: isDark ? 0.15 : 0.12),
+              backgroundColor: AppColors.teal.withValues(
+                alpha: isDark ? 0.15 : 0.12,
+              ),
               backgroundImage: imageProvider,
               child: imageProvider == null
-                  ? Icon(
-                      Icons.person_rounded,
-                      color: isDark ? AppColors.accentCyan : AppColors.teal,
-                    )
+                  ? Icon(Icons.person_rounded, color: AppColors.brand(context))
                   : null,
             ),
             const SizedBox(height: 10),
@@ -1416,9 +1361,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 15,
-                color: isDark
-                    ? const Color(0xFFE6EDF3)
-                    : const Color(0xFF202329),
+                color: AppColors.textPrimary(context),
               ),
             ),
             const SizedBox(height: 4),
@@ -1429,9 +1372,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               style: TextStyle(
                 fontSize: 10,
                 letterSpacing: 0.3,
-                color: isDark
-                    ? const Color(0xFF9EABB7)
-                    : const Color(0xFF7B838C),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -1447,9 +1388,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w600,
-                color: isDark
-                    ? const Color(0xFF98A7B2)
-                    : const Color(0xFF70808C),
+                color: AppColors.textSecondary(context),
               ),
             ),
             if (patient.isPregnant ||
@@ -1468,9 +1407,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 style: TextStyle(
                   fontSize: 10,
                   height: 1.25,
-                  color: isDark
-                      ? const Color(0xFFB2C0CC)
-                      : const Color(0xFF63707D),
+                  color: AppColors.textSecondary(context),
                 ),
               ),
             ],
@@ -1485,9 +1422,7 @@ class _HomePageState extends ConsumerState<HomePage> {
               style: TextStyle(
                 fontSize: 11,
                 height: 1.25,
-                color: isDark
-                    ? const Color(0xFFB2C0CC)
-                    : const Color(0xFF63707D),
+                color: AppColors.textSecondary(context),
               ),
             ),
             const Spacer(),
@@ -1495,7 +1430,9 @@ class _HomePageState extends ConsumerState<HomePage> {
               width: double.infinity,
               height: 32,
               decoration: BoxDecoration(
-                gradient: const LinearGradient(colors: [AppColors.teal, AppColors.accentCyan]),
+                gradient: const LinearGradient(
+                  colors: [AppColors.teal, AppColors.accentCyan],
+                ),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
@@ -1536,7 +1473,6 @@ class _HomePageState extends ConsumerState<HomePage> {
   }
 
   Widget _languageSettingsCard() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final l10n = context.l10n;
     final currentCode =
         ref.watch(appLocaleProvider).valueOrNull?.languageCode ?? 'en';
@@ -1555,22 +1491,16 @@ class _HomePageState extends ConsumerState<HomePage> {
               style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: isDark
-                    ? const Color(0xFFE6EDF3)
-                    : const Color(0xFF1F252B),
+                color: AppColors.textPrimary(context),
               ),
             ),
           ),
           ListTile(
-            leading: Icon(Icons.translate, color: isDark ? AppColors.accentCyan : AppColors.teal),
+            leading: Icon(Icons.translate, color: AppColors.brand(context)),
             title: Text(l10n.tr('home.language')),
             trailing: Text(
               AppLocalizations.nativeLanguageNames[currentCode] ?? 'Hindi',
-              style: TextStyle(
-                color: isDark
-                    ? const Color(0xFFA5B3BF)
-                    : const Color(0xFF6C7580),
-              ),
+              style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             onTap: _showLanguageSelector,
           ),
@@ -1668,7 +1598,10 @@ class _HomePageState extends ConsumerState<HomePage> {
                               children: [
                                 ShaderMask(
                                   shaderCallback: (bounds) => LinearGradient(
-                                    colors: [AppColors.teal, AppColors.accentCyan],
+                                    colors: [
+                                      AppColors.teal,
+                                      AppColors.accentCyan,
+                                    ],
                                   ).createShader(bounds),
                                   child: Text(
                                     l10n.tr('common.selectLanguage'),
@@ -1713,8 +1646,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                           // Language list
                           Expanded(
                             child: ListView.separated(
-                              itemCount:
-                                  supportedLanguageCodes.length,
+                              itemCount: supportedLanguageCodes.length,
                               separatorBuilder: (_, _) =>
                                   const SizedBox(height: 8),
                               itemBuilder: (listContext, index) {
@@ -1827,7 +1759,8 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                       : FontWeight.w500,
                                                   color: isSelected
                                                       ? (isDarkSheet
-                                                            ? AppColors.accentCyan
+                                                            ? AppColors
+                                                                  .accentCyan
                                                             : AppColors.teal)
                                                       : (isDarkSheet
                                                             ? const Color(
@@ -1876,7 +1809,9 @@ class _HomePageState extends ConsumerState<HomePage> {
                                             ? Colors.white.withValues(
                                                 alpha: 0.15,
                                               )
-                                            : AppColors.teal.withValues(alpha: 0.35),
+                                            : AppColors.teal.withValues(
+                                                alpha: 0.35,
+                                              ),
                                       ),
                                       color: isDarkSheet
                                           ? Colors.white.withValues(alpha: 0.06)
@@ -1927,5 +1862,42 @@ class _HomePageState extends ConsumerState<HomePage> {
       final locale = Locale(selectedCode);
       await ref.read(appLocaleProvider.notifier).setLocale(locale);
     }
+  }
+}
+
+/// A sync icon that actually rotates while a sync is in progress.
+/// (Replaces a fake `AlwaysStoppedAnimation(DateTime.now()…)` that never spun.)
+class _SpinningSyncIcon extends StatefulWidget {
+  const _SpinningSyncIcon({
+    this.color = const Color(0xFF0EA5E9),
+    this.size = 20,
+  });
+
+  final Color color;
+  final double size;
+
+  @override
+  State<_SpinningSyncIcon> createState() => _SpinningSyncIconState();
+}
+
+class _SpinningSyncIconState extends State<_SpinningSyncIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RotationTransition(
+      turns: _controller,
+      child: Icon(Icons.sync, color: widget.color, size: widget.size),
+    );
   }
 }

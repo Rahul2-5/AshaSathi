@@ -33,4 +33,55 @@ class AppColors {
   static const Color white = Colors.white;
   static const Color black = Colors.black;
   static const Color transparent = Colors.transparent;
+
+  // Status colors (shared across tasks / sync / alerts)
+  static const Color success = Color(0xFF1FA971);
+  static const Color warning = Color(0xFFDD8A2A);
+  static const Color danger = Color(0xFFD64242);
+  static const Color info = Color(0xFF14A7A0);
+
+  // ── Semantic, brightness-aware helpers ───────────────────────────────────
+  // Prefer these over scattered `isDark ? A : B` ternaries so theming stays
+  // consistent and a single source of truth drives light/dark surfaces.
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  /// Primary readable text color.
+  static Color textPrimary(BuildContext context) =>
+      _isDark(context) ? lightText : darkText;
+
+  /// Muted secondary text (subtitles, captions).
+  static Color textSecondary(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF9EABB7) : const Color(0xFF6C7580);
+
+  /// Faint tertiary text (hints, metadata).
+  static Color textTertiary(BuildContext context) =>
+      _isDark(context) ? lightTextTertiary : const Color(0xFF8B939C);
+
+  /// Opaque card/panel surface (used where translucency isn't wanted).
+  static Color surface(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF1A232C) : white;
+
+  /// A slightly recessed inner surface (sections inside a card).
+  static Color surfaceMuted(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF22303C) : const Color(0xFFF4F8FB);
+
+  /// Hairline border for cards and dividers.
+  static Color border(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF2A3642) : const Color(0xFFE9EDF0);
+
+  /// Brand accent tuned for the current brightness.
+  static Color brand(BuildContext context) =>
+      _isDark(context) ? accentCyan : teal;
+
+  /// Skeleton/shimmer resting block color (opaque so the loading placeholder
+  /// reads clearly against the gradient background).
+  static Color shimmerBase(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF263441) : const Color(0xFFD6DEE6);
+
+  /// Skeleton/shimmer moving-sweep highlight. Deliberately lighter than
+  /// [shimmerBase] in both themes so the animation is clearly visible.
+  static Color shimmerHighlight(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF3C4C5A) : const Color(0xFFF2F6FA);
 }

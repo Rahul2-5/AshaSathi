@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:frontend/constants/app_colors.dart';
 import 'package:frontend/localization/app_localizations.dart';
 
 import '../../providers/login_provider.dart';
@@ -15,13 +16,13 @@ class TaskCard extends ConsumerWidget {
   Color _statusColor() {
     switch (task.status) {
       case TaskStatus.urgent:
-        return Colors.red;
+        return AppColors.danger;
       case TaskStatus.completed:
-        return Colors.green;
+        return AppColors.success;
       case TaskStatus.inProgress:
-        return Colors.orange;
+        return AppColors.warning;
       default:
-        return Colors.grey;
+        return AppColors.darkTextTertiary;
     }
   }
 
@@ -39,8 +40,6 @@ class TaskCard extends ConsumerWidget {
   }
 
   void _showLoadingDialog(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -50,11 +49,9 @@ class TaskCard extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A232C) : Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2E3C48) : const Color(0xFFDCE5EC),
-            ),
+            border: Border.all(color: AppColors.border(context)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.16),
@@ -75,7 +72,7 @@ class TaskCard extends ConsumerWidget {
               Text(
                 'Processing...',
                 style: TextStyle(
-                  color: isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329),
+                  color: AppColors.textPrimary(context),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -92,11 +89,10 @@ class TaskCard extends ConsumerWidget {
   }
 
   Future<void> _showTaskDetailsDialog(BuildContext context) async {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF1A232C) : Colors.white;
-    final sectionColor = isDark ? const Color(0xFF22303C) : const Color(0xFFF4F8FB);
-    final primaryText = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329);
-    final secondaryText = isDark ? const Color(0xFFA4B0BA) : const Color(0xFF5C6670);
+    final surfaceColor = AppColors.surface(context);
+    final sectionColor = AppColors.surfaceMuted(context);
+    final primaryText = AppColors.textPrimary(context);
+    final secondaryText = AppColors.textSecondary(context);
 
     await showDialog<void>(
       context: context,
@@ -108,9 +104,7 @@ class TaskCard extends ConsumerWidget {
           decoration: BoxDecoration(
             color: surfaceColor,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2E3C48) : const Color(0xFFDCE5EC),
-            ),
+            border: Border.all(color: AppColors.border(context)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.18),
@@ -149,7 +143,10 @@ class TaskCard extends ConsumerWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: _statusColor().withValues(alpha: 0.14),
                       borderRadius: BorderRadius.circular(20),
@@ -229,10 +226,14 @@ class TaskCard extends ConsumerWidget {
 
   Future<bool?> _showDeleteConfirmDialog(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final surfaceColor = isDark ? const Color(0xFF1A232C) : Colors.white;
-    final sectionColor = isDark ? const Color(0xFF2A1F27) : const Color(0xFFFFF2F4);
-    final primaryText = isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329);
-    final secondaryText = isDark ? const Color(0xFFB8A8AE) : const Color(0xFF6E5D63);
+    final surfaceColor = AppColors.surface(context);
+    final sectionColor = isDark
+        ? const Color(0xFF2A1F27)
+        : const Color(0xFFFFF2F4);
+    final primaryText = AppColors.textPrimary(context);
+    final secondaryText = isDark
+        ? const Color(0xFFB8A8AE)
+        : const Color(0xFF6E5D63);
 
     return showDialog<bool>(
       context: context,
@@ -310,10 +311,7 @@ class TaskCard extends ConsumerWidget {
                     const SizedBox(height: 6),
                     Text(
                       context.l10n.tr('task.deleteTaskConfirm'),
-                      style: TextStyle(
-                        color: secondaryText,
-                        height: 1.3,
-                      ),
+                      style: TextStyle(color: secondaryText, height: 1.3),
                     ),
                   ],
                 ),
@@ -355,8 +353,6 @@ class TaskCard extends ConsumerWidget {
     required Color accent,
     required IconData icon,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -366,11 +362,9 @@ class TaskCard extends ConsumerWidget {
         content: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A232C) : Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: accent.withValues(alpha: 0.35),
-            ),
+            border: Border.all(color: accent.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.10),
@@ -395,8 +389,7 @@ class TaskCard extends ConsumerWidget {
                 child: Text(
                   message,
                   style: TextStyle(
-                    color:
-                        isDark ? const Color(0xFFE6EDF3) : const Color(0xFF202329),
+                    color: AppColors.textPrimary(context),
                     fontWeight: FontWeight.w600,
                     fontSize: 13,
                   ),
@@ -411,8 +404,6 @@ class TaskCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -421,194 +412,196 @@ class TaskCard extends ConsumerWidget {
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1A232C) : Colors.white,
+            color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: isDark ? const Color(0xFF2A3642) : const Color(0xFFE9EDF0),
-            ),
+            border: Border.all(color: AppColors.border(context)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.03),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
-              )
+              ),
             ],
           ),
           child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: const Color(0xFFDFF4EC),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Center(
-              child: Icon(
-                Icons.assignment,
-                color: Color(0xFF18A39B),
-                size: 20,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDFF4EC),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.assignment,
+                    color: Color(0xFF18A39B),
+                    size: 20,
+                  ),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(width: 12),
+              const SizedBox(width: 12),
 
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Text(
-                        task.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 14,
-                          color: isDark ? Color(0xFFE6EDF3) : Color(0xFF202329),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      height: 26,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _statusColor().withValues(alpha: 0.14),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.only(top: 1),
-                        child: Text(
-                          task.status == TaskStatus.urgent
-                              ? _statusLabel(context).toUpperCase()
-                              : _statusLabel(context),
-                          style: TextStyle(
-                            color: _statusColor(),
-                            fontWeight: FontWeight.w700,
-                            fontSize: 11,
-                            letterSpacing: 0.2,
-                            height: 1.1,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            task.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 14,
+                              color: AppColors.textPrimary(context),
+                            ),
                           ),
-                          textAlign: TextAlign.center,
                         ),
+                        const SizedBox(width: 8),
+                        Container(
+                          height: 26,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            color: _statusColor().withValues(alpha: 0.14),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Text(
+                              task.status == TaskStatus.urgent
+                                  ? _statusLabel(context).toUpperCase()
+                                  : _statusLabel(context),
+                              style: TextStyle(
+                                color: _statusColor(),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                                letterSpacing: 0.2,
+                                height: 1.1,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      task.description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColors.textTertiary(context),
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  task.description,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: isDark ? const Color(0xFF9EABB7) : const Color(0xFF8B939C),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.edit_outlined,
-              color: Color(0xFF18A39B),
-            ),
-            onPressed: () async {
-              final edited = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => AddTaskPage(initialTask: task),
-                ),
-              );
-
-              if (!context.mounted) return;
-              if (edited == true) {
-                final token = await ref.read(loginProvider.notifier).getValidToken();
-                if (token == null || token.isEmpty) return;
-                if (!context.mounted) return;
-                await ref.read(taskListProvider.notifier).loadTasks(token);
-              }
-            },
-            tooltip: context.l10n.tr('task.editTask'),
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.delete_outline,
-              color: Color(0xFFFF5252),
-              size: 20,
-            ),
-            onPressed: () async {
-              final confirm = await _showDeleteConfirmDialog(context);
-
-              if (!context.mounted) return;
-
-              if (confirm == true) {
-                final token = await ref.read(loginProvider.notifier).getValidToken();
-                if (token == null || token.isEmpty) return;
-                if (!context.mounted) return;
-                _showLoadingDialog(context);
-
-                // Fire deletion in background so UI is not blocked by network latency.
-                final deleteFuture = ref
-                    .read(taskListProvider.notifier)
-                    .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
-
-                // Immediately hide the modal so user can continue interacting.
-                if (context.mounted) _hideLoadingDialog(context);
-
-                // Give immediate feedback that deletion started.
-                if (context.mounted) {
-                  _showStyledSnackBar(
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, color: Color(0xFF18A39B)),
+                onPressed: () async {
+                  final edited = await Navigator.push(
                     context,
-                    message: 'Deleting...',
-                    accent: const Color(0xFFDD8A2A),
-                    icon: Icons.delete_outline,
+                    MaterialPageRoute(
+                      builder: (_) => AddTaskPage(initialTask: task),
+                    ),
                   );
-                }
 
-                // When the background delete completes, show final status.
-                deleteFuture.then((deleted) {
                   if (!context.mounted) return;
-                  if (deleted) {
-                    _showStyledSnackBar(
-                      context,
-                      message: context.l10n.tr('task.deletedSuccessfully'),
-                      accent: const Color(0xFFD64242),
-                      icon: Icons.delete_outline,
-                    );
-                  } else {
-                    _showStyledSnackBar(
-                      context,
-                      message: context.l10n.tr('task.markedDeletion'),
-                      accent: const Color(0xFFDD8A2A),
-                      icon: Icons.cloud_off_outlined,
-                    );
+                  if (edited == true) {
+                    final token = await ref
+                        .read(loginProvider.notifier)
+                        .getValidToken();
+                    if (token == null || token.isEmpty) return;
+                    if (!context.mounted) return;
+                    await ref.read(taskListProvider.notifier).loadTasks(token);
                   }
-                }).catchError((e) {
+                },
+                tooltip: context.l10n.tr('task.editTask'),
+              ),
+              IconButton(
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Color(0xFFFF5252),
+                  size: 20,
+                ),
+                onPressed: () async {
+                  final confirm = await _showDeleteConfirmDialog(context);
+
                   if (!context.mounted) return;
-                  _showStyledSnackBar(
-                    context,
-                    message: context
-                        .l10n
-                        .tr('task.errorDeleting', args: {'error': e.toString()}),
-                    accent: const Color(0xFFD64242),
-                    icon: Icons.error_outline,
-                  );
-                });
-              }
-            },
-            splashRadius: 18,
-            padding: const EdgeInsets.all(4),
-            constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
-          ),
-        ],
+
+                  if (confirm == true) {
+                    final token = await ref
+                        .read(loginProvider.notifier)
+                        .getValidToken();
+                    if (token == null || token.isEmpty) return;
+                    if (!context.mounted) return;
+                    _showLoadingDialog(context);
+
+                    // Fire deletion in background so UI is not blocked by network latency.
+                    final deleteFuture = ref
+                        .read(taskListProvider.notifier)
+                        .deleteTaskWithUuid(task.id ?? -1, task.uuid, token);
+
+                    // Immediately hide the modal so user can continue interacting.
+                    if (context.mounted) _hideLoadingDialog(context);
+
+                    // Give immediate feedback that deletion started.
+                    if (context.mounted) {
+                      _showStyledSnackBar(
+                        context,
+                        message: 'Deleting...',
+                        accent: const Color(0xFFDD8A2A),
+                        icon: Icons.delete_outline,
+                      );
+                    }
+
+                    // When the background delete completes, show final status.
+                    deleteFuture
+                        .then((deleted) {
+                          if (!context.mounted) return;
+                          if (deleted) {
+                            _showStyledSnackBar(
+                              context,
+                              message: context.l10n.tr(
+                                'task.deletedSuccessfully',
+                              ),
+                              accent: const Color(0xFFD64242),
+                              icon: Icons.delete_outline,
+                            );
+                          } else {
+                            _showStyledSnackBar(
+                              context,
+                              message: context.l10n.tr('task.markedDeletion'),
+                              accent: const Color(0xFFDD8A2A),
+                              icon: Icons.cloud_off_outlined,
+                            );
+                          }
+                        })
+                        .catchError((e) {
+                          if (!context.mounted) return;
+                          _showStyledSnackBar(
+                            context,
+                            message: context.l10n.tr(
+                              'task.errorDeleting',
+                              args: {'error': e.toString()},
+                            ),
+                            accent: const Color(0xFFD64242),
+                            icon: Icons.error_outline,
+                          );
+                        });
+                  }
+                },
+                splashRadius: 18,
+                padding: const EdgeInsets.all(4),
+                constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
+              ),
+            ],
           ),
         ),
       ),
