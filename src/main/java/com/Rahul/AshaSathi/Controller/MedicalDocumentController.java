@@ -93,33 +93,12 @@ public class MedicalDocumentController {
         log.info("Created MedicalDocument id={} for patientId={}, imagePath={}",
             doc.getId(), patientId, imagePath);
 
-        // Immediately trigger OCR extraction and store raw text + confidence
-        // (OCR is fast — blocking here is acceptable and saves a round-trip)
-        try {
-            byte[] imageBytes = file.getBytes();
-            String filename   = file.getOriginalFilename() != null
-                ? file.getOriginalFilename() : "upload.jpg";
-
-            Map<String, Object> ocrResult =
-                docService.extractTextFromBytes(imageBytes, filename);
-
-            String rawText    = (String) ocrResult.getOrDefault("raw_text", "");
-            double confidence = toDouble(ocrResult.getOrDefault("confidence", 0.0));
-            List<Map<String, Object>> segments =
-                (List<Map<String, Object>>) ocrResult.getOrDefault("segments", List.of());
-
-            doc.setRawText(rawText);
-            doc.setConfidenceScore(confidence);
-            doc = docRepo.save(doc);
-
-            // Persist OCR line segments
-            docService.persistOcrLines(doc, segments);
-
-            log.info("OCR complete for doc {}: {} chars, confidence={}", doc.getId(), rawText.length(), confidence);
-        } catch (Exception e) {
-            log.warn("OCR pre-extraction failed for doc {}: {}", doc.getId(), e.getMessage());
-            // Non-fatal — pipeline will retry via /process
-        }
+        // NOTE: OCR is intentionally NOT run here. OCR (PaddleOCR over the ngrok
+        // tunnel) takes far longer than Heroku's hard 30s request limit, so doing
+        // it synchronously made /upload time out with H12 before returning a doc
+        // id — the client then never called /process and no summary was ever
+        // produced. OCR now runs only in the async processDocument pipeline,
+        // which already performs it and is not bound by the HTTP request timeout.
 
         return ResponseEntity.status(HttpStatus.CREATED)
             .body(new MedicalDocumentUploadResponse(
@@ -256,11 +235,5 @@ public class MedicalDocumentController {
             || lower.endsWith(".png")  || lower.endsWith(".webp")
             || lower.endsWith(".bmp")  || lower.endsWith(".heic")
             || lower.endsWith(".heif") || lower.endsWith(".tiff");
-    }
-
-    private double toDouble(Object value) {
-        if (value instanceof Number n) return n.doubleValue();
-        try { return Double.parseDouble(value.toString()); }
-        catch (Exception e) { return 0.0; }
     }
 }
