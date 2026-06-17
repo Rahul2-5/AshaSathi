@@ -402,7 +402,8 @@ class _GlassAppBarState extends State<GlassAppBar> {
     // theme change — replacing three nested TweenAnimationBuilders that rebuilt
     // every frame. One BackdropFilter is kept: the bar sits over scrolling
     // content, so the blur is meaningful here.
-    return ClipRect(
+    return RepaintBoundary(
+      child: ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
         child: AnimatedContainer(
@@ -432,6 +433,7 @@ class _GlassAppBarState extends State<GlassAppBar> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

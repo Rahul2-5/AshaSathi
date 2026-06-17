@@ -9,6 +9,7 @@ import 'package:frontend/navigation/main_navigation.dart';
 import 'package:frontend/splash/splash_page.dart';
 
 import 'package:frontend/screens/medical_vision/medical_document_screen.dart';
+import 'package:frontend/screens/medical_vision/medical_vision_history_screen.dart';
 
 class AshaSathiApp extends ConsumerWidget {
   const AshaSathiApp({super.key});
@@ -61,6 +62,13 @@ class AshaSathiApp extends ConsumerWidget {
               : null;
           return MaterialPageRoute(
             builder: (_) => MedicalDocumentScreen(patientId: patientId),
+            settings: settings,
+          );
+        }
+
+        if (settings.name == '/medical-vision-history') {
+          return MaterialPageRoute(
+            builder: (_) => const MedicalVisionHistoryScreen(),
             settings: settings,
           );
         }

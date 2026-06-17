@@ -11,6 +11,7 @@ import 'package:frontend/constants/app_colors.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' show MediaType;
 import 'package:frontend/providers/login_provider.dart';
+import 'package:frontend/screens/medical_vision/patient_assign_sheet.dart';
 
 // ─── Models ──────────────────────────────────────────────────────────────────
 
@@ -373,6 +374,20 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
               ],
             ),
           ),
+          GestureDetector(
+            onTap: () =>
+                Navigator.pushNamed(context, '/medical-vision-history'),
+            child: GlassContainer(
+              padding: const EdgeInsets.all(10),
+              borderRadius: BorderRadius.circular(14),
+              child: Icon(Icons.history_rounded,
+                  size: 18,
+                  color: isDark
+                      ? const Color(0xFFE0EAF3)
+                      : const Color(0xFF1D232B)),
+            ),
+          ),
+          const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
@@ -970,11 +985,37 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
     );
   }
 
-  void _confirmAndSave() {
+  Future<void> _confirmAndSave() async {
     // The user can edit diagnosis/follow-up before confirming.
-    // Final record is already saved in PostgreSQL — this just closes the screen.
-    _showSnack('Medical record confirmed and saved!');
-    Navigator.pop(context, true);
+    // The extracted record is already saved in PostgreSQL.
+    final docId = _result?.id;
+
+    // Opened from a specific patient → already linked at upload time. Just close.
+    if (widget.patientId != null || docId == null) {
+      _showSnack('Medical record confirmed and saved!');
+      if (mounted) Navigator.pop(context, true);
+      return;
+    }
+
+    // Otherwise ask who this report belongs to (or mark it as a one-off test).
+    final token = await ref.read(loginProvider.notifier).getValidToken();
+    if (token == null || token.isEmpty) {
+      _showSnack('Session expired. Please login again.');
+      return;
+    }
+    if (!mounted) return;
+
+    final assigned = await showPatientAssignSheet(
+      context: context,
+      docId: docId,
+      token: token,
+    );
+
+    if (assigned == true) {
+      _showSnack('Medical record saved!');
+      if (mounted) Navigator.pop(context, true);
+    }
+    // If the user dismissed the sheet, stay on the screen so they can retry.
   }
 
   // ─── Helpers ──────────────────────────────────────────────────────────────

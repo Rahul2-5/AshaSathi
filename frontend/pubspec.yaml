@@ -91,6 +91,11 @@ flutter:
     - assets/images/AshaIcon.png
     - assets/images/splash1.png
 
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit.ttf
+
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
 

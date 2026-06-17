@@ -1068,10 +1068,33 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(
-                Icons.arrow_forward_ios_rounded,
-                size: 16,
-                color: AppColors.textSecondary(context),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pushNamed(
+                        context, '/medical-vision-history'),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: const Color(0xFF14B8A6)
+                            .withValues(alpha: isDark ? 0.18 : 0.12),
+                      ),
+                      child: const Icon(
+                        Icons.history_rounded,
+                        size: 18,
+                        color: Color(0xFF14B8A6),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    size: 14,
+                    color: AppColors.textSecondary(context),
+                  ),
+                ],
               ),
             ],
           ),
@@ -1283,39 +1306,10 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _patientCard(Patient patient) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final String? photo = patient.photoPath;
-    String? localPath;
-    String? networkUrl;
+    final imageProvider = _resolvePatientImage(patient.photoPath);
 
-    if (photo != null && photo.isNotEmpty) {
-      final normalizedPhoto = photo.replaceAll('\\', '/');
-      final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
-
-      // Server stores relative paths like "/uploads/patients/1/profile.jpg"
-      if (normalizedPhoto.startsWith('/uploads/') ||
-          normalizedPhoto.contains('/uploads/')) {
-        networkUrl = "${AppConfig.apiBaseUrl}$normalizedPhoto";
-      } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) ||
-          isWindowsAbsolutePath) {
-        // Assume absolute local file path on device
-        localPath = photo;
-      } else if (photo.startsWith('http')) {
-        networkUrl = photo;
-      } else {
-        // Treat as relative server path
-        networkUrl = "${AppConfig.apiBaseUrl}/$normalizedPhoto";
-      }
-    }
-
-    ImageProvider? imageProvider;
-
-    if (localPath != null && File(localPath).existsSync()) {
-      imageProvider = FileImage(File(localPath));
-    } else if (networkUrl != null) {
-      imageProvider = NetworkImage(networkUrl);
-    }
-
-    return GestureDetector(
+    return RepaintBoundary(
+      child: GestureDetector(
       onTap: () async {
         final deleted = await Navigator.push(
           context,
@@ -1458,8 +1452,50 @@ class _HomePageState extends ConsumerState<HomePage> {
           ],
         ),
       ),
+      ),
     );
   }
+
+  ImageProvider? _resolvePatientImage(String? photo) {
+    if (photo == null || photo.isEmpty) return null;
+
+    final cached = _imageProviderCache[photo];
+    if (cached != null) return cached;
+
+    final normalizedPhoto = photo.replaceAll('\\', '/');
+    final isWindowsAbsolutePath = RegExp(r'^[A-Za-z]:[/\\]').hasMatch(photo);
+
+    ImageProvider? provider;
+    if (normalizedPhoto.contains('/uploads/')) {
+      provider = NetworkImage("${AppConfig.apiBaseUrl}$normalizedPhoto");
+    } else if ((photo.startsWith('/') && !photo.startsWith('/uploads/')) ||
+        isWindowsAbsolutePath) {
+      // Local device path. existsSync() is synchronous disk I/O, so it must
+      // never run during build — resolve it once off-frame and cache below.
+      final pending = _pendingLocalChecks;
+      if (!pending.contains(photo)) {
+        pending.add(photo);
+        scheduleMicrotask(() async {
+          final exists = await File(photo).exists();
+          if (!mounted) return;
+          setState(() {
+            _imageProviderCache[photo] = exists ? FileImage(File(photo)) : null;
+          });
+        });
+      }
+      return null;
+    } else if (photo.startsWith('http')) {
+      provider = NetworkImage(photo);
+    } else {
+      provider = NetworkImage("${AppConfig.apiBaseUrl}/$normalizedPhoto");
+    }
+
+    _imageProviderCache[photo] = provider;
+    return provider;
+  }
+
+  final Map<String, ImageProvider?> _imageProviderCache = {};
+  final Set<String> _pendingLocalChecks = {};
 
   String _localizedGender(String value) {
     final normalized = value.trim().toLowerCase();

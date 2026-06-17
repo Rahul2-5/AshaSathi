@@ -156,6 +156,65 @@ public class MedicalDocumentController {
         return ResponseEntity.ok(MedicalDocumentResponse.from(doc));
     }
 
+    // ── GET /api/medical-documents ───────────────────────────────────────────
+
+    /**
+     * List every scanned medical document, newest first. Backs the Medical
+     * Vision history screen. Documents are not user-scoped (the entity has no
+     * owner field), so this returns all records.
+     */
+    @Transactional(readOnly = true)
+    @GetMapping
+    public ResponseEntity<List<MedicalDocumentResponse>> getAllDocuments() {
+        List<MedicalDocumentResponse> responses = docRepo.findAllByOrderByCreatedAtDesc().stream()
+            .map(doc -> {
+                doc.getMedicines().size();
+                doc.getLabResults().size();
+                return MedicalDocumentResponse.from(doc);
+            })
+            .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    // ── PATCH /api/medical-documents/{id}/assign ─────────────────────────────
+
+    /**
+     * Assign (or clear) the patient a document belongs to. Called after the user
+     * confirms a scan: they pick a registered patient, or choose "don't assign"
+     * for a one-off test (patientId = null).
+     *
+     * Body: {"patientId": <id>} to assign, or {"patientId": null} / {} to clear.
+     */
+    @PatchMapping("/{id}/assign")
+    public ResponseEntity<MedicalDocumentResponse> assignPatient(
+            @PathVariable Long id,
+            @RequestBody(required = false) Map<String, Object> body) {
+        MedicalDocument doc = findDocOrThrow(id);
+
+        Long patientId = null;
+        if (body != null && body.get("patientId") != null) {
+            Object raw = body.get("patientId");
+            if (raw instanceof Number n) {
+                patientId = n.longValue();
+            } else {
+                try {
+                    patientId = Long.parseLong(raw.toString());
+                } catch (NumberFormatException e) {
+                    throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Invalid patientId: " + raw);
+                }
+            }
+        }
+
+        doc.setPatientId(patientId);
+        docRepo.save(doc);
+        log.info("Assigned medical document {} to patientId={}", id, patientId);
+
+        doc.getMedicines().size();
+        doc.getLabResults().size();
+        return ResponseEntity.ok(MedicalDocumentResponse.from(doc));
+    }
+
     // ── GET /api/medical-documents/patient/{patientId} ────────────────────────
 
     /**

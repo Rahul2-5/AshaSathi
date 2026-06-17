@@ -20,6 +20,7 @@ import java.util.List;
 @Builder
 public class MedicalDocumentResponse {
     private Long id;
+    private Long patientId;          // null = not assigned to any patient (one-off test)
     private String processingStatus;
     private String diagnosis;
     private String followUpDate;      // ISO string for Flutter date display
@@ -84,6 +85,7 @@ public class MedicalDocumentResponse {
 
         return MedicalDocumentResponse.builder()
             .id(doc.getId())
+            .patientId(doc.getPatientId())
             .processingStatus(doc.getProcessingStatus().name())
             .diagnosis(doc.getDiagnosis())
             .followUpDate(doc.getFollowUpDate() != null ? doc.getFollowUpDate().toString() : null)
