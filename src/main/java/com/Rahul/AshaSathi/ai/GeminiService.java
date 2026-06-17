@@ -37,6 +37,14 @@ public class GeminiService {
     private static final int MAX_RETRIES = 3;
     private static final Duration TIMEOUT = Duration.ofSeconds(45);
     private static final double TEMPERATURE = 0.0;
+    // gemini-2.5-flash is a "thinking" model: its internal reasoning tokens are
+    // billed against maxOutputTokens. Left enabled, thinking on a full
+    // prescription consumes ~1500-2000 tokens and the actual JSON/summary comes
+    // back truncated (finishReason=MAX_TOKENS), which breaks extraction parsing
+    // and aborts the pipeline before a summary is generated. Disable thinking so
+    // the whole budget is available for the response.
+    private static final int MAX_OUTPUT_TOKENS = 4096;
+    private static final int THINKING_BUDGET = 0;
 
     @Qualifier("geminiWebClient")
     private final WebClient geminiWebClient;
@@ -121,7 +129,8 @@ public class GeminiService {
             ),
             "generationConfig", Map.of(
                 "temperature", TEMPERATURE,
-                "maxOutputTokens", 2048
+                "maxOutputTokens", MAX_OUTPUT_TOKENS,
+                "thinkingConfig", Map.of("thinkingBudget", THINKING_BUDGET)
             )
         );
 
@@ -162,12 +171,33 @@ public class GeminiService {
         if (candidates == null || candidates.isEmpty()) {
             throw new RuntimeException("Gemini returned no candidates.");
         }
-        var content = (Map<?, ?>) ((Map<?, ?>) candidates.get(0)).get("content");
-        var parts   = (List<?>) content.get("parts");
+        var candidate = (Map<?, ?>) candidates.get(0);
+        String finishReason = (String) candidate.get("finishReason");
+
+        var content = (Map<?, ?>) candidate.get("content");
+        var parts   = content != null ? (List<?>) content.get("parts") : null;
         if (parts == null || parts.isEmpty()) {
-            throw new RuntimeException("Gemini returned empty content parts.");
+            // MAX_TOKENS means the model used up maxOutputTokens (often on hidden
+            // thinking) before emitting any text — surface it explicitly rather
+            // than as a generic empty-parts error.
+            if ("MAX_TOKENS".equals(finishReason)) {
+                throw new RuntimeException(
+                    "Gemini response truncated (finishReason=MAX_TOKENS): the model "
+                    + "hit maxOutputTokens before producing output. Raise "
+                    + "MAX_OUTPUT_TOKENS or keep thinking disabled.");
+            }
+            throw new RuntimeException(
+                "Gemini returned empty content parts (finishReason=" + finishReason + ").");
         }
+
         String text = (String) ((Map<?, ?>) parts.get(0)).get("text");
+        // Even with a text part, MAX_TOKENS means the payload is cut off mid-stream
+        // (e.g. truncated JSON), which would fail downstream parsing — reject it.
+        if ("MAX_TOKENS".equals(finishReason)) {
+            throw new RuntimeException(
+                "Gemini response truncated (finishReason=MAX_TOKENS): output was cut "
+                + "off and is incomplete. Raise MAX_OUTPUT_TOKENS or keep thinking disabled.");
+        }
         log.info("Gemini response received ({} chars).", text == null ? 0 : text.length());
         return text;
     }
