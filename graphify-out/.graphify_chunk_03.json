@@ -1,0 +1,226 @@
+{
+  "nodes": [
+    {
+      "id": "patients_1_profile",
+      "label": "Patient 1 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/1/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo. Real photograph of an adult male patient with short brown hair and a short beard, wearing a dark maroon t-shirt, against a plain light gray background. Head-and-shoulders portrait style.",
+      "demographic": "adult male",
+      "image_style": "real photograph",
+      "confidence_score": 1.0
+    },
+    {
+      "id": "patients_11_profile",
+      "label": "Patient 11 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/11/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo placeholder. A pixelated/low-resolution image showing a blocky pixel-art style green building or structure with shades of green, brown, and purple on a light green background. No person visible; likely a placeholder avatar or corrupted/thumbnail image.",
+      "demographic": null,
+      "image_style": "pixel art / placeholder graphic",
+      "confidence_score": 0.7
+    },
+    {
+      "id": "patients_19_profile",
+      "label": "Patient 19 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/19/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo placeholder. A pixelated/low-resolution image showing a blocky pixel-art style green building or structure with shades of green, brown, and purple on a light green background. Very similar to patients/11 image. No person visible; likely a placeholder avatar or corrupted/thumbnail image.",
+      "demographic": null,
+      "image_style": "pixel art / placeholder graphic",
+      "confidence_score": 0.7
+    },
+    {
+      "id": "patients_2_profile",
+      "label": "Patient 2 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/2/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo. Cartoon/illustrated avatar depicting a young male with short dark hair, blue eyes, medium skin tone, wearing a gray hoodie with a maroon/red inner hood, smiling, against a white background. Anime/vector illustration style.",
+      "demographic": "young male (illustrated avatar)",
+      "image_style": "cartoon / vector illustration",
+      "confidence_score": 1.0
+    },
+    {
+      "id": "patients_20_profile",
+      "label": "Patient 20 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/20/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo. Real photograph of an adult male patient with short brown hair and a short beard, wearing a dark maroon t-shirt, against a plain light gray background. Head-and-shoulders portrait style. Identical or near-identical to patients/1 profile image.",
+      "demographic": "adult male",
+      "image_style": "real photograph",
+      "confidence_score": 1.0
+    },
+    {
+      "id": "patients_21_profile",
+      "label": "Patient 21 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/21/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo placeholder. A pixelated/low-resolution image showing a blocky pixel-art style green building or structure with shades of green, brown, and purple on a light green background. No person visible; likely a placeholder avatar or corrupted/thumbnail image.",
+      "demographic": null,
+      "image_style": "pixel art / placeholder graphic",
+      "confidence_score": 0.7
+    },
+    {
+      "id": "patients_22_profile",
+      "label": "Patient 22 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/22/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo. Cartoon/illustrated avatar depicting a young male with short dark hair, blue eyes, medium skin tone, wearing a gray hoodie with a maroon/red inner hood, smiling, against a white background. Anime/vector illustration style. Identical or near-identical to patients/2 profile image.",
+      "demographic": "young male (illustrated avatar)",
+      "image_style": "cartoon / vector illustration",
+      "confidence_score": 1.0
+    },
+    {
+      "id": "patients_23_profile",
+      "label": "Patient 23 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/23/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo placeholder. A pixelated/low-resolution image showing a blocky pixel-art style green building or structure with shades of green, brown, and purple on a light green background. No person visible; likely a placeholder avatar or corrupted/thumbnail image.",
+      "demographic": null,
+      "image_style": "pixel art / placeholder graphic",
+      "confidence_score": 0.7
+    },
+    {
+      "id": "patients_24_profile",
+      "label": "Patient 24 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/24/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo. Real photograph of an adult male patient with short brown hair and a short beard, wearing a dark maroon t-shirt, against a plain light gray background. Head-and-shoulders portrait style. Identical or near-identical to patients/1 and patients/20 profile images.",
+      "demographic": "adult male",
+      "image_style": "real photograph",
+      "confidence_score": 1.0
+    },
+    {
+      "id": "patients_25_profile",
+      "label": "Patient 25 Profile Photo",
+      "file_type": "image",
+      "source_file": "Backend/uploads/patients/25/profile.jpg",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Patient profile photo placeholder. A pixelated/low-resolution image showing a blocky pixel-art style green building or structure with shades of green, brown, and purple on a light green background. No person visible; likely a placeholder avatar or corrupted/thumbnail image.",
+      "demographic": null,
+      "image_style": "pixel art / placeholder graphic",
+      "confidence_score": 0.7
+    }
+  ],
+  "edges": [
+    {
+      "source": "patients_1_profile",
+      "target": "patients_20_profile",
+      "relation": "visually_identical_to",
+      "confidence_score": 0.95
+    },
+    {
+      "source": "patients_1_profile",
+      "target": "patients_24_profile",
+      "relation": "visually_identical_to",
+      "confidence_score": 0.95
+    },
+    {
+      "source": "patients_20_profile",
+      "target": "patients_24_profile",
+      "relation": "visually_identical_to",
+      "confidence_score": 0.95
+    },
+    {
+      "source": "patients_2_profile",
+      "target": "patients_22_profile",
+      "relation": "visually_identical_to",
+      "confidence_score": 0.95
+    },
+    {
+      "source": "patients_11_profile",
+      "target": "patients_19_profile",
+      "relation": "visually_similar_to",
+      "confidence_score": 0.9
+    },
+    {
+      "source": "patients_11_profile",
+      "target": "patients_21_profile",
+      "relation": "visually_similar_to",
+      "confidence_score": 0.9
+    },
+    {
+      "source": "patients_11_profile",
+      "target": "patients_23_profile",
+      "relation": "visually_similar_to",
+      "confidence_score": 0.9
+    },
+    {
+      "source": "patients_11_profile",
+      "target": "patients_25_profile",
+      "relation": "visually_similar_to",
+      "confidence_score": 0.9
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "group_real_photo_adult_male",
+      "label": "Real photograph patient profile group - adult male",
+      "members": ["patients_1_profile", "patients_20_profile", "patients_24_profile"],
+      "relation": "same_image_asset_reused"
+    },
+    {
+      "id": "group_cartoon_young_male",
+      "label": "Cartoon avatar patient profile group - young male",
+      "members": ["patients_2_profile", "patients_22_profile"],
+      "relation": "same_image_asset_reused"
+    },
+    {
+      "id": "group_pixel_art_placeholder",
+      "label": "Pixel art placeholder patient profile group",
+      "members": ["patients_11_profile", "patients_19_profile", "patients_21_profile", "patients_23_profile", "patients_25_profile"],
+      "relation": "same_or_similar_placeholder_image"
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

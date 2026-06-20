@@ -1,0 +1,201 @@
+{
+  "nodes": [
+    {
+      "id": "splash_ashasathi_brand_logo",
+      "label": "AshaSathi Splash Screen Brand Logo",
+      "file_type": "image",
+      "source_file": "frontend/android/app/src/main/res/drawable-xxxhdpi/splash.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Primary splash screen asset showing the AshaSathi brand wordmark in bold green (#2E8B3A / #34A853-range) letters on a plain white background. The letter 'H' in 'ASHA' is visually replaced by a house icon (roof + window grid) forming an integrated logomark. 'SATHI' appears below in slightly smaller matching green text. Clean, minimal, high-contrast layout conveying housing/shelter theme.",
+      "colors": ["#FFFFFF", "#2E8B3A"],
+      "confidence_score": 0.97
+    },
+    {
+      "id": "ic_launcher_ashasathi_app_icon",
+      "label": "AshaSathi Android App Launcher Icon",
+      "file_type": "image",
+      "source_file": "frontend/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Android launcher icon (representative of hdpi/mdpi/xhdpi/xxhdpi/xxxhdpi density variants — all identical in design). Displays the AshaSathi wordmark logo — 'ASHA' in large bold green capitals with a house/roof icon integrated into the 'H', and 'SATHI' below — on a soft gradient background transitioning from very pale mint-green/white in the top-left to slightly richer mint toward the bottom-right. Rounded-square format typical of Android adaptive icons.",
+      "colors": ["#E8F5E9", "#FFFFFF", "#2E8B3A"],
+      "density_variants": ["mipmap-hdpi", "mipmap-mdpi", "mipmap-xhdpi", "mipmap-xxhdpi", "mipmap-xxxhdpi"],
+      "confidence_score": 0.97
+    },
+    {
+      "id": "AshaIcon_main_app_icon",
+      "label": "AshaSathi Main App Icon (AshaIcon)",
+      "file_type": "image",
+      "source_file": "frontend/assets/images/AshaIcon.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "High-resolution version of the AshaSathi app icon used as an asset within the Flutter project. Shows the full AshaSathi wordmark — 'ASHA' in bold green with a house/roof logomark on the 'H', 'SATHI' below — on a soft pale-mint gradient rounded-square background. This is the canonical asset-quality icon for in-app usage and store listings.",
+      "colors": ["#E8F5E9", "#FFFFFF", "#2E8B3A"],
+      "confidence_score": 0.97
+    },
+    {
+      "id": "github_social_login_icon",
+      "label": "GitHub Social Login Button Icon",
+      "file_type": "image",
+      "source_file": "frontend/assets/images/github.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Official GitHub Octocat logo mark in solid black on a white/transparent background. The Octocat (cat-octopus hybrid mascot) is shown in a circular composition — white silhouette against a solid black circle. Standard icon used for 'Sign in with GitHub' OAuth login buttons. Monochrome, high-contrast design.",
+      "colors": ["#000000", "#FFFFFF"],
+      "confidence_score": 0.99
+    },
+    {
+      "id": "google_social_login_icon",
+      "label": "Google Social Login Button Icon",
+      "file_type": "image",
+      "source_file": "frontend/assets/images/google.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Official Google 'G' logo in the standard four-color scheme. A stylized capital 'G' formed by a segmented arc using Google brand colors: red (#EA4335) at the top, yellow (#FBBC05) at the bottom-left, green (#34A853) at the bottom, and blue (#4285F4) at the right. White center and background. Used for 'Sign in with Google' OAuth login buttons.",
+      "colors": ["#EA4335", "#FBBC05", "#34A853", "#4285F4", "#FFFFFF"],
+      "confidence_score": 0.99
+    },
+    {
+      "id": "splash1_flutter_splash_screen",
+      "label": "AshaSathi Flutter Splash Screen (splash1)",
+      "file_type": "image",
+      "source_file": "frontend/assets/images/splash1.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "Flutter in-app splash screen asset showing the AshaSathi brand logo on a white background with generous padding. Visually very similar to the Android drawable splash — bold green 'ASHA' text with integrated house/roof icon on the 'H', and 'SATHI' in matching green below. The composition appears slightly larger/more padded than the Android version, suited for full-screen splash display within the Flutter app.",
+      "colors": ["#FFFFFF", "#2E8B3A"],
+      "confidence_score": 0.97
+    }
+  ],
+  "edges": [
+    {
+      "source": "splash_ashasathi_brand_logo",
+      "target": "ic_launcher_ashasathi_app_icon",
+      "relation": "same_branding_as",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.98,
+      "source_file": "frontend/android/app/src/main/res/drawable-xxxhdpi/splash.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "splash_ashasathi_brand_logo",
+      "target": "AshaIcon_main_app_icon",
+      "relation": "same_branding_as",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.98,
+      "source_file": "frontend/android/app/src/main/res/drawable-xxxhdpi/splash.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "splash_ashasathi_brand_logo",
+      "target": "splash1_flutter_splash_screen",
+      "relation": "variant_of",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.97,
+      "source_file": "frontend/android/app/src/main/res/drawable-xxxhdpi/splash.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "ic_launcher_ashasathi_app_icon",
+      "target": "AshaIcon_main_app_icon",
+      "relation": "variant_of",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.99,
+      "source_file": "frontend/android/app/src/main/res/mipmap-hdpi/ic_launcher.png",
+      "source_location": null,
+      "weight": 1.0
+    },
+    {
+      "source": "github_social_login_icon",
+      "target": "google_social_login_icon",
+      "relation": "conceptually_related_to",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.95,
+      "source_file": "frontend/assets/images/github.png",
+      "source_location": null,
+      "weight": 0.9
+    },
+    {
+      "source": "github_social_login_icon",
+      "target": "AshaIcon_main_app_icon",
+      "relation": "used_in_same_app_as",
+      "confidence": "INFERRED",
+      "confidence_score": 0.90,
+      "source_file": "frontend/assets/images/github.png",
+      "source_location": null,
+      "weight": 0.8
+    },
+    {
+      "source": "google_social_login_icon",
+      "target": "AshaIcon_main_app_icon",
+      "relation": "used_in_same_app_as",
+      "confidence": "INFERRED",
+      "confidence_score": 0.90,
+      "source_file": "frontend/assets/images/google.png",
+      "source_location": null,
+      "weight": 0.8
+    },
+    {
+      "source": "splash1_flutter_splash_screen",
+      "target": "AshaIcon_main_app_icon",
+      "relation": "same_branding_as",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.97,
+      "source_file": "frontend/assets/images/splash1.png",
+      "source_location": null,
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "ashasathi_brand_identity",
+      "label": "AshaSathi Brand Identity Assets",
+      "members": [
+        "splash_ashasathi_brand_logo",
+        "ic_launcher_ashasathi_app_icon",
+        "AshaIcon_main_app_icon",
+        "splash1_flutter_splash_screen"
+      ],
+      "relation": "forms_brand_identity",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.98,
+      "note": "All four assets share the same visual brand: bold green AshaSathi wordmark with integrated house/roof icon on the H letterform, consistent color palette of deep green on white/light-mint background. The house icon symbolizes housing/shelter, aligning with the app's apparent purpose as a housing or community support platform."
+    },
+    {
+      "id": "social_oauth_login_assets",
+      "label": "Social OAuth Login Button Icons",
+      "members": [
+        "github_social_login_icon",
+        "google_social_login_icon"
+      ],
+      "relation": "forms_feature_group",
+      "confidence": "CONFIRMED",
+      "confidence_score": 0.96,
+      "note": "GitHub and Google icons are standard OAuth provider logos used for third-party authentication flows within the AshaSathi Flutter app."
+    }
+  ],
+  "input_tokens": 0,
+  "output_tokens": 0
+}

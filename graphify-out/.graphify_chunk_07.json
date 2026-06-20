@@ -1,0 +1,203 @@
+{
+  "nodes": [
+    {
+      "id": "ios_appicon_main",
+      "label": "AshaSathi iOS App Icon (1024x1024)",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-1024x1024@1x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "App icon for AshaSathi. Light mint/white gradient background. Bold green text reads 'ASHA' on the top line and 'SATHI' on the bottom line, both in a sans-serif font. The letter 'H' in 'ASHA' is stylized as a house/home icon with a triangular roof and a window, reinforcing a home or shelter theme. The overall color palette is green on a pale green-white background.",
+      "confidence_score": 0.97,
+      "tags": ["app-icon", "ios", "branding", "green", "house", "home", "asha-sathi", "logo"]
+    },
+    {
+      "id": "ios_appicon_20x20_1x",
+      "label": "AshaSathi iOS App Icon 20x20 @1x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@1x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "20x20pt @1x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "20x20", "1x"]
+    },
+    {
+      "id": "ios_appicon_20x20_2x",
+      "label": "AshaSathi iOS App Icon 20x20 @2x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@2x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "20x20pt @2x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "20x20", "2x"]
+    },
+    {
+      "id": "ios_appicon_20x20_3x",
+      "label": "AshaSathi iOS App Icon 20x20 @3x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-20x20@3x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "20x20pt @3x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "20x20", "3x"]
+    },
+    {
+      "id": "ios_appicon_29x29_1x",
+      "label": "AshaSathi iOS App Icon 29x29 @1x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@1x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "29x29pt @1x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "29x29", "1x"]
+    },
+    {
+      "id": "ios_appicon_29x29_2x",
+      "label": "AshaSathi iOS App Icon 29x29 @2x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@2x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "29x29pt @2x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "29x29", "2x"]
+    },
+    {
+      "id": "ios_appicon_29x29_3x",
+      "label": "AshaSathi iOS App Icon 29x29 @3x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-29x29@3x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "29x29pt @3x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "29x29", "3x"]
+    },
+    {
+      "id": "ios_appicon_40x40_1x",
+      "label": "AshaSathi iOS App Icon 40x40 @1x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@1x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "40x40pt @1x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "40x40", "1x"]
+    },
+    {
+      "id": "ios_appicon_40x40_2x",
+      "label": "AshaSathi iOS App Icon 40x40 @2x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@2x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "40x40pt @2x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "40x40", "2x"]
+    },
+    {
+      "id": "ios_appicon_40x40_3x",
+      "label": "AshaSathi iOS App Icon 40x40 @3x",
+      "file_type": "image",
+      "source_file": "frontend/ios/Runner/Assets.xcassets/AppIcon.appiconset/Icon-App-40x40@3x.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "description": "40x40pt @3x variant of the AshaSathi iOS app icon.",
+      "confidence_score": 0.90,
+      "tags": ["app-icon", "ios", "40x40", "3x"]
+    }
+  ],
+  "edges": [
+    {
+      "source": "ios_appicon_20x20_1x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_20x20_2x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_20x20_3x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_29x29_1x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_29x29_2x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_29x29_3x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_40x40_1x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_40x40_2x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    },
+    {
+      "source": "ios_appicon_40x40_3x",
+      "target": "ios_appicon_main",
+      "relation": "variant_of",
+      "label": "scaled variant of main icon"
+    }
+  ],
+  "hyperedges": [],
+  "input_tokens": 1024,
+  "output_tokens": 512
+}
