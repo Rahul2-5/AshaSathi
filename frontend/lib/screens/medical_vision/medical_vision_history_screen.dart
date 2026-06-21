@@ -154,6 +154,13 @@ class _MedicalVisionHistoryScreenState
                     ? const Color(0xFFE0EAF3)
                     : const Color(0xFF1D232B)),
           ),
+          if (count > 0)
+            IconButton(
+              onPressed: () => _confirmDeleteAll(isDark),
+              tooltip: 'Delete all',
+              icon: const Icon(Icons.delete_sweep_rounded,
+                  color: Color(0xFFEF4444)),
+            ),
         ],
       ),
     );
@@ -166,7 +173,35 @@ class _MedicalVisionHistoryScreenState
     final assignee = _assigneeLabel(doc.patientId, patients);
     final statusColor = _statusColor(doc.processingStatus);
 
-    return Padding(
+    return Dismissible(
+      key: ValueKey(doc.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+              color: const Color(0xFFEF4444).withValues(alpha: 0.4)),
+        ),
+        child: const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.delete_rounded, color: Color(0xFFEF4444), size: 26),
+            SizedBox(height: 4),
+            Text('Delete',
+                style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFEF4444))),
+          ],
+        ),
+      ),
+      confirmDismiss: (_) => _confirmDeleteOne(doc, assignee),
+      onDismissed: (_) {}, // handled inside confirmDismiss
+      child: Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Material(
         color: Colors.transparent,
@@ -320,7 +355,106 @@ class _MedicalVisionHistoryScreenState
           ),
         ),
       ),
+      ), // end Dismissible child Padding
     );
+  }
+
+  // ── Delete helpers ────────────────────────────────────────────────────────
+
+  Future<bool?> _confirmDeleteOne(MedicalDocSummary doc, String assignee) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete scan?'),
+        content: Text('This will permanently delete the scan for "$assignee". This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFEF4444)),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return false;
+    try {
+      final token = await ref.read(loginProvider.notifier).getValidToken();
+      if (token == null) return false;
+      await deleteDocument(token, doc.id);
+      ref.invalidate(medicalDocumentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Scan deleted'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return true;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _confirmDeleteAll(bool isDark) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete all scans?'),
+        content: const Text('This will permanently delete every scan in history. This cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(foregroundColor: const Color(0xFFEF4444)),
+            child: const Text('Delete All'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      final token = await ref.read(loginProvider.notifier).getValidToken();
+      if (token == null) return;
+      await deleteAllDocuments(token);
+      ref.invalidate(medicalDocumentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('All scans deleted'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to delete: $e'),
+            behavior: SnackBarBehavior.floating,
+            backgroundColor: const Color(0xFFEF4444),
+          ),
+        );
+      }
+    }
   }
 
   // ── Full-detail bottom sheet ──────────────────────────────────────────────

@@ -148,4 +148,31 @@ public class MedicalDocumentController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    /**
+     * DELETE /api/medical-documents/{id}
+     * Permanently deletes a single document (cascades to medicines + lab results).
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        try {
+            medicalDocumentService.deleteDocument(id);
+            return ResponseEntity.noContent().build();
+        } catch (RuntimeException e) {
+            log.warn("Delete failed for document {}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
+    }
+
+    /**
+     * DELETE /api/medical-documents
+     * Permanently deletes ALL documents (cascades to medicines + lab results).
+     */
+    @DeleteMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> deleteAllDocuments() {
+        medicalDocumentService.deleteAllDocuments();
+        return ResponseEntity.noContent().build();
+    }
 }

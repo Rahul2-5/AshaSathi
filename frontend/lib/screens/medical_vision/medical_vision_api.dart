@@ -202,3 +202,26 @@ Future<void> assignDocumentToPatient(
     throw Exception('Failed to assign patient (${resp.statusCode})');
   }
 }
+
+/// Deletes a single medical document (and its medicines + lab results).
+Future<void> deleteDocument(String token, int docId) async {
+  final uri =
+      Uri.parse('${AppConfig.apiBaseUrl}/api/medical-documents/$docId');
+  final resp = await http
+      .delete(uri, headers: {'Authorization': 'Bearer $token'})
+      .timeout(const Duration(seconds: 15));
+  if (resp.statusCode != 204) {
+    throw Exception('Failed to delete document (${resp.statusCode})');
+  }
+}
+
+/// Deletes ALL medical documents.
+Future<void> deleteAllDocuments(String token) async {
+  final uri = Uri.parse('${AppConfig.apiBaseUrl}/api/medical-documents');
+  final resp = await http
+      .delete(uri, headers: {'Authorization': 'Bearer $token'})
+      .timeout(const Duration(seconds: 20));
+  if (resp.statusCode != 204) {
+    throw Exception('Failed to delete all documents (${resp.statusCode})');
+  }
+}

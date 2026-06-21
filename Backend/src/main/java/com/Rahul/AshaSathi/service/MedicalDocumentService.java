@@ -400,6 +400,38 @@ public class MedicalDocumentService {
         return resp;
     }
 
+    // ─── Delete ──────────────────────────────────────────────────────────────
+
+    public void deleteDocument(Long id) {
+        MedicalDocument doc = documentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Document not found: " + id));
+        // Delete uploaded image file from disk if present
+        if (doc.getImagePath() != null) {
+            try {
+                Files.deleteIfExists(Paths.get(doc.getImagePath()));
+            } catch (IOException e) {
+                log.warn("Could not delete image file {}: {}", doc.getImagePath(), e.getMessage());
+            }
+        }
+        documentRepository.delete(doc);
+        log.info("Deleted medical document id={}", id);
+    }
+
+    public void deleteAllDocuments() {
+        List<MedicalDocument> all = documentRepository.findAll();
+        for (MedicalDocument doc : all) {
+            if (doc.getImagePath() != null) {
+                try {
+                    Files.deleteIfExists(Paths.get(doc.getImagePath()));
+                } catch (IOException e) {
+                    log.warn("Could not delete image file {}: {}", doc.getImagePath(), e.getMessage());
+                }
+            }
+        }
+        documentRepository.deleteAll(all);
+        log.info("Deleted all {} medical documents", all.size());
+    }
+
     private String safeStr(Object val) {
         return val != null ? val.toString() : "";
     }
