@@ -10,4 +10,5 @@ import java.util.List;
 public interface MedicalDocumentRepository extends JpaRepository<MedicalDocument, Long> {
     List<MedicalDocument> findByPatientId(Long patientId);
     List<MedicalDocument> findByProcessingStatus(MedicalDocument.ProcessingStatus status);
+    List<MedicalDocument> findAllByOrderByCreatedAtDesc();
 }

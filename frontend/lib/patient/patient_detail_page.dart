@@ -15,6 +15,7 @@ import '../providers/patient_provider.dart';
 import '../offline/patient_offline_dao.dart';
 import '../offline/patient_sync_service.dart';
 import '../offline/connectivity_service.dart';
+import '../screens/medical_vision/medical_vision_api.dart';
 
 import 'patient_model.dart';
 
@@ -326,7 +327,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // DEMOGRAPHICS SECTION
         _sectionCard(
           context,
-          title: '≡ƒæñ Demographics',
+          title: 'Demographics',
           child: Column(
             children: [
               Row(
@@ -385,7 +386,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // CONTACT SECTION
         _sectionCard(
           context,
-          title: '≡ƒô₧ Contact Information',
+          title: 'Contact Information',
           child: Column(
             children: [
               _infoField(
@@ -410,7 +411,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         // HEALTH SECTION
         _sectionCard(
           context,
-          title: 'ΓÜò∩╕Å Health Information',
+          title: 'Health Information',
           child: Column(
             children: [
               if (_patient.gender == 'Female')
@@ -478,7 +479,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         if (_patient.description.trim().isNotEmpty)
           _sectionCard(
             context,
-            title: '≡ƒô¥ Notes',
+            title: 'Notes',
             child: _infoField(
               context,
               label: 'Description / Notes',
@@ -494,22 +495,28 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
 
   Widget _medicalDocumentsSection(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final patientId = _patient.id;
 
     return _sectionCard(
       context,
-      title: '📁 Medical Documents',
+      title: 'Medical Documents',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Scan or upload prescription/lab reports to automatically extract health data for this patient.',
-            style: TextStyle(
-              fontSize: 12,
-              color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
-              height: 1.3,
+          if (patientId != null) ...[
+            _buildMedicalInsights(patientId, isDark),
+            const SizedBox(height: 14),
+          ] else ...[
+            Text(
+              'Scan or upload prescription/lab reports to automatically extract health data for this patient.',
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+                height: 1.3,
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
+          ],
           ElevatedButton.icon(
             style: ElevatedButton.styleFrom(
               backgroundColor: isDark
@@ -531,22 +538,325 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             icon: const Icon(Icons.document_scanner_rounded, size: 20),
             label: Text(
               'Scan Medical Document',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w700, fontSize: 14),
             ),
-            onPressed: () {
-              Navigator.pushNamed(
+            onPressed: () async {
+              final result = await Navigator.pushNamed(
                 context,
                 '/medical-vision',
                 arguments: _patient.id,
               );
+              if (result == true && mounted && patientId != null) {
+                ref.invalidate(patientMedicalDocsProvider(patientId));
+              }
             },
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildMedicalInsights(int patientId, bool isDark) {
+    final docsAsync = ref.watch(patientMedicalDocsProvider(patientId));
+
+    return docsAsync.when(
+      loading: () => Row(
+        children: [
+          const SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF14B8A6)),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Loading scan history...',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+            ),
+          ),
+        ],
+      ),
+      error: (err, st) => const SizedBox.shrink(),
+      data: (docs) {
+        if (docs.isEmpty) {
+          return Text(
+            'No completed scans yet. Scan a prescription or lab report below to extract health insights automatically.',
+            style: TextStyle(
+              fontSize: 12,
+              color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384),
+              height: 1.4,
+            ),
+          );
+        }
+
+        final latest = docs.first;
+        final accent = isDark ? const Color(0xFF4EEFD4) : const Color(0xFF0BAEB4);
+        final subText = isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384);
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Scan count + date header ──────────────────────────────────
+            Row(
+              children: [
+                Icon(Icons.analytics_outlined, size: 14, color: accent),
+                const SizedBox(width: 6),
+                Text(
+                  '${docs.length} scan${docs.length > 1 ? 's' : ''}  ·  Latest: ${_formatScanDate(latest.createdAt)}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: accent,
+                  ),
+                ),
+              ],
+            ),
+
+            // ── Diagnosis ─────────────────────────────────────────────────
+            if (latest.diagnosis != null && latest.diagnosis!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _insightRow(
+                icon: Icons.medical_information_outlined,
+                label: 'Diagnosis',
+                body: latest.diagnosis!,
+                isDark: isDark,
+              ),
+            ],
+
+            // ── AI Summary ────────────────────────────────────────────────
+            if (latest.aiSummary != null && latest.aiSummary!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.summarize_outlined, size: 15,
+                      color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('AI Summary',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: subText,
+                              letterSpacing: 0.2,
+                            )),
+                        const SizedBox(height: 4),
+                        Text(
+                          latest.aiSummary!,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.45,
+                            color: isDark
+                                ? const Color(0xFFD5E1EB)
+                                : const Color(0xFF2D3A44),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // ── Abnormal Labs ─────────────────────────────────────────────
+            if (latest.abnormalLabs.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.biotech_outlined, size: 15,
+                      color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Abnormal Lab Results',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: subText,
+                              letterSpacing: 0.2,
+                            )),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 6,
+                          runSpacing: 6,
+                          children: latest.abnormalLabs.map((lab) {
+                            final c = _labSeverityColor(lab.severity);
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: c.withValues(alpha: isDark ? 0.15 : 0.10),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                    color: c.withValues(alpha: 0.5), width: 1),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(_labSeverityIcon(lab.severity),
+                                      size: 11, color: c),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${lab.testName}: ${lab.value} ${lab.unit}'.trim(),
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: c,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
+            // ── Medicines ─────────────────────────────────────────────────
+            if (latest.medicineNames.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _insightRow(
+                icon: Icons.medication_outlined,
+                label: 'Medicines',
+                body: latest.medicineNames.take(5).join(', ') +
+                    (latest.medicineNames.length > 5
+                        ? ' + ${latest.medicineNames.length - 5} more'
+                        : ''),
+                isDark: isDark,
+              ),
+            ],
+
+            // ── Follow-up date ────────────────────────────────────────────
+            if (latest.followUpDate != null &&
+                latest.followUpDate!.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              _insightRow(
+                icon: Icons.event_outlined,
+                label: 'Follow-up',
+                body: latest.followUpDate!,
+                isDark: isDark,
+              ),
+            ],
+
+            // ── View all history link ─────────────────────────────────────
+            if (docs.length > 1) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () =>
+                    Navigator.pushNamed(context, '/medical-vision-history'),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'View all ${docs.length} scans',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: accent,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(Icons.arrow_forward_rounded, size: 14, color: accent),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _insightRow({
+    required IconData icon,
+    required String label,
+    required String body,
+    required bool isDark,
+  }) {
+    final subText = isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon,
+            size: 15,
+            color: isDark ? const Color(0xFF7FB3D5) : const Color(0xFF0BAEB4)),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: subText,
+                    letterSpacing: 0.2,
+                  )),
+              const SizedBox(height: 3),
+              Text(
+                body,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: isDark
+                      ? const Color(0xFFD5E1EB)
+                      : const Color(0xFF111418),
+                  height: 1.4,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Color _labSeverityColor(String severity) {
+    switch (severity) {
+      case 'CRITICAL':
+        return const Color(0xFFDC2626);
+      case 'HIGH':
+        return const Color(0xFFEF4444);
+      case 'LOW':
+        return const Color(0xFFF59E0B);
+      default:
+        return const Color(0xFF22C55E);
+    }
+  }
+
+  IconData _labSeverityIcon(String severity) {
+    switch (severity) {
+      case 'CRITICAL':
+        return Icons.warning_rounded;
+      case 'HIGH':
+        return Icons.arrow_upward_rounded;
+      case 'LOW':
+        return Icons.arrow_downward_rounded;
+      default:
+        return Icons.check_rounded;
+    }
+  }
+
+  String _formatScanDate(String? iso) {
+    if (iso == null) return '';
+    final dt = DateTime.tryParse(iso);
+    if (dt == null) return iso;
+    final local = dt.toLocal();
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year}';
   }
 
   Widget _sectionCard(

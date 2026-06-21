@@ -696,6 +696,7 @@ class Step2PatientDetails extends ConsumerWidget {
                 onPressed: safeMonths > 1 ? () => updateMonths(safeMonths - 1) : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 color: const Color(0xFF14b8a6),
+                tooltip: 'Decrease months',
               ),
               Expanded(
                 child: Text(
@@ -715,6 +716,7 @@ class Step2PatientDetails extends ConsumerWidget {
                 onPressed: safeMonths < 9 ? () => updateMonths(safeMonths + 1) : null,
                 icon: const Icon(Icons.add_circle_outline),
                 color: const Color(0xFF14b8a6),
+                tooltip: 'Increase months',
               ),
             ],
           ),

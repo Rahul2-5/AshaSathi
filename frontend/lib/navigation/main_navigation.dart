@@ -133,75 +133,98 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
       },
       appBar: GlassAppBar(
         centerTitle: true,
-        title: _currentIndex == 0
-            ? _buildAppBarTitleWithLogout(isDark)
-            : _buildAppBarTitle(isDark),
-        actions: _currentIndex == 0
-          ? [
-                Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.1)
-                          : const Color(0xFFE9F3F0).withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Builder(
-                      builder: (buttonContext) {
-                        return Listener(
-                          onPointerDown: (event) {
-                            _lastThemeToggleTapPosition = event.position;
-                          },
-                          child: IconButton(
-                            onPressed: () {
-                              final box =
-                                  buttonContext.findRenderObject()
-                                      as RenderBox?;
-                              final center = box != null
-                                  ? box.localToGlobal(
-                                      box.size.center(Offset.zero),
-                                    )
-                                  : const Offset(0, 0);
-                              final revealCenter =
-                                  _lastThemeToggleTapPosition ?? center;
-                              setState(() {
-                                _themeRevealCenter = revealCenter;
-                                _themeRevealColor = isDark
-                                    ? darkScaffoldBg
-                                    : lightScaffoldBg;
-                                _isThemeRevealActive = true;
-                              });
-                              themeModeNotifier.setThemeMode(
-                                isDark ? ThemeMode.light : ThemeMode.dark,
-                              );
-                              _themeRevealController.forward(from: 0);
-                              _lastThemeToggleTapPosition = null;
-                            },
-                            icon: Icon(
-                              isDark
-                                  ? Icons.light_mode_rounded
-                                  : Icons.dark_mode_rounded,
-                              size: 20,
-                              color: isDark
-                                  ? const Color(0xFFFFD166)
-                                  : const Color(0xFF1D2127),
-                            ),
-                            tooltip: isDark
-                                ? l10n.tr('theme.switchToLight')
-                                : l10n.tr('theme.switchToDark'),
-                            padding: EdgeInsets.zero,
-                            splashRadius: 20,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: Tooltip(
+            message: 'Logout',
+            child: IconButton(
+              style: IconButton.styleFrom(
+                backgroundColor: isDark
+                    ? Colors.white.withValues(alpha: 0.08)
+                    : Colors.white.withValues(alpha: 0.55),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
                 ),
-              ]
-            : null,
+              ),
+              icon: Icon(
+                Icons.logout_rounded,
+                size: 18,
+                color: isDark ? AppColors.accentCyan : AppColors.teal,
+              ),
+              onPressed: () async {
+                final navigator = Navigator.of(context);
+                await ref.read(loginProvider.notifier).logout();
+                if (!mounted) return;
+                navigator.pushNamedAndRemoveUntil(
+                  '/login',
+                  (route) => false,
+                );
+              },
+            ),
+          ),
+        ),
+        title: _buildAppBarTitle(isDark),
+        actions: [
+          // Theme toggle
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : const Color(0xFFE9F3F0).withValues(alpha: 0.8),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Builder(
+                builder: (buttonContext) {
+                  return Listener(
+                    onPointerDown: (event) {
+                      _lastThemeToggleTapPosition = event.position;
+                    },
+                    child: IconButton(
+                      onPressed: () {
+                        final box =
+                            buttonContext.findRenderObject() as RenderBox?;
+                        final center = box != null
+                            ? box.localToGlobal(box.size.center(Offset.zero))
+                            : const Offset(0, 0);
+                        final revealCenter =
+                            _lastThemeToggleTapPosition ?? center;
+                        setState(() {
+                          _themeRevealCenter = revealCenter;
+                          _themeRevealColor =
+                              isDark ? darkScaffoldBg : lightScaffoldBg;
+                          _isThemeRevealActive = true;
+                        });
+                        themeModeNotifier.setThemeMode(
+                          isDark ? ThemeMode.light : ThemeMode.dark,
+                        );
+                        _themeRevealController.forward(from: 0);
+                        _lastThemeToggleTapPosition = null;
+                      },
+                      icon: Icon(
+                        isDark
+                            ? Icons.light_mode_rounded
+                            : Icons.dark_mode_rounded,
+                        size: 20,
+                        color: isDark
+                            ? const Color(0xFFFFD166)
+                            : const Color(0xFF1D2127),
+                      ),
+                      tooltip: isDark
+                          ? l10n.tr('theme.switchToLight')
+                          : l10n.tr('theme.switchToDark'),
+                      padding: EdgeInsets.zero,
+                      splashRadius: 20,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
       drawer: _buildDrawer(context),
 
@@ -443,7 +466,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
         return Padding(
           padding: EdgeInsets.fromLTRB(
             16,
-            MediaQuery.of(context).padding.top + 20,
+            MediaQuery.of(context).padding.top + 8,
             16,
             120,
           ),
@@ -485,6 +508,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                               _familySearchController.clear();
                               setState(() => _familyQuery = '');
                             },
+                            tooltip: 'Clear search',
                             icon: Icon(
                               Icons.close,
                               color: isDark
@@ -495,25 +519,24 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                   ),
                 ),
               ),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  _familyFilterChip('All', _FamilyMemberFilter.all),
-                  _familyFilterChip(
-                    '1-2 Members',
-                    _FamilyMemberFilter.oneToTwo,
-                  ),
-                  _familyFilterChip(
-                    '3-5 Members',
-                    _FamilyMemberFilter.threeToFive,
-                  ),
-                  _familyFilterChip('6+ Members', _FamilyMemberFilter.sixPlus),
-                ],
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _familyFilterChip('All', _FamilyMemberFilter.all),
+                    const SizedBox(width: 8),
+                    _familyFilterChip('1-2 Members', _FamilyMemberFilter.oneToTwo),
+                    const SizedBox(width: 8),
+                    _familyFilterChip('3-5 Members', _FamilyMemberFilter.threeToFive),
+                    const SizedBox(width: 8),
+                    _familyFilterChip('6+ Members', _FamilyMemberFilter.sixPlus),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Expanded(
                     child: Text(
@@ -522,11 +545,13 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                         color: isDark
                             ? const Color(0xFF9FB0C0)
                             : const Color(0xFF667384),
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                   PopupMenuButton<_FamilySortBy>(
+                    padding: EdgeInsets.zero,
                     onSelected: (value) {
                       if (!mounted) return;
                       setState(() => _familySortBy = value);
@@ -546,24 +571,27 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                       ),
                     ],
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _familySortLabel(),
-                          style: const TextStyle(
-                            color: Color(0xFF23A7CB),
+                          style: TextStyle(
+                            color: isDark ? AppColors.accentCyan : AppColors.teal,
+                            fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                        const Icon(
+                        Icon(
                           Icons.keyboard_arrow_down,
-                          color: Color(0xFF23A7CB),
+                          size: 16,
+                          color: isDark ? AppColors.accentCyan : AppColors.teal,
                         ),
                       ],
                     ),
                   ),
                 ],
               ),
-
+              const SizedBox(height: 8),
               Expanded(
                 child: filteredFamilies.isEmpty
                     ? Center(
@@ -577,6 +605,7 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
                         ),
                       )
                     : ListView.builder(
+                        padding: EdgeInsets.zero,
                         itemCount: filteredFamilies.length,
                         itemBuilder: (context, index) {
                           final family = filteredFamilies[index];
@@ -1008,60 +1037,6 @@ class _MainNavigationState extends ConsumerState<MainNavigation>
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1E2228),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            Icons.monitor_heart_outlined,
-            size: 18,
-            color: isDark ? const Color(0xFF1E2228) : Colors.white,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          context.l10n.tr('nav.dashboard').toUpperCase(),
-          style: TextStyle(
-            color: isDark ? const Color(0xFFDCE6EF) : const Color(0xFF1F2329),
-            fontWeight: FontWeight.w800,
-            letterSpacing: 1.1,
-            fontSize: 14,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAppBarTitleWithLogout(bool isDark) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          tooltip: 'Logout',
-          style: IconButton.styleFrom(
-            backgroundColor: isDark
-                ? Colors.white.withValues(alpha: 0.08)
-                : Colors.white.withValues(alpha: 0.55),
-            shape: const CircleBorder(),
-          ),
-          icon: Icon(
-            Icons.logout_rounded,
-            color: isDark ? AppColors.accentCyan : AppColors.teal,
-          ),
-          onPressed: () async {
-            await ref.read(loginProvider.notifier).logout();
-            if (!mounted) return;
-            Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/login',
-              (route) => false,
-            );
-          },
-        ),
-        const SizedBox(width: 8),
         Container(
           width: 28,
           height: 28,

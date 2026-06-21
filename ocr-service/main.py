@@ -11,6 +11,7 @@ from services.confidence_service import ConfidenceService
 from models.response_models import (
     OCRExtractionResponse,
     ParseTextRequest,
+    GeminiParseAndSummarizeRequest,
     ParseTextResponse,
     GeminiParseResponse,
     MedicalDataExtraction,
@@ -173,28 +174,40 @@ async def parse_text(request: ParseTextRequest):
 # ── Gemini Full Pipeline Endpoint (OCR + Parse + Summary) ─────────────────────
 
 @app.post("/parse-and-summarize", response_model=GeminiParseResponse)
-async def parse_and_summarize(request: ParseTextRequest):
+async def parse_and_summarize(request: GeminiParseAndSummarizeRequest):
     """
     Extended endpoint: extract medical data AND generate an AI clinical summary
-    in a single call. Used by Spring Boot's async processing pipeline.
+    and ASHA worker action items — all in a single Gemini call.
+    Accepts optional patient_age and patient_gender for context-aware summaries.
+    Used by Spring Boot's async processing pipeline.
     """
     if not request.raw_text.strip():
         raise HTTPException(status_code=400, detail="OCR text cannot be empty.")
 
     try:
-        # Single Gemini call returns both the structured data and the summary
-        # (halves latency and rate-limit usage vs. two sequential calls).
-        extracted, summary = await gemini_service.extract_and_summarize(request.raw_text)
+        extracted, summary, asha_actions = await gemini_service.extract_and_summarize(
+            request.raw_text,
+            patient_age=request.patient_age,
+            patient_gender=request.patient_gender,
+        )
 
         data = MedicalDataExtraction(
+            document_type=extracted.get("document_type"),
             diagnosis=extracted.get("diagnosis"),
+            doctor_name=extracted.get("doctor_name"),
+            hospital_name=extracted.get("hospital_name"),
             follow_up_date=extracted.get("follow_up_date"),
             medicines=extracted.get("medicines", []),
             lab_tests=extracted.get("lab_tests", []),
             notes=extracted.get("notes"),
         )
 
-        return GeminiParseResponse(success=True, data=data, summary=summary)
+        return GeminiParseResponse(
+            success=True,
+            data=data,
+            summary=summary,
+            asha_actions=asha_actions,
+        )
 
     except RuntimeError as e:
         logger.error(f"Gemini service error: {e}")

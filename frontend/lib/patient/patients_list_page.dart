@@ -172,6 +172,7 @@ class _PatientsListPageState extends ConsumerState<PatientsListPage> {
                     ? const Color(0xFFE6EDF3)
                     : const Color(0xFF1A1E24),
               ),
+              tooltip: 'Back',
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(

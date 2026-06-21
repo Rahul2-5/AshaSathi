@@ -220,6 +220,7 @@ class AppLocalizations {
         'patient.condition.arthritis': 'Arthritis',
         'patient.condition.kidney': 'Kidney',
         'patient.condition.liver': 'Liver',
+        'patient.condition.cancer': 'Cancer',
       'patient.ageYears': '{age} years',
       'patient.phone': 'Phone',
       'patient.delete': 'Delete Patient',

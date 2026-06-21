@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:frontend/constants/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -36,13 +37,14 @@ class GradientScaffold extends StatefulWidget {
 
 class _GradientScaffoldState extends State<GradientScaffold>
     with SingleTickerProviderStateMixin {
-  // Smooth background transition duration
-  static const _kDuration = Duration(milliseconds: 500);
   static const _kCurve = Curves.easeInOutCubic;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final kDuration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 500);
 
     final bgStart = isDark ? AppColors.darkBg1 : AppColors.lightBg1;
     final bgMid = isDark ? AppColors.darkBg2 : AppColors.lightBg2;
@@ -73,7 +75,7 @@ class _GradientScaffoldState extends State<GradientScaffold>
         children: [
           // ── Animated base gradient ──────────────────────────────────────
           AnimatedContainer(
-            duration: _kDuration,
+            duration: kDuration,
             curve: _kCurve,
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -90,7 +92,7 @@ class _GradientScaffoldState extends State<GradientScaffold>
             child: _AnimatedGlowOrb(
               size: 260,
               color: orb1Color,
-              duration: _kDuration,
+              duration: kDuration,
               curve: _kCurve,
             ),
           ),
@@ -101,7 +103,7 @@ class _GradientScaffoldState extends State<GradientScaffold>
             child: _AnimatedGlowOrb(
               size: 300,
               color: orb2Color,
-              duration: _kDuration,
+              duration: kDuration,
               curve: _kCurve,
             ),
           ),
@@ -112,7 +114,7 @@ class _GradientScaffoldState extends State<GradientScaffold>
             child: _AnimatedGlowOrb(
               size: 220,
               color: orb3Color,
-              duration: _kDuration,
+              duration: kDuration,
               curve: _kCurve,
             ),
           ),
@@ -379,12 +381,14 @@ class GlassAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _GlassAppBarState extends State<GlassAppBar> {
-  static const _kDuration = Duration(milliseconds: 500);
   static const _kCurve = Curves.easeInOutCubic;
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    final kDuration =
+        reduceMotion ? Duration.zero : const Duration(milliseconds: 500);
 
     // Target colors for this theme
     final topColor = isDark
@@ -407,7 +411,7 @@ class _GlassAppBarState extends State<GlassAppBar> {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: widget.blur, sigmaY: widget.blur),
         child: AnimatedContainer(
-          duration: _kDuration,
+          duration: kDuration,
           curve: _kCurve,
           height: widget.height + topPadding,
           decoration: BoxDecoration(
@@ -461,48 +465,57 @@ class GlassChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final activeColor = selectedColor ?? AppColors.teal;
+    const radius = BorderRadius.all(Radius.circular(14));
 
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          gradient: selected
-              ? LinearGradient(
-                  colors: [activeColor, activeColor.withValues(alpha: 0.75)],
-                )
-              : LinearGradient(
-                  colors: isDark
-                      ? [
-                          Colors.white.withValues(alpha: 0.08),
-                          Colors.white.withValues(alpha: 0.04),
-                        ]
-                      : [
-                          Colors.white.withValues(alpha: 0.38),
-                          Colors.white.withValues(alpha: 0.22),
-                        ],
-                ),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected
-                ? activeColor.withValues(alpha: 0.60)
-                : (isDark
-                      ? AppColors.white.withValues(alpha: 0.12)
-                      : AppColors.teal.withValues(alpha: 0.25)),
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: radius,
+        splashColor: activeColor.withValues(alpha: 0.18),
+        highlightColor: activeColor.withValues(alpha: 0.10),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOutCubic,
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            gradient: selected
+                ? LinearGradient(
+                    colors: [activeColor, activeColor.withValues(alpha: 0.75)],
+                  )
+                : LinearGradient(
+                    colors: isDark
+                        ? [
+                            Colors.white.withValues(alpha: 0.08),
+                            Colors.white.withValues(alpha: 0.04),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.38),
+                            Colors.white.withValues(alpha: 0.22),
+                          ],
+                  ),
+            borderRadius: radius,
+            border: Border.all(
+              color: selected
+                  ? activeColor.withValues(alpha: 0.60)
+                  : (isDark
+                        ? AppColors.white.withValues(alpha: 0.12)
+                        : AppColors.teal.withValues(alpha: 0.25)),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected
-                ? AppColors.white
-                : (isDark
-                      ? AppColors.lightTextSecondary
-                      : AppColors.darkTextSecondary),
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: selected
+                  ? AppColors.white
+                  : (isDark
+                        ? AppColors.lightTextSecondary
+                        : AppColors.darkTextSecondary),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
       ),
@@ -616,9 +629,12 @@ class GlassButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = gradientColors ?? [AppColors.teal, AppColors.accentCyan];
     final radius = borderRadius ?? BorderRadius.circular(18);
+    final isDisabled = onPressed == null || isLoading;
 
-    return GestureDetector(
-      onTap: onPressed,
+    return Semantics(
+      button: true,
+      enabled: !isDisabled,
+      label: label,
       child: Container(
         width: width,
         height: height,
@@ -627,11 +643,11 @@ class GlassButton extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: onPressed == null
+            colors: isDisabled
                 ? [Colors.grey.shade400, Colors.grey.shade500]
                 : colors,
           ),
-          boxShadow: onPressed == null
+          boxShadow: isDisabled
               ? []
               : [
                   BoxShadow(
@@ -643,58 +659,72 @@ class GlassButton extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: radius,
-          child: Stack(
-            children: [
-              // Shine overlay
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: height / 2,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.white.withValues(alpha: 0.20),
-                        Colors.transparent,
-                      ],
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: isDisabled
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      onPressed!();
+                    },
+              borderRadius: radius,
+              splashColor: Colors.white.withValues(alpha: 0.18),
+              highlightColor: Colors.white.withValues(alpha: 0.10),
+              child: Stack(
+                children: [
+                  // Shine overlay
+                  Positioned(
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: height / 2,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.white.withValues(alpha: 0.20),
+                            Colors.transparent,
+                          ],
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              // Content
-              Center(
-                child: isLoading
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: AppColors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                    : Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            label,
-                            style: const TextStyle(
-                              fontSize: 17,
+                  // Content
+                  Center(
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
                               color: AppColors.white,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
+                              strokeWidth: 2.5,
                             ),
+                          )
+                        : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (icon != null) ...[
+                                Icon(icon, color: AppColors.white, size: 20),
+                                const SizedBox(width: 8),
+                              ],
+                              Text(
+                                label,
+                                style: const TextStyle(
+                                  fontSize: 17,
+                                  color: AppColors.white,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
                           ),
-                          if (icon != null) ...[
-                            const SizedBox(width: 8),
-                            Icon(icon, color: AppColors.white, size: 20),
-                          ],
-                        ],
-                      ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),

@@ -48,7 +48,7 @@ class OCRService:
                 cpu_threads=os.cpu_count() or 4,
                 text_detection_model_name='PP-OCRv5_mobile_det',
                 text_recognition_model_name='en_PP-OCRv5_mobile_rec',
-                text_det_limit_side_len=896,
+                text_det_limit_side_len=1280,
                 text_det_limit_type='max',
                 text_recognition_batch_size=16,
                 use_doc_orientation_classify=False,

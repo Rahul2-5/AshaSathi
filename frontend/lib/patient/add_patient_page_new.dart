@@ -75,17 +75,6 @@ class AddPatientPageNew extends ConsumerWidget {
       border: Border(bottom: BorderSide(color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white.withValues(alpha: 0.5))),
       child: Column(
         children: [
-          // Title - centered, no icons
-          Text(
-            'Add Patient',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: isDark ? Colors.white : Colors.black,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 20),
           // Progress bars
           Row(
             children: [

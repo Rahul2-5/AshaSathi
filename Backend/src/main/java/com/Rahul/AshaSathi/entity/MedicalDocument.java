@@ -33,6 +33,18 @@ public class MedicalDocument {
     @Column(name = "ai_summary", columnDefinition = "TEXT")
     private String aiSummary;
 
+    @Column(name = "asha_actions", columnDefinition = "TEXT")
+    private String ashaActions;
+
+    @Column(name = "document_type")
+    private String documentType;
+
+    @Column(name = "doctor_name")
+    private String doctorName;
+
+    @Column(name = "hospital_name")
+    private String hospitalName;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "processing_status", nullable = false)
     private ProcessingStatus processingStatus = ProcessingStatus.PENDING;

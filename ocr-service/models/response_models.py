@@ -46,7 +46,10 @@ class LabTestSchema(BaseModel):
 
 
 class MedicalDataExtraction(BaseModel):
+    document_type: Optional[str] = None
     diagnosis: Optional[str] = None
+    doctor_name: Optional[str] = None
+    hospital_name: Optional[str] = None
     follow_up_date: Optional[str] = None
     medicines: List[MedicineSchema] = []
     lab_tests: List[LabTestSchema] = []
@@ -55,6 +58,12 @@ class MedicalDataExtraction(BaseModel):
 
 class ParseTextRequest(BaseModel):
     raw_text: str
+
+
+class GeminiParseAndSummarizeRequest(BaseModel):
+    raw_text: str
+    patient_age: Optional[int] = None
+    patient_gender: Optional[str] = None
 
 
 class ParseTextResponse(BaseModel):
@@ -67,4 +76,5 @@ class GeminiParseResponse(BaseModel):
     success: bool
     data: MedicalDataExtraction
     summary: Optional[str] = None
+    asha_actions: Optional[str] = None
     error: Optional[str] = None

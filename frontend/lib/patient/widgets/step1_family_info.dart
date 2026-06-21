@@ -237,6 +237,7 @@ class Step1FamilyInfo extends ConsumerWidget {
                 onPressed: safeValue > 1 ? () => updateCount(safeValue - 1) : null,
                 icon: const Icon(Icons.remove_circle_outline),
                 color: const Color(0xFF14b8a6),
+                tooltip: 'Decrease count',
               ),
               Expanded(
                 child: Text(
@@ -253,6 +254,7 @@ class Step1FamilyInfo extends ConsumerWidget {
                 onPressed: () => updateCount(safeValue + 1),
                 icon: const Icon(Icons.add_circle_outline),
                 color: const Color(0xFF14b8a6),
+                tooltip: 'Increase count',
               ),
             ],
           ),

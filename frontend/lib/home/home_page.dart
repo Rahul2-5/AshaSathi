@@ -189,7 +189,12 @@ class _HomePageState extends ConsumerState<HomePage> {
           CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  MediaQuery.of(context).padding.top + 12,
+                  16,
+                  0,
+                ),
                 sliver: SliverList(
                   delegate: SliverChildListDelegate([
                     _welcomeHeader(),
@@ -296,13 +301,25 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
         const SizedBox(height: 5),
-        Text(
-          'Here\'s your daily health overview 🩺',
-          style: TextStyle(
-            color: isDark ? const Color(0xFFAFC4D2) : const Color(0xFF3A5060),
-            fontSize: 15,
-            fontWeight: FontWeight.w500,
-          ),
+        Row(
+          children: [
+            Icon(
+              Icons.monitor_heart_outlined,
+              size: 16,
+              color: isDark ? const Color(0xFFAFC4D2) : const Color(0xFF3A5060),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'Your daily health overview',
+              style: TextStyle(
+                color: isDark
+                    ? const Color(0xFFAFC4D2)
+                    : const Color(0xFF3A5060),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ],
     );
@@ -454,12 +471,32 @@ class _HomePageState extends ConsumerState<HomePage> {
               child: Icon(icon, size: 16, color: AppColors.brand(context)),
             ),
             const SizedBox(height: 12),
-            Text(
-              value,
-              style: GoogleFonts.outfit(
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary(context),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+                  child: child,
+                ),
+              ),
+              child: Text(
+                value,
+                key: ValueKey(value),
+                style: GoogleFonts.outfit(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary(context),
+                  fontFeatures: [const FontFeature.tabularFigures()],
+                ),
               ),
             ),
             const SizedBox(height: 2),
@@ -555,10 +592,10 @@ class _HomePageState extends ConsumerState<HomePage> {
             }
           },
           child: Container(
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(14),
               gradient: const LinearGradient(
                 colors: [AppColors.teal, AppColors.accentCyan],
               ),
@@ -570,7 +607,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                 ),
               ],
             ),
-            child: const Icon(Icons.add, size: 20, color: Colors.white),
+            child: const Icon(Icons.add_rounded, size: 22, color: Colors.white),
           ),
         ),
       ],
@@ -685,15 +722,30 @@ class _HomePageState extends ConsumerState<HomePage> {
                             : const Color(0xFFEAB308).withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: Text(
-                        hasConflicts ? '⚠️  Needs action' : '⚡ Retry needed',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          color: hasConflicts
-                              ? const Color(0xFFE67E22)
-                              : const Color(0xFFEAB308),
-                        ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            hasConflicts
+                                ? Icons.warning_amber_rounded
+                                : Icons.bolt_rounded,
+                            size: 12,
+                            color: hasConflicts
+                                ? const Color(0xFFE67E22)
+                                : const Color(0xFFEAB308),
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            hasConflicts ? 'Needs action' : 'Retry needed',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: hasConflicts
+                                  ? const Color(0xFFE67E22)
+                                  : const Color(0xFFEAB308),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                 ],
@@ -967,9 +1019,18 @@ class _HomePageState extends ConsumerState<HomePage> {
   Widget _medicalVisionCard(bool isDark) {
     return Padding(
       padding: const EdgeInsets.only(top: 12),
-      child: GestureDetector(
-        onTap: () => Navigator.pushNamed(context, '/medical-vision'),
-        child: GlassContainer(
+      child: Semantics(
+        button: true,
+        label: 'AI Medical Vision — scan prescriptions and lab reports',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.pushNamed(context, '/medical-vision'),
+              splashColor: const Color(0xFF14B8A6).withValues(alpha: 0.12),
+              highlightColor: const Color(0xFF14B8A6).withValues(alpha: 0.07),
+              child: GlassContainer(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
           borderRadius: BorderRadius.circular(18),
@@ -1071,20 +1132,30 @@ class _HomePageState extends ConsumerState<HomePage> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(
-                        context, '/medical-vision-history'),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: const Color(0xFF14B8A6)
-                            .withValues(alpha: isDark ? 0.18 : 0.12),
-                      ),
-                      child: const Icon(
-                        Icons.history_rounded,
-                        size: 18,
-                        color: Color(0xFF14B8A6),
+                  Semantics(
+                    button: true,
+                    label: 'Medical scan history',
+                    child: ClipOval(
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => Navigator.pushNamed(
+                              context, '/medical-vision-history'),
+                          splashColor: const Color(0xFF14B8A6).withValues(alpha: 0.25),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: const Color(0xFF14B8A6)
+                                  .withValues(alpha: isDark ? 0.18 : 0.12),
+                            ),
+                            child: const Icon(
+                              Icons.history_rounded,
+                              size: 18,
+                              color: Color(0xFF14B8A6),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
                   ),
@@ -1100,6 +1171,9 @@ class _HomePageState extends ConsumerState<HomePage> {
           ),
         ),
       ),
+    ),
+  ),
+),
     );
   }
 
@@ -1153,15 +1227,56 @@ class _HomePageState extends ConsumerState<HomePage> {
 
         if (state.tasks.isEmpty) {
           return SliverToBoxAdapter(
-            child: Center(child: Text(context.l10n.tr('home.noTasksToday'))),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 28),
+              child: Column(
+                children: [
+                  Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.teal.withValues(alpha: 0.10),
+                    ),
+                    child: Icon(
+                      Icons.assignment_outlined,
+                      size: 28,
+                      color: AppColors.brand(context),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    context.l10n.tr('home.noTasksToday'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Tap + above to add your first task',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           );
         }
 
+        final reduceMotion = MediaQuery.of(context).disableAnimations;
         return SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: TaskCard(task: state.tasks[index]),
+            (context, index) => _StaggeredItem(
+              index: index,
+              disabled: reduceMotion,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: TaskCard(task: state.tasks[index]),
+              ),
             ),
             childCount: state.tasks.length,
           ),
@@ -1186,7 +1301,47 @@ class _HomePageState extends ConsumerState<HomePage> {
         }
 
         if (allEmpty) {
-          return Center(child: Text(context.l10n.tr('home.noPatientsFound')));
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.teal.withValues(alpha: 0.10),
+                    ),
+                    child: Icon(
+                      Icons.people_alt_outlined,
+                      size: 32,
+                      color: AppColors.brand(context),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'No patients yet',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: AppColors.textPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    context.l10n.tr('home.noPatientsFound'),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
         }
 
         return ListView.separated(
@@ -1305,153 +1460,163 @@ class _HomePageState extends ConsumerState<HomePage> {
 
   Widget _patientCard(Patient patient) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final imageProvider = _resolvePatientImage(patient.photoPath);
+    final cardRadius = BorderRadius.circular(18);
 
     return RepaintBoundary(
-      child: GestureDetector(
-      onTap: () async {
-        final deleted = await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => PatientDetailPage(patient: patient),
-          ),
-        );
-
-        if (!mounted) return;
-
-        if (deleted == true) {
-          final token = await ref.read(loginProvider.notifier).getValidToken();
-          if (token != null && mounted) {
-            ref.read(patientListProvider.notifier).loadPatients(token);
-          }
-        }
-      },
-
-      child: GlassContainer(
-        width: 150,
-        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-        borderRadius: BorderRadius.circular(18),
-        blur: 12,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            CircleAvatar(
-              radius: 28,
-              backgroundColor: AppColors.teal.withValues(
-                alpha: isDark ? 0.15 : 0.12,
-              ),
-              backgroundImage: imageProvider,
-              child: imageProvider == null
-                  ? Icon(Icons.person_rounded, color: AppColors.brand(context))
-                  : null,
-            ),
-            const SizedBox(height: 10),
-            Text(
-              patient.name.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: AppColors.textPrimary(context),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              "${_localizedGender(patient.gender).toUpperCase()}  •  ${context.l10n.tr('patients.yearsShort', args: {'age': patient.age.toString()}).toUpperCase()}",
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 10,
-                letterSpacing: 0.3,
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              [
-                if (patient.caste.trim().isNotEmpty) patient.caste.trim(),
-                if (patient.phoneNumber.trim().isNotEmpty)
-                  patient.phoneNumber.trim(),
-              ].join('  •  '),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-            if (patient.isPregnant ||
-                patient.activeDiseaseLabels.isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                [
-                  if (patient.isPregnant)
-                    'Pregnant${patient.monthsOfPregnancy != null ? ' (${patient.monthsOfPregnancy} mo)' : ''}',
-                  if (patient.activeDiseaseLabels.isNotEmpty)
-                    patient.activeDiseaseLabels.take(2).join(', '),
-                ].join('  •  '),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 10,
-                  height: 1.25,
-                  color: AppColors.textSecondary(context),
+      child: ClipRRect(
+        borderRadius: cardRadius,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: cardRadius,
+            splashColor: AppColors.teal.withValues(alpha: 0.12),
+            highlightColor: AppColors.teal.withValues(alpha: 0.06),
+            onTap: () async {
+              final navigator = Navigator.of(context);
+              final deleted = await navigator.push(
+                MaterialPageRoute(
+                  builder: (_) => PatientDetailPage(patient: patient),
                 ),
-              ),
-            ],
-            const SizedBox(height: 8),
-            Text(
-              patient.description.trim().isEmpty
-                  ? 'No notes'
-                  : patient.description,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11,
-                height: 1.25,
-                color: AppColors.textSecondary(context),
-              ),
-            ),
-            const Spacer(),
-            Container(
-              width: double.infinity,
-              height: 32,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.teal, AppColors.accentCyan],
-                ),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              );
+              if (!mounted) return;
+              if (deleted == true) {
+                final token =
+                    await ref.read(loginProvider.notifier).getValidToken();
+                if (token != null && mounted) {
+                  ref.read(patientListProvider.notifier).loadPatients(token);
+                }
+              }
+            },
+            child: GlassContainer(
+              width: 150,
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+              borderRadius: cardRadius,
+              blur: 12,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AppColors.teal.withValues(
+                      alpha: isDark ? 0.15 : 0.12,
+                    ),
+                    backgroundImage: imageProvider,
+                    child: imageProvider == null
+                        ? Icon(
+                            Icons.person_rounded,
+                            color: AppColors.brand(context),
+                          )
+                        : null,
+                  ),
+                  const SizedBox(height: 10),
                   Text(
-                    context.l10n.tr('common.view'),
-                    style: const TextStyle(
-                      color: Colors.white,
+                    patient.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: 15,
+                      color: AppColors.textPrimary(context),
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 16,
-                    color: Colors.white,
+                  const SizedBox(height: 4),
+                  Text(
+                    "${_localizedGender(patient.gender)}  •  ${context.l10n.tr('patients.yearsShort', args: {'age': patient.age.toString()})}",
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      letterSpacing: 0.3,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    [
+                      if (patient.caste.trim().isNotEmpty) patient.caste.trim(),
+                      if (patient.phoneNumber.trim().isNotEmpty)
+                        patient.phoneNumber.trim(),
+                    ].join('  •  '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  if (patient.isPregnant ||
+                      patient.activeDiseaseLabels.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      [
+                        if (patient.isPregnant)
+                          'Pregnant${patient.monthsOfPregnancy != null ? ' (${patient.monthsOfPregnancy} mo)' : ''}',
+                        if (patient.activeDiseaseLabels.isNotEmpty)
+                          patient.activeDiseaseLabels.take(2).join(', '),
+                      ].join('  •  '),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 10,
+                        height: 1.25,
+                        color: AppColors.textSecondary(context),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Text(
+                    patient.description.trim().isEmpty
+                        ? 'No notes'
+                        : patient.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 11,
+                      height: 1.25,
+                      color: AppColors.textSecondary(context),
+                    ),
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: double.infinity,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.teal, AppColors.accentCyan],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          context.l10n.tr('common.view'),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          size: 16,
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1833,40 +1998,32 @@ class _HomePageState extends ConsumerState<HomePage> {
                           Row(
                             children: [
                               Expanded(
-                                child: GestureDetector(
-                                  onTap: () =>
-                                      Navigator.pop(modalContext, false),
-                                  child: Container(
-                                    height: 52,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(16),
-                                      border: Border.all(
+                                child: SizedBox(
+                                  height: 52,
+                                  child: OutlinedButton(
+                                    onPressed: () =>
+                                        Navigator.pop(modalContext, false),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: isDarkSheet
+                                          ? const Color(0xFFB0C0CC)
+                                          : const Color(0xFF3A5060),
+                                      side: BorderSide(
                                         color: isDarkSheet
-                                            ? Colors.white.withValues(
-                                                alpha: 0.15,
-                                              )
-                                            : AppColors.teal.withValues(
-                                                alpha: 0.35,
-                                              ),
+                                            ? Colors.white.withValues(alpha: 0.15)
+                                            : AppColors.teal.withValues(alpha: 0.35),
                                       ),
-                                      color: isDarkSheet
+                                      backgroundColor: isDarkSheet
                                           ? Colors.white.withValues(alpha: 0.06)
-                                          : Colors.white.withValues(
-                                              alpha: 0.50,
-                                            ),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        l10n.tr('common.cancel'),
-                                        style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: isDarkSheet
-                                              ? const Color(0xFFB0C0CC)
-                                              : const Color(0xFF3A5060),
-                                        ),
+                                          : Colors.white.withValues(alpha: 0.50),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      textStyle: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
+                                    child: Text(l10n.tr('common.cancel')),
                                   ),
                                 ),
                               ),
@@ -1934,6 +2091,66 @@ class _SpinningSyncIconState extends State<_SpinningSyncIcon>
     return RotationTransition(
       turns: _controller,
       child: Icon(Icons.sync, color: widget.color, size: widget.size),
+    );
+  }
+}
+
+/// Fades + slides each list item in with a per-index stagger delay.
+class _StaggeredItem extends StatefulWidget {
+  const _StaggeredItem({
+    required this.index,
+    required this.child,
+    this.disabled = false,
+  });
+
+  final int index;
+  final Widget child;
+  final bool disabled;
+
+  @override
+  State<_StaggeredItem> createState() => _StaggeredItemState();
+}
+
+class _StaggeredItemState extends State<_StaggeredItem>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 320),
+    );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic));
+
+    if (widget.disabled) {
+      _ctrl.value = 1.0;
+    } else {
+      final delay = Duration(milliseconds: 40 * widget.index.clamp(0, 8));
+      Future.delayed(delay, () {
+        if (mounted) _ctrl.forward();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(position: _slide, child: widget.child),
     );
   }
 }

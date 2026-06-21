@@ -46,9 +46,13 @@ public class MedicalDocumentDTO {
         private Long patientId;
         private String imagePath;
         private String rawText;
+        private String documentType;
         private String diagnosis;
+        private String doctorName;
+        private String hospitalName;
         private String followUpDate;
         private String aiSummary;
+        private String ashaActions;
         private String processingStatus;
         private Double ocrConfidence;
         private String createdAt;
@@ -109,12 +113,25 @@ public class MedicalDocumentDTO {
         private boolean success;
         private GeminiMedicalData data;
         private String summary;
+
+        @JsonProperty("asha_actions")
+        private String ashaActions;
+
         private String error;
     }
 
     @Data
     public static class GeminiMedicalData {
+        @JsonProperty("document_type")
+        private String documentType;
+
         private String diagnosis;
+
+        @JsonProperty("doctor_name")
+        private String doctorName;
+
+        @JsonProperty("hospital_name")
+        private String hospitalName;
 
         @JsonProperty("follow_up_date")
         private String followUpDate;
@@ -150,6 +167,12 @@ public class MedicalDocumentDTO {
     public static class GeminiParseRequest {
         @JsonProperty("raw_text")
         private String rawText;
+
+        @JsonProperty("patient_age")
+        private Integer patientAge;
+
+        @JsonProperty("patient_gender")
+        private String patientGender;
     }
 
     // ─── Asynchronous processing result ──────────────────────────────────────

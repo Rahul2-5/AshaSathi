@@ -353,6 +353,7 @@ class TaskCard extends ConsumerWidget {
     required Color accent,
     required IconData icon,
   }) {
+    ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         behavior: SnackBarBehavior.floating,
@@ -402,13 +403,97 @@ class TaskCard extends ConsumerWidget {
     );
   }
 
+  Widget _buildDeleteBackground(BuildContext context) {
+    return Container(
+      alignment: Alignment.centerRight,
+      padding: const EdgeInsets.only(right: 20),
+      decoration: BoxDecoration(
+        color: const Color(0xFFD64242).withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFD64242).withValues(alpha: 0.30)),
+      ),
+      child: const Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Icon(Icons.delete_outline, color: Color(0xFFD64242), size: 22),
+          SizedBox(width: 6),
+          Text(
+            'Delete',
+            style: TextStyle(
+              color: Color(0xFFD64242),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: () => _showTaskDetailsDialog(context),
+    return Dismissible(
+      key: Key('task-${task.uuid}'),
+      direction: DismissDirection.endToStart,
+      background: _buildDeleteBackground(context),
+      confirmDismiss: (direction) async {
+        final confirm = await _showDeleteConfirmDialog(context);
+        if (confirm != true) return false;
+
+        final token = await ref.read(loginProvider.notifier).getValidToken();
+        if (token == null || token.isEmpty) return false;
+
+        if (context.mounted) {
+          _showStyledSnackBar(
+            context,
+            message: 'Deleting...',
+            accent: const Color(0xFFDD8A2A),
+            icon: Icons.delete_outline,
+          );
+        }
+
+        ref
+            .read(taskListProvider.notifier)
+            .deleteTaskWithUuid(task.id ?? -1, task.uuid, token)
+            .then((deleted) {
+              if (!context.mounted) return;
+              if (deleted) {
+                _showStyledSnackBar(
+                  context,
+                  message: context.l10n.tr('task.deletedSuccessfully'),
+                  accent: const Color(0xFFD64242),
+                  icon: Icons.delete_outline,
+                );
+              } else {
+                _showStyledSnackBar(
+                  context,
+                  message: context.l10n.tr('task.markedDeletion'),
+                  accent: const Color(0xFFDD8A2A),
+                  icon: Icons.cloud_off_outlined,
+                );
+              }
+            })
+            .catchError((e) {
+              if (!context.mounted) return;
+              _showStyledSnackBar(
+                context,
+                message: context.l10n.tr(
+                  'task.errorDeleting',
+                  args: {'error': e.toString()},
+                ),
+                accent: const Color(0xFFD64242),
+                icon: Icons.error_outline,
+              );
+            });
+
+        return true;
+      },
+      onDismissed: (_) {},
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () => _showTaskDetailsDialog(context),
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 14, 8, 14),
           decoration: BoxDecoration(
@@ -526,10 +611,13 @@ class TaskCard extends ConsumerWidget {
               ),
               IconButton(
                 icon: const Icon(
-                  Icons.delete_outline,
+                  Icons.delete_outline_rounded,
                   color: Color(0xFFFF5252),
                   size: 20,
                 ),
+                tooltip: 'Delete task',
+                constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+                padding: const EdgeInsets.all(10),
                 onPressed: () async {
                   final confirm = await _showDeleteConfirmDialog(context);
 
@@ -597,14 +685,12 @@ class TaskCard extends ConsumerWidget {
                         });
                   }
                 },
-                splashRadius: 18,
-                padding: const EdgeInsets.all(4),
-                constraints: const BoxConstraints(minHeight: 24, minWidth: 24),
               ),
             ],
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

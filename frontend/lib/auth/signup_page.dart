@@ -207,6 +207,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                                     controller: _userNameController,
                                     hint: context.l10n.tr('auth.username'),
                                     icon: Icons.person_outline_rounded,
+                                    autofillHints: const [AutofillHints.username],
                                     validator: _appvalidator.validateUsername,
                                   ),
                                   const SizedBox(height: 18),
@@ -217,6 +218,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                                     hint: context.l10n.tr('auth.email'),
                                     icon: Icons.mail_outline_rounded,
                                     keyboardType: TextInputType.emailAddress,
+                                    autofillHints: const [AutofillHints.email],
                                     validator: _appvalidator.validateEmail,
                                   ),
                                   const SizedBox(height: 18),
@@ -227,6 +229,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                                     hint: context.l10n.tr('auth.phoneNumber'),
                                     icon: Icons.call_outlined,
                                     keyboardType: TextInputType.phone,
+                                    autofillHints: const [AutofillHints.telephoneNumber],
                                     validator: _appvalidator.validatePhoneNumber,
                                   ),
                                   const SizedBox(height: 18),
@@ -240,6 +243,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                                         hint: '••••••••',
                                         icon: Icons.lock_outline_rounded,
                                         obscureText: !showPwd,
+                                        autofillHints: const [AutofillHints.newPassword],
                                         validator: _appvalidator.validatePassword,
                                         suffix: IconButton(
                                           icon: Icon(
@@ -318,12 +322,18 @@ class _SignUpViewState extends ConsumerState<SignUpView>
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () => Navigator.pushReplacement(
+                              TextButton(
+                                onPressed: () => Navigator.pushReplacement(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => const LoginView(),
                                   ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _accentCyan,
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  minimumSize: const Size(48, 44),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   'Sign In',
@@ -450,6 +460,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
     required IconData icon,
     TextInputType? keyboardType,
     bool obscureText = false,
+    List<String>? autofillHints,
     String? Function(String?)? validator,
     Widget? suffix,
   }) {
@@ -461,6 +472,7 @@ class _SignUpViewState extends ConsumerState<SignUpView>
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          autofillHints: autofillHints,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator,
           style: TextStyle(

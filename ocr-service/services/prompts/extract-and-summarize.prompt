@@ -1,25 +1,41 @@
-You are an expert medical document extraction engine and clinical assistant for Indian healthcare documents, helping ASHA workers understand patient records.
+From the OCR-extracted text below, perform BOTH tasks and return a single JSON response.
 
-From the following OCR-extracted text, do BOTH tasks in a single JSON response:
-1. Extract the structured medical data.
-2. Write a concise clinical summary.
+Patient context (use this to interpret lab values and tailor the summary):
+- Age: {{PATIENT_AGE}}
+- Gender: {{PATIENT_GENDER}}
 
-Rules for extraction:
+Task 1 — Structured extraction rules:
 - Missing or unclear values must be null.
-- Preserve medicine names and all laboratory values exactly as written.
-- Use ISO 8601 date format (YYYY-MM-DD) whenever possible.
-- Extract all medicines (even if dosage is unclear) and all lab test results with values and units.
-- If the text is not a medical document, return the empty schema and an empty summary string.
+- Preserve medicine names and laboratory values exactly as written.
+- Use ISO 8601 date format (YYYY-MM-DD) for dates whenever possible.
+- Extract ALL medicines even if dosage is unclear.
+- Extract ALL lab test results with values, units, and reference ranges.
+- For document_type choose one of: "prescription", "lab_report", "discharge_summary", "radiology", "other".
+- If the text is not a medical document, return the empty schema and empty summary/asha_actions strings.
 
-Rules for the summary (the "summary" field):
-- Simple, clear language a non-doctor can understand. Maximum 150 words.
+Task 2 — Clinical summary rules (the "summary" field):
+- Simple, clear language a non-doctor can understand. Maximum 200 words.
 - Plain text only: no bullet points, no markdown, no headers. A single paragraph.
-- Include diagnosis, important medicines, any abnormal lab values, and follow-up instructions.
-- Skip any section whose information is missing.
+- Include: diagnosis, important medicines with schedule, any abnormal lab values, follow-up instructions.
+- For lab values: compare each value against its reference_range. Explicitly call out values outside range.
+  Use "CRITICAL:" prefix if a value is dangerously outside range (>2x limit or clinical emergency threshold).
+- If document_type is "lab_report", focus primarily on which values are outside the reference range.
+- If document_type is "prescription", focus primarily on the medicine schedule and follow-up date.
+- Consider patient age and gender when interpreting values (e.g. haemoglobin norms differ by gender/age).
+- Skip any section whose information is completely missing.
 
-Return ONLY valid JSON in exactly this schema. No markdown, no explanations, no comments:
+Task 3 — ASHA worker action items (the "asha_actions" field):
+- 2 to 4 short, specific tasks for the ASHA worker written as direct instructions.
+- Plain text only. One sentence per action, separated by " | ".
+- Examples: "Give Paracetamol 500mg twice daily after meals for 5 days" | "Bring patient for follow-up on 2025-07-10" | "Watch for fever above 102°F and report immediately"
+- If no actionable information is present, return an empty string.
+
+Return ONLY valid JSON in exactly this schema. No markdown, no explanations, no comments outside the JSON:
 {
+  "document_type": null,
   "diagnosis": null,
+  "doctor_name": null,
+  "hospital_name": null,
   "follow_up_date": null,
   "medicines": [
     { "name": null, "dosage": null, "frequency": null, "duration": null }
@@ -28,7 +44,8 @@ Return ONLY valid JSON in exactly this schema. No markdown, no explanations, no 
     { "test_name": null, "value": null, "unit": null, "reference_range": null }
   ],
   "notes": null,
-  "summary": ""
+  "summary": "",
+  "asha_actions": ""
 }
 
 OCR TEXT:

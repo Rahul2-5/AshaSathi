@@ -106,6 +106,16 @@ public class MedicalDocumentController {
     }
 
     /**
+     * GET /api/medical-documents
+     * Returns all scanned documents newest-first (used by the Scan History screen).
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<MedicalDocumentDTO.DocumentResponse>> getAllDocuments() {
+        return ResponseEntity.ok(medicalDocumentService.getAllDocuments());
+    }
+
+    /**
      * GET /api/medical-documents/patient/{patientId}
      * Returns all documents for a given patient.
      */
@@ -116,5 +126,26 @@ public class MedicalDocumentController {
         List<MedicalDocumentDTO.DocumentResponse> docs =
                 medicalDocumentService.getDocumentsByPatient(patientId);
         return ResponseEntity.ok(docs);
+    }
+
+    /**
+     * PATCH /api/medical-documents/{id}/assign
+     * Assigns (or clears) the patient for an existing document.
+     * Body: { "patientId": 42 } or { "patientId": null } to unassign.
+     */
+    @PatchMapping("/{id}/assign")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MedicalDocumentDTO.DocumentResponse> assignDocument(
+            @PathVariable Long id,
+            @RequestBody java.util.Map<String, Object> body) {
+        try {
+            Long patientId = body.get("patientId") != null
+                    ? Long.valueOf(body.get("patientId").toString())
+                    : null;
+            return ResponseEntity.ok(medicalDocumentService.assignToPatient(id, patientId));
+        } catch (RuntimeException e) {
+            log.warn("Assign failed for document {}: {}", id, e.getMessage());
+            return ResponseEntity.notFound().build();
+        }
     }
 }

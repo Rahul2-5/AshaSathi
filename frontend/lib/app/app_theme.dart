@@ -98,7 +98,7 @@ ThemeData buildLightTheme() {
     ),
     iconTheme: const IconThemeData(color: Color(0xFF1F252B)),
     navigationBarTheme: NavigationBarThemeData(
-      height: 32,
+      height: 64,
       elevation: 0,
       backgroundColor: Colors.white.withValues(alpha: 0.75),
       surfaceTintColor: Colors.transparent,
@@ -229,7 +229,7 @@ ThemeData buildDarkTheme() {
     ),
     iconTheme: const IconThemeData(color: Color(0xFFEAF2F8)),
     navigationBarTheme: NavigationBarThemeData(
-      height: 60,
+      height: 64,
       elevation: 0,
       backgroundColor: const Color(0xFF0B1120).withValues(alpha: 0.88),
       surfaceTintColor: Colors.transparent,
@@ -275,25 +275,21 @@ class AppPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    const beginOffset = Offset(0.06, 0);
-    const endOffset = Offset.zero;
-    const curve = Curves.easeOutCubic;
-
+    // Enter: ease-out (feels snappy arriving); Exit: ease-in (feels intentional leaving).
+    // Exit curve is also applied as reverseCurve so back-navigation feels correct.
     final curvedAnimation = CurvedAnimation(
       parent: animation,
-      curve: curve,
-      reverseCurve: curve,
+      curve: Curves.easeOutCubic,
+      reverseCurve: Curves.easeInCubic,
     );
-
-    final offsetTween = Tween<Offset>(
-      begin: beginOffset,
-      end: endOffset,
-    ).chain(CurveTween(curve: curve));
 
     return FadeTransition(
       opacity: Tween<double>(begin: 0.0, end: 1.0).animate(curvedAnimation),
       child: SlideTransition(
-        position: curvedAnimation.drive(offsetTween),
+        position: Tween<Offset>(
+          begin: const Offset(0.06, 0),
+          end: Offset.zero,
+        ).animate(curvedAnimation),
         child: child,
       ),
     );

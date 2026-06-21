@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -66,7 +67,8 @@ class MedicalLabResult {
 class MedicalDocumentResult {
   final int id;
   final String processingStatus;
-  final String? diagnosis, followUpDate, aiSummary, rawText;
+  final String? documentType, diagnosis, doctorName, hospitalName;
+  final String? followUpDate, aiSummary, ashaActions, rawText;
   final double? ocrConfidence;
   final List<MedicalMedicine> medicines;
   final List<MedicalLabResult> labResults;
@@ -74,9 +76,13 @@ class MedicalDocumentResult {
   MedicalDocumentResult({
     required this.id,
     required this.processingStatus,
+    this.documentType,
     this.diagnosis,
+    this.doctorName,
+    this.hospitalName,
     this.followUpDate,
     this.aiSummary,
+    this.ashaActions,
     this.rawText,
     this.ocrConfidence,
     required this.medicines,
@@ -87,9 +93,13 @@ class MedicalDocumentResult {
       MedicalDocumentResult(
         id: j['id'],
         processingStatus: j['processingStatus'] ?? 'PENDING',
+        documentType: j['documentType'],
         diagnosis: j['diagnosis'],
+        doctorName: j['doctorName'],
+        hospitalName: j['hospitalName'],
         followUpDate: j['followUpDate'],
         aiSummary: j['aiSummary'],
+        ashaActions: j['ashaActions'],
         rawText: j['rawText'],
         ocrConfidence: (j['ocrConfidence'] as num?)?.toDouble(),
         medicines: (j['medicines'] as List? ?? [])
@@ -324,7 +334,13 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
                 SliverToBoxAdapter(child: _buildProcessingIndicator(isDark)),
               if (_result != null) ...[
                 SliverToBoxAdapter(child: _buildConfidenceBadge(isDark)),
+                if ((_result?.ocrConfidence ?? 1.0) < 0.75)
+                  SliverToBoxAdapter(child: _buildLowConfidenceWarning(isDark)),
+                if (_hasCriticalLabs)
+                  SliverToBoxAdapter(child: _buildCriticalAlertBanner(isDark)),
                 SliverToBoxAdapter(child: _buildSummaryCard(isDark)),
+                if ((_result?.ashaActions ?? '').isNotEmpty)
+                  SliverToBoxAdapter(child: _buildAshaActionsCard(isDark)),
                 SliverToBoxAdapter(child: _buildDiagnosisCard(isDark)),
                 SliverToBoxAdapter(child: _buildMedicinesSection(isDark)),
                 SliverToBoxAdapter(child: _buildLabResultsSection(isDark)),
@@ -345,14 +361,26 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(10),
+          Semantics(
+            button: true,
+            label: 'Back',
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Icon(Icons.arrow_back_ios_new_rounded,
-                  size: 18,
-                  color: isDark ? const Color(0xFFE0EAF3) : const Color(0xFF1D232B)),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pop(context),
+                  splashColor: Colors.white.withValues(alpha: 0.18),
+                  highlightColor: Colors.white.withValues(alpha: 0.10),
+                  child: GlassContainer(
+                    padding: const EdgeInsets.all(10),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Icon(Icons.arrow_back_ios_new_rounded,
+                        size: 18,
+                        color: isDark ? const Color(0xFFE0EAF3) : const Color(0xFF1D232B)),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -374,17 +402,28 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () =>
-                Navigator.pushNamed(context, '/medical-vision-history'),
-            child: GlassContainer(
-              padding: const EdgeInsets.all(10),
+          Semantics(
+            button: true,
+            label: 'Medical history',
+            child: ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Icon(Icons.history_rounded,
-                  size: 18,
-                  color: isDark
-                      ? const Color(0xFFE0EAF3)
-                      : const Color(0xFF1D232B)),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pushNamed(context, '/medical-vision-history'),
+                  splashColor: Colors.white.withValues(alpha: 0.18),
+                  highlightColor: Colors.white.withValues(alpha: 0.10),
+                  child: GlassContainer(
+                    padding: const EdgeInsets.all(10),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Icon(Icons.history_rounded,
+                        size: 18,
+                        color: isDark
+                            ? const Color(0xFFE0EAF3)
+                            : const Color(0xFF1D232B)),
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 10),
@@ -490,36 +529,51 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
             ),
             if (_selectedImage != null && !_isUploading && !_isPolling) ...[
               const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: GestureDetector(
-                  onTap: _uploadAndProcess,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: const LinearGradient(
-                          colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.teal.withValues(alpha: 0.35),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        )
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.auto_awesome,
-                            color: Colors.white, size: 20),
-                        const SizedBox(width: 8),
-                        Text('Analyze with AI',
-                            style: GoogleFonts.outfit(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: Colors.white)),
-                      ],
+              Semantics(
+                button: true,
+                label: 'Analyze with AI',
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          _uploadAndProcess();
+                        },
+                        splashColor: Colors.white.withValues(alpha: 0.18),
+                        highlightColor: Colors.white.withValues(alpha: 0.10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            gradient: const LinearGradient(
+                                colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.teal.withValues(alpha: 0.35),
+                                blurRadius: 14,
+                                offset: const Offset(0, 6),
+                              )
+                            ],
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.auto_awesome,
+                                  color: Colors.white, size: 20),
+                              const SizedBox(width: 8),
+                              Text('Analyze with AI',
+                                  style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 16,
+                                      color: Colors.white)),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -537,25 +591,36 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
     required VoidCallback onTap,
     required bool isDark,
   }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: GlassContainer(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+    final accentColor = isDark ? AppColors.accentCyan : AppColors.teal;
+    return Semantics(
+      button: true,
+      label: label,
+      child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon,
-                size: 18,
-                color: isDark ? AppColors.accentCyan : AppColors.teal),
-            const SizedBox(width: 6),
-            Text(label,
-                style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: isDark
-                        ? const Color(0xFFD5E1EB)
-                        : const Color(0xFF1D232B))),
-          ],
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            splashColor: accentColor.withValues(alpha: 0.15),
+            highlightColor: accentColor.withValues(alpha: 0.08),
+            child: GlassContainer(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              borderRadius: BorderRadius.circular(14),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 18, color: accentColor),
+                  const SizedBox(width: 6),
+                  Text(label,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          color: isDark
+                              ? const Color(0xFFD5E1EB)
+                              : const Color(0xFF1D232B))),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -639,7 +704,9 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
             const SizedBox(width: 10),
             Text('OCR Confidence: $confPercent%',
                 style: TextStyle(
-                    fontWeight: FontWeight.w700, color: confColor)),
+                    fontWeight: FontWeight.w700,
+                    color: confColor,
+                    fontFeatures: [const FontFeature.tabularFigures()])),
             const Spacer(),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -653,6 +720,186 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
                       fontWeight: FontWeight.w700,
                       color: confColor)),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Low Confidence Warning ───────────────────────────────────────────────
+
+  Widget _buildLowConfidenceWarning(bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+      child: GlassContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.45)),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.12 : 0.08),
+            const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.05 : 0.04),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFF59E0B), size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                'Low confidence scan — please review all extracted data carefully before saving.',
+                style: TextStyle(
+                  fontSize: 13,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? const Color(0xFFFFCC80)
+                      : const Color(0xFF92400E),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  bool get _hasCriticalLabs =>
+      (_result?.labResults ?? []).any((l) => l.severity == 'CRITICAL');
+
+  // ─── Critical Alert Banner ────────────────────────────────────────────────
+
+  Widget _buildCriticalAlertBanner(bool isDark) {
+    final criticals = (_result?.labResults ?? [])
+        .where((l) => l.severity == 'CRITICAL')
+        .toList();
+    final names = criticals.map((l) => l.testName).join(', ');
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+      child: GlassContainer(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFDC2626).withValues(alpha: 0.7)),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFDC2626).withValues(alpha: isDark ? 0.18 : 0.10),
+            const Color(0xFFDC2626).withValues(alpha: isDark ? 0.08 : 0.05),
+          ],
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(Icons.crisis_alert_rounded,
+                  color: Color(0xFFDC2626), size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('CRITICAL LAB VALUES DETECTED',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                        color: isDark
+                            ? const Color(0xFFFF8A80)
+                            : const Color(0xFF991B1B),
+                      )),
+                  const SizedBox(height: 2),
+                  Text(names,
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.4,
+                        fontWeight: FontWeight.w600,
+                        color: isDark
+                            ? const Color(0xFFFFCDD2)
+                            : const Color(0xFF7F1D1D),
+                      )),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ─── ASHA Actions Card ────────────────────────────────────────────────────
+
+  Widget _buildAshaActionsCard(bool isDark) {
+    final raw = _result?.ashaActions ?? '';
+    final actions = raw.split('|').map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(18),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF8B5CF6).withValues(alpha: 0.35)),
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.12 : 0.07),
+            const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.05 : 0.03),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.checklist_rounded,
+                    color: Color(0xFF8B5CF6), size: 18),
+                const SizedBox(width: 8),
+                Text('ASHA Action Items',
+                    style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? const Color(0xFFE8EEF3)
+                            : const Color(0xFF171A1F))),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...actions.asMap().entries.map((entry) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        margin: const EdgeInsets.only(top: 1, right: 10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF8B5CF6).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text('${entry.key + 1}',
+                              style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF8B5CF6))),
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(entry.value,
+                            style: TextStyle(
+                                height: 1.45,
+                                color: isDark
+                                    ? const Color(0xFFBFCBDA)
+                                    : const Color(0xFF3A5060))),
+                      ),
+                    ],
+                  ),
+                )),
           ],
         ),
       ),
@@ -685,12 +932,33 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
                 const Icon(Icons.summarize_rounded,
                     color: Color(0xFF14B8A6), size: 18),
                 const SizedBox(width: 8),
-                Text('AI Clinical Summary',
-                    style: GoogleFonts.outfit(
-                        fontWeight: FontWeight.w700,
-                        color: isDark
-                            ? const Color(0xFFE8EEF3)
-                            : const Color(0xFF171A1F))),
+                Expanded(
+                  child: Text('AI Clinical Summary',
+                      style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? const Color(0xFFE8EEF3)
+                              : const Color(0xFF171A1F))),
+                ),
+                Semantics(
+                  button: true,
+                  label: 'Copy summary',
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(8),
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: summary));
+                      _showSnack('Summary copied to clipboard');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(Icons.copy_rounded,
+                          size: 16,
+                          color: isDark
+                              ? const Color(0xFF9FB0C0)
+                              : const Color(0xFF667384)),
+                    ),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
@@ -719,6 +987,19 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
           children: [
             _sectionTitle('Diagnosis & Follow-up', Icons.medical_information_rounded, isDark),
             const SizedBox(height: 14),
+            if ((_result?.doctorName ?? '').isNotEmpty || (_result?.hospitalName ?? '').isNotEmpty) ...[
+              Row(
+                children: [
+                  if ((_result?.doctorName ?? '').isNotEmpty)
+                    Expanded(child: _readOnlyField('Doctor', _result!.doctorName!, isDark)),
+                  if ((_result?.doctorName ?? '').isNotEmpty && (_result?.hospitalName ?? '').isNotEmpty)
+                    const SizedBox(width: 10),
+                  if ((_result?.hospitalName ?? '').isNotEmpty)
+                    Expanded(child: _readOnlyField('Hospital', _result!.hospitalName!, isDark)),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
             _editableField(
               label: 'Diagnosis',
               controller: _diagnosisCtrl,
@@ -885,18 +1166,23 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
 
   Widget _labResultRow(MedicalLabResult lab, bool isDark) {
     Color severityColor;
+    IconData severityIcon;
     switch (lab.severity) {
       case 'CRITICAL':
         severityColor = const Color(0xFFDC2626);
+        severityIcon = Icons.warning_rounded;
         break;
       case 'HIGH':
         severityColor = const Color(0xFFEF4444);
+        severityIcon = Icons.arrow_upward_rounded;
         break;
       case 'LOW':
         severityColor = const Color(0xFFF59E0B);
+        severityIcon = Icons.arrow_downward_rounded;
         break;
       default:
         severityColor = const Color(0xFF22C55E);
+        severityIcon = Icons.check_rounded;
     }
 
     return Container(
@@ -927,7 +1213,9 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
           ),
           Text('${lab.value} ${lab.unit}',
               style: TextStyle(
-                  fontWeight: FontWeight.w700, color: severityColor)),
+                  fontWeight: FontWeight.w700,
+                  color: severityColor,
+                  fontFeatures: [const FontFeature.tabularFigures()])),
           const SizedBox(width: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -935,11 +1223,18 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
               color: severityColor.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Text(lab.severity,
-                style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: severityColor)),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(severityIcon, size: 10, color: severityColor),
+                const SizedBox(width: 3),
+                Text(lab.severity,
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        color: severityColor)),
+              ],
+            ),
           ),
         ],
       ),
@@ -951,34 +1246,49 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
   Widget _buildConfirmButton(bool isDark) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-      child: GestureDetector(
-        onTap: _confirmAndSave,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            gradient: const LinearGradient(
-                colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.teal.withValues(alpha: 0.4),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              )
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.check_circle_rounded,
-                  color: Colors.white, size: 22),
-              const SizedBox(width: 10),
-              Text('Confirm & Save Record',
-                  style: GoogleFonts.outfit(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 17,
-                      color: Colors.white)),
-            ],
+      child: Semantics(
+        button: true,
+        label: 'Confirm and save medical record',
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                _confirmAndSave();
+              },
+              splashColor: Colors.white.withValues(alpha: 0.18),
+              highlightColor: Colors.white.withValues(alpha: 0.10),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(18),
+                  gradient: const LinearGradient(
+                      colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)]),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.teal.withValues(alpha: 0.4),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    )
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle_rounded,
+                        color: Colors.white, size: 22),
+                    const SizedBox(width: 10),
+                    Text('Confirm & Save Record',
+                        style: GoogleFonts.outfit(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 17,
+                            color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),
@@ -1078,6 +1388,38 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
                 color: Color(0xFFF59E0B), size: 18)
             : null,
       ),
+    );
+  }
+
+  Widget _readOnlyField(String label, String value, bool isDark) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: isDark ? const Color(0xFF9FB0C0) : const Color(0xFF667384))),
+        const SizedBox(height: 4),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : Colors.grey.withValues(alpha: 0.25)),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.04)
+                : Colors.white.withValues(alpha: 0.6),
+          ),
+          child: Text(value,
+              style: TextStyle(
+                  fontSize: 13,
+                  color: isDark ? const Color(0xFFD5E1EB) : const Color(0xFF1D232B))),
+        ),
+      ],
     );
   }
 

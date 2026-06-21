@@ -155,17 +155,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                                   : const Color(0xFF1F2933),
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Asha Sathi',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.outfit(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w700,
-                              color: _accentCyan,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 10),
                           Text(
                             l10n.tr('auth.loginSubtitle'),
                             textAlign: TextAlign.center,
@@ -194,6 +184,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                                     hint: 'name@example.com',
                                     icon: Icons.mail_outline_rounded,
                                     keyboardType: TextInputType.emailAddress,
+                                    autofillHints: const [AutofillHints.username, AutofillHints.email],
                                     validator: _appvalidator.validateEmail,
                                   ),
                                   const SizedBox(height: 18),
@@ -207,6 +198,7 @@ class _LoginViewState extends ConsumerState<LoginView>
                                         hint: '••••••••',
                                         icon: Icons.lock_outline_rounded,
                                         obscureText: !showPwd,
+                                        autofillHints: const [AutofillHints.password],
                                         validator: _appvalidator.validatePassword,
                                         suffix: IconButton(
                                           icon: Icon(
@@ -285,12 +277,18 @@ class _LoginViewState extends ConsumerState<LoginView>
                                 ),
                               ),
                               const SizedBox(width: 4),
-                              GestureDetector(
-                                onTap: () => Navigator.push(
+                              TextButton(
+                                onPressed: () => Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (_) => const SignUpView(),
                                   ),
+                                ),
+                                style: TextButton.styleFrom(
+                                  foregroundColor: _accentCyan,
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  minimumSize: const Size(48, 44),
+                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: Text(
                                   l10n.tr('auth.createAccount'),
@@ -375,6 +373,7 @@ class _LoginViewState extends ConsumerState<LoginView>
     required IconData icon,
     TextInputType? keyboardType,
     bool obscureText = false,
+    List<String>? autofillHints,
     String? Function(String?)? validator,
     Widget? suffix,
   }) {
@@ -386,6 +385,7 @@ class _LoginViewState extends ConsumerState<LoginView>
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          autofillHints: autofillHints,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           validator: validator,
           style: TextStyle(
