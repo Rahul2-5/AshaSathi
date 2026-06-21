@@ -24,6 +24,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/medical-documents")
+@CrossOrigin(origins = "*", maxAge = 3600)
 @Slf4j
 @RequiredArgsConstructor
 public class MedicalDocumentController {
