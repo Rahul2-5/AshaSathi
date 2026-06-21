@@ -215,6 +215,51 @@ public class MedicalDocumentController {
         return ResponseEntity.ok(MedicalDocumentResponse.from(doc));
     }
 
+    // ── DELETE /api/medical-documents/{id} ───────────────────────────────────
+
+    /**
+     * Permanently delete a single document and its medicines, lab results and
+     * OCR lines (cascade). Also removes the image file from disk if present.
+     */
+    @DeleteMapping("/{id}")
+    @Transactional
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id) {
+        MedicalDocument doc = findDocOrThrow(id);
+        if (doc.getImagePath() != null) {
+            try {
+                Files.deleteIfExists(Paths.get(doc.getImagePath()));
+            } catch (IOException e) {
+                log.warn("Could not delete image file {}: {}", doc.getImagePath(), e.getMessage());
+            }
+        }
+        docRepo.delete(doc);
+        log.info("Deleted medical document id={}", id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ── DELETE /api/medical-documents ────────────────────────────────────────
+
+    /**
+     * Permanently delete ALL documents. Also removes their image files.
+     */
+    @DeleteMapping
+    @Transactional
+    public ResponseEntity<Void> deleteAllDocuments() {
+        List<MedicalDocument> all = docRepo.findAllByOrderByCreatedAtDesc();
+        for (MedicalDocument doc : all) {
+            if (doc.getImagePath() != null) {
+                try {
+                    Files.deleteIfExists(Paths.get(doc.getImagePath()));
+                } catch (IOException e) {
+                    log.warn("Could not delete image file {}: {}", doc.getImagePath(), e.getMessage());
+                }
+            }
+        }
+        docRepo.deleteAll(all);
+        log.info("Deleted all {} medical documents", all.size());
+        return ResponseEntity.noContent().build();
+    }
+
     // ── GET /api/medical-documents/patient/{patientId} ────────────────────────
 
     /**
