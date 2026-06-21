@@ -38,3 +38,20 @@ src/main/resources/application-secrets.properties
 config/application-secrets.properties
 .env
 .env.*
+
+### Python ###
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+### OCR Service uploads (user data, not source) ###
+ocr-service/uploads/
+
+### Graphify build artifacts (intermediate/cache files) ###
+graphify-out/cache/
+graphify-out/.graphify_*
+graphify-out/cost.json
+graphify-out/manifest.json
+graphify-out/graph.html
+.graphify_detect.json
