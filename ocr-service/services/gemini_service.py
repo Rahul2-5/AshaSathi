@@ -71,9 +71,13 @@ def _loads_lenient(text: str) -> dict:
             result = json.loads(attempt, strict=False)
             if isinstance(result, dict):
                 return result
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            # Show 120 chars around the failure position so we can diagnose
+            start = max(0, e.pos - 60)
+            snippet = attempt[start : e.pos + 60]
+            logger.error(f"JSON parse failed at pos={e.pos} line={e.lineno} col={e.colno}: {e.msg} | context: {snippet!r}")
             continue
-    logger.error("All JSON repair attempts failed. Returning empty schema.")
+    logger.error(f"All JSON repair attempts failed. Full cleaned text:\n{text}")
     return {}
 
 
@@ -157,23 +161,38 @@ class GeminiService:
 
     # ── Internal request helper ───────────────────────────────────────────────
 
-    async def _call_gemini(self, system_text: str, user_text: str) -> str:
+    async def _call_gemini(
+        self,
+        system_text: str,
+        user_text: str,
+        json_mode: bool = False,
+        thinking_budget: Optional[int] = None,
+    ) -> str:
         """
         POST to Gemini REST API with system_instruction + user content.
         Retries transient failures with exponential backoff across model fallbacks.
+        Pass json_mode=True to request application/json output (no markdown fences).
+        Pass thinking_budget=0 to disable thinking (fast extraction); omit for free-text
+        generation tasks like summarization so the model can reason properly.
         """
         if not self.api_key:
             raise RuntimeError("GEMINI_API_KEY environment variable is not set.")
+
+        gen_config: dict = {
+            "temperature": TEMPERATURE,
+            "maxOutputTokens": 8192,
+        }
+        if json_mode:
+            gen_config["responseMimeType"] = "application/json"
+        if thinking_budget is not None:
+            gen_config["thinkingConfig"] = {"thinkingBudget": thinking_budget}
 
         payload = {
             "system_instruction": {
                 "parts": [{"text": system_text}]
             },
             "contents": [{"parts": [{"text": user_text}]}],
-            "generationConfig": {
-                "temperature": TEMPERATURE,
-                "maxOutputTokens": 4096,
-            },
+            "generationConfig": gen_config,
         }
 
         last_error: Exception = RuntimeError("Unknown error")
@@ -250,7 +269,7 @@ class GeminiService:
         template = _load_prompt("medical-extraction.prompt")
         user_text = template.replace("{{OCR_TEXT}}", ocr_text)
 
-        raw_response = await self._call_gemini(system_text, user_text)
+        raw_response = await self._call_gemini(system_text, user_text, json_mode=True, thinking_budget=0)
         logger.info(f"Raw Gemini extraction response (first 200 chars): {raw_response[:200]}")
 
         cleaned = _strip_markdown(raw_response)
@@ -283,7 +302,8 @@ class GeminiService:
             .replace("{{PATIENT_GENDER}}", gender_str)
         )
 
-        raw_response = await self._call_gemini(system_text, user_text)
+        # No thinking_budget restriction here — summary generation needs model reasoning.
+        raw_response = await self._call_gemini(system_text, user_text, json_mode=True)
         logger.info(f"Raw Gemini combined response (first 200 chars): {raw_response[:200]}")
 
         cleaned = _strip_markdown(raw_response)
@@ -292,6 +312,11 @@ class GeminiService:
 
         summary = re.sub(r"^#+\s*", "", (parsed.get("summary") or "").strip(), flags=re.MULTILINE)
         asha_actions = (parsed.get("asha_actions") or "").strip()
+
+        logger.info(
+            f"Extracted summary length={len(summary)} chars, "
+            f"asha_actions length={len(asha_actions)} chars"
+        )
 
         return self._normalize_extraction(parsed), summary, asha_actions
 

@@ -159,12 +159,20 @@ public class MedicalDocumentService {
             doc.getLabResults().clear();
             doc.getLabResults().addAll(labResults);
 
-            // Step 5: Set AI clinical summary and ASHA actions (from Gemini)
-            log.info("Step 5: Setting AI summary and ASHA actions for document {}", documentId);
-            doc.setAiSummary(geminiResult.getSummary());
-            doc.setAshaActions(geminiResult.getAshaActions());
+            // Step 5: Persist AI summary and ASHA actions.
+            // Use a direct @Modifying UPDATE (belt) AND set on the detached entity (suspenders)
+            // so the final merge in Step 6 cannot overwrite the columns with null.
+            String summary = geminiResult.getSummary();
+            String ashaActions = geminiResult.getAshaActions();
+            log.info("Step 5: Persisting AI summary ({} chars) and ASHA actions ({} chars) for document {}",
+                    summary != null ? summary.length() : 0,
+                    ashaActions != null ? ashaActions.length() : 0,
+                    documentId);
+            documentRepository.updateSummary(documentId, summary, ashaActions);
+            doc.setAiSummary(summary);
+            doc.setAshaActions(ashaActions);
 
-            // Step 6: Mark complete
+            // Step 6: Mark complete — merge also carries aiSummary so it is not overwritten
             doc.setProcessingStatus(MedicalDocument.ProcessingStatus.COMPLETED);
             documentRepository.save(doc);
             log.info("Document {} processing COMPLETED successfully", documentId);

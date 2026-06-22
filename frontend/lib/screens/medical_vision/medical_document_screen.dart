@@ -281,7 +281,9 @@ class _MedicalDocumentScreenState extends ConsumerState<MedicalDocumentScreen>
 
           if (status == 'COMPLETED') {
             timer.cancel();
+            debugPrint('=== COMPLETED JSON ===\n${resp.body}\n=== END ===');
             final result = MedicalDocumentResult.fromJson(data);
+            debugPrint('aiSummary from fromJson: ${result.aiSummary?.length} chars');
             if (!mounted) return;
             setState(() {
               _isPolling = false;
