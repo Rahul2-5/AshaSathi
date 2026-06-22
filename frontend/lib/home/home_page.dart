@@ -1700,7 +1700,7 @@ class _HomePageState extends ConsumerState<HomePage> {
             leading: Icon(Icons.translate, color: AppColors.brand(context)),
             title: Text(l10n.tr('home.language')),
             trailing: Text(
-              AppLocalizations.nativeLanguageNames[currentCode] ?? 'Hindi',
+              AppLocalizations.nativeLanguageScripts[currentCode] ?? 'English',
               style: TextStyle(color: AppColors.textSecondary(context)),
             ),
             onTap: _showLanguageSelector,
@@ -1951,7 +1951,7 @@ class _HomePageState extends ConsumerState<HomePage> {
                                             children: [
                                               Text(
                                                 AppLocalizations
-                                                        .nativeLanguageNames[code] ??
+                                                        .nativeLanguageScripts[code] ??
                                                     code,
                                                 style: TextStyle(
                                                   fontSize: 15,
@@ -1972,17 +1972,19 @@ class _HomePageState extends ConsumerState<HomePage> {
                                                               )),
                                                 ),
                                               ),
-                                              Text(
-                                                AppLocalizations
-                                                        .nativeLanguageScripts[code] ??
-                                                    '',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  color: isDarkSheet
-                                                      ? const Color(0xFF7A8D9A)
-                                                      : const Color(0xFF7A8D9A),
+                                              if (AppLocalizations.nativeLanguageNames[code] !=
+                                                  AppLocalizations.nativeLanguageScripts[code])
+                                                Text(
+                                                  AppLocalizations
+                                                          .nativeLanguageNames[code] ??
+                                                      '',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    color: isDarkSheet
+                                                        ? const Color(0xFF7A8D9A)
+                                                        : const Color(0xFF7A8D9A),
+                                                  ),
                                                 ),
-                                              ),
                                             ],
                                           ),
                                         ),

@@ -1,12 +1,12 @@
-# Graph Report - AshaSathi  (2026-06-21)
+# Graph Report - AshaSathi  (2026-06-22)
 
 ## Corpus Check
-- 208 files · ~279,364 words
+- 192 files · ~307,237 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1985 nodes · 2490 edges · 101 communities detected
-- Extraction: 89% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 250 edges (avg confidence: 0.81)
+- 1995 nodes · 2632 edges · 102 communities detected
+- Extraction: 84% EXTRACTED · 14% INFERRED · 0% AMBIGUOUS · INFERRED: 380 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
@@ -111,6 +111,7 @@
 - [[_COMMUNITY_Community 112|Community 112]]
 - [[_COMMUNITY_Community 113|Community 113]]
 - [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `FamilyPatient` - 39 edges
@@ -152,139 +153,139 @@
 
 ### Community 0 - "Community 0"
 Cohesion: 0.01
-Nodes (155): app_database_offline.dart, ../config/app_config.dart, connectivity_service.dart, _addColumnIfMissing, AppDatabaseOffline, _createFamilyTables, openDatabase, ConnectivityService (+147 more)
+Nodes (171): add_patient_models.dart, ../app/dashboard_bootstrap_controller.dart, ../constants/app_colors.dart, AshaSathiApp, build, MaterialApp, MaterialPageRoute, MyApp (+163 more)
 
 ### Community 1 - "Community 1"
-Cohesion: 0.03
-Nodes (19): GeminiService, ResponseParser, SqliteToPostgresMigration, AuthController, FamilyController, MedicalDocumentController, of, Duration (+11 more)
+Cohesion: 0.01
+Nodes (156): app_database_offline.dart, ../config/app_config.dart, connectivity_service.dart, AppLocaleNotifier, AppThemeModeNotifier, Locale, _serialize, _addColumnIfMissing (+148 more)
 
 ### Community 2 - "Community 2"
-Cohesion: 0.02
-Nodes (104): AshaSathiApp, build, MaterialApp, MaterialPageRoute, MyApp, build, CircularProgressIndicator, dispose (+96 more)
+Cohesion: 0.03
+Nodes (12): FamilyController, Builder, Builder, Builder, FamilyResponse, Patient, FamilyPatientRepository, FamilyRepository (+4 more)
 
 ### Community 3 - "Community 3"
 Cohesion: 0.02
-Nodes (100): AppColors, border, brand, _isDark, shimmerBase, shimmerHighlight, surface, surfaceMuted (+92 more)
+Nodes (128): ../app/app_settings_controller.dart, copyWith, DashboardBootstrapNotifier, DashboardBootstrapState, syncAll, build, _buildRecentPatientsSkeleton, _buildTaskSkeletonSliver (+120 more)
 
 ### Community 4 - "Community 4"
-Cohesion: 0.03
-Nodes (77): copyWith, DashboardBootstrapNotifier, DashboardBootstrapState, syncAll, build, _buildRecentPatientsSkeleton, _buildTaskSkeletonSliver, Center (+69 more)
+Cohesion: 0.04
+Nodes (16): GeminiService, ResponseParser, SqliteToPostgresMigration, AuthController, AppLocalizations, _AppLocalizationsDelegate, isSupported, of (+8 more)
 
 ### Community 5 - "Community 5"
 Cohesion: 0.03
-Nodes (66): build, _buildCheckboxField, _buildFormField, _buildHelpText, _buildMemberCounter, Column, Container, didUpdateWidget (+58 more)
+Nodes (75): app/app_shell.dart, AppPageTransitionsBuilder, AppScrollBehavior, BouncingScrollPhysics, buildDarkTheme, buildLightTheme, buildOverscrollIndicator, FadeTransition (+67 more)
 
 ### Community 6 - "Community 6"
-Cohesion: 0.04
-Nodes (19): HerokuDataSourceConfig, PatientPhotoController, _AddPatientFormState, DeepCollectionEquality, EqualUnmodifiableListView, EqualUnmodifiableMapView, _FamilyInfo, identical (+11 more)
+Cohesion: 0.03
+Nodes (74): build, CircularProgressIndicator, dispose, Icon, initState, PatientSuccessPage, _PatientSuccessPageState, Scaffold (+66 more)
 
 ### Community 7 - "Community 7"
-Cohesion: 0.05
-Nodes (7): Builder, FamilyDetailsResponseDTO, Builder, FamilyPatientRepository, FamilyRepository, FamilyService, FamilyService
+Cohesion: 0.04
+Nodes (20): HerokuDataSourceConfig, MedicalDocumentController, _AddPatientFormState, DeepCollectionEquality, EqualUnmodifiableListView, EqualUnmodifiableMapView, _FamilyInfo, identical (+12 more)
 
 ### Community 8 - "Community 8"
-Cohesion: 0.04
-Nodes (4): PatientController, Patient, PatientRepository, PatientService
-
-### Community 9 - "Community 9"
-Cohesion: 0.03
-Nodes (55): app/app_shell.dart, AppLocaleNotifier, AppThemeModeNotifier, Locale, _serialize, main, AuthService, _clearToken (+47 more)
-
-### Community 10 - "Community 10"
-Cohesion: 0.03
-Nodes (57): AppPageTransitionsBuilder, AppScrollBehavior, BouncingScrollPhysics, buildDarkTheme, buildLightTheme, buildOverscrollIndicator, FadeTransition, getScrollPhysics (+49 more)
-
-### Community 11 - "Community 11"
 Cohesion: 0.05
 Nodes (52): addPatientFormProvider (StateNotifierProvider), AddPatientFormState, AddPatientNotifier (StateNotifier), Add Patient Screen (3-Step Wizard), POST /api/families Endpoint, canProceedToNextStepProvider (Computed Provider), currentPatientProvider (Computed Provider), Disease Selection Grid (10 diseases) (+44 more)
 
-### Community 12 - "Community 12"
-Cohesion: 0.04
-Nodes (50): ../app/app_settings_controller.dart, AddPatientPageNew, AlertDialog, build, _buildAppBarTitle, _buildAppBarTitleWithLogout, _buildDrawer, _buildFamilyLoadingSkeleton (+42 more)
-
-### Community 13 - "Community 13"
-Cohesion: 0.04
-Nodes (48): _actionButton, build, _buildAshaActionsCard, _buildConfidenceBadge, _buildConfirmButton, _buildCriticalAlertBanner, _buildDiagnosisCard, _buildHeader (+40 more)
-
-### Community 14 - "Community 14"
+### Community 9 - "Community 9"
 Cohesion: 0.05
 Nodes (48): Linux Application ID: com.example.frontend, Linux Binary Name: frontend, GTK+ 3.0 Dependency (Linux), Linux CMakeLists (Root Project Config), Linux Flutter CMakeLists (Flutter Build Steps), GIO 2.0 Dependency (Linux), GLib 2.0 Dependency (Linux), libflutter_linux_gtk.so (Flutter Linux Library) (+40 more)
 
-### Community 15 - "Community 15"
-Cohesion: 0.06
-Nodes (6): User, JWTAuthenticationFilter, JwtUtil, OncePerRequestFilter, JwtAuthenticationFilter, UserDetails
+### Community 10 - "Community 10"
+Cohesion: 0.04
+Nodes (46): build, _buildGlassAppBar, _buildMedicalInsights, _buildPatientImage, Color, Column, _confirmDelete, Container (+38 more)
 
-### Community 16 - "Community 16"
+### Community 11 - "Community 11"
 Cohesion: 0.05
-Nodes (38): addPatient, AddPatientNotifier, clearError, goToStep, nextStep, previousStep, RegisteredFamilySnapshot, removePatient (+30 more)
+Nodes (8): User, JWTAuthenticationFilter, JwtUtil, OncePerRequestFilter, JwtAuthenticationFilter, CustomUserDetailsService, UserDetails, UserDetailsService
 
-### Community 17 - "Community 17"
+### Community 12 - "Community 12"
+Cohesion: 0.05
+Nodes (43): _assigneeLabel, _badge, _body, build, Center, _chip, Color, _confColor (+35 more)
+
+### Community 13 - "Community 13"
+Cohesion: 0.07
+Nodes (7): PatientController, PatientPhotoController, TaskController, GoogleLoginRequestDTO, PatientRepository, UserRepository, AuthService
+
+### Community 14 - "Community 14"
 Cohesion: 0.05
 Nodes (1): FamilyPatient
 
-### Community 18 - "Community 18"
+### Community 15 - "Community 15"
 Cohesion: 0.05
-Nodes (37): add_patient_models.dart, ../app/dashboard_bootstrap_controller.dart, ../constants/app_colors.dart, build, Column, Container, _detailItem, FamilyDetailsPage (+29 more)
+Nodes (37): addPatient, AddPatientNotifier, clearError, goToStep, nextStep, previousStep, RegisteredFamilySnapshot, removePatient (+29 more)
 
-### Community 19 - "Community 19"
+### Community 16 - "Community 16"
 Cohesion: 0.07
 Nodes (36): BaseModel, Enum, ConfidenceLevel, GeminiParseAndSummarizeRequest, GeminiParseResponse, LabTestSchema, MedicalDataExtraction, MedicineSchema (+28 more)
 
-### Community 20 - "Community 20"
+### Community 17 - "Community 17"
+Cohesion: 0.07
+Nodes (32): Path, GeminiService, _load_prompt(), _loads_lenient(), _normalize_extraction(), Called once at application startup., Called once at application startup., Called once at application startup. (+24 more)
+
+### Community 18 - "Community 18"
 Cohesion: 0.06
 Nodes (1): FamilyPatientResponseDTO
 
-### Community 21 - "Community 21"
-Cohesion: 0.09
-Nodes (26): Path, GeminiService, _load_prompt(), _loads_lenient(), _normalize_extraction(), Called once at application startup., Called once at application startup., POST to Gemini REST API with system_instruction + user content.         Retries (+18 more)
-
-### Community 22 - "Community 22"
+### Community 19 - "Community 19"
 Cohesion: 0.06
 Nodes (1): PatientDataDTO
 
-### Community 23 - "Community 23"
-Cohesion: 0.09
-Nodes (6): TaskController, GoogleLoginRequestDTO, UserRepository, AuthService, CustomUserDetailsService, UserDetailsService
-
-### Community 24 - "Community 24"
+### Community 20 - "Community 20"
 Cohesion: 0.11
 Nodes (19): RegisterPlugins(), FlutterWindow(), OnCreate(), Create(), Destroy(), EnableFullDpiSupportIfAvailable(), GetClientArea(), GetThisFromHandle() (+11 more)
 
-### Community 25 - "Community 25"
+### Community 21 - "Community 21"
+Cohesion: 0.08
+Nodes (21): copyWith, PatientOfflineEntity, TaskOfflineEntity, AddTaskPage, _AddTaskPageState, build, _chipSelectedColor, Color (+13 more)
+
+### Community 22 - "Community 22"
 Cohesion: 0.09
 Nodes (3): Task, TaskRepository, TaskService
 
-### Community 26 - "Community 26"
+### Community 23 - "Community 23"
+Cohesion: 0.13
+Nodes (6): AshaSathiApplication, CommandLineRunner, MedicalDataSeeder, setGender, DrugMasterRepository, ValidationService
+
+### Community 24 - "Community 24"
 Cohesion: 0.11
 Nodes (1): Family
 
-### Community 27 - "Community 27"
+### Community 25 - "Community 25"
+Cohesion: 0.11
+Nodes (17): clearError, clearSearch, copyWith, loadTasks, resetFilter, TaskFilter, TaskFilterNotifier, TaskListNotifier (+9 more)
+
+### Community 26 - "Community 26"
 Cohesion: 0.12
 Nodes (16): DocumentResponse, ExtractedLabTest, ExtractedMedicine, GeminiLabTest, GeminiMedicalData, GeminiMedicine, GeminiParseRequest, GeminiParseResponse (+8 more)
+
+### Community 27 - "Community 27"
+Cohesion: 0.12
+Nodes (14): AuthService, _clearToken, copyWith, _isJwtExpired, LoginNotifier, LoginState, logout, _saveToken (+6 more)
 
 ### Community 28 - "Community 28"
 Cohesion: 0.18
 Nodes (16): macOS App Icon 512px (Flutter Default), macOS App Icon 64px (Flutter Default), AshaSathi Brand Identity Logo, Branding Inconsistency: Icons vs Splash, Flutter Default App Icon, macOS App Icon Set, Progressive Web App (PWA) Icon Set, Web Dark Mode Splash Screen Set (+8 more)
 
 ### Community 29 - "Community 29"
+Cohesion: 0.13
+Nodes (1): FamilyDetailsResponseDTO
+
+### Community 30 - "Community 30"
 Cohesion: 0.14
 Nodes (4): fl_register_plugins(), main(), my_application_activate(), my_application_new()
 
-### Community 30 - "Community 30"
+### Community 31 - "Community 31"
 Cohesion: 0.23
 Nodes (14): Android 12 Splash (Night, MDPI), Android 12 Splash (Night, XHDPI), Android 12 Splash (Night, XXHDPI), Android 12 Splash (Night, XXXHDPI), Android 12 Splash (Light, XHDPI), Android 12 Splash (Light, XXHDPI), Android 12 Splash (Light, XXXHDPI), AshaSathi Logo Design (+6 more)
 
-### Community 31 - "Community 31"
+### Community 32 - "Community 32"
 Cohesion: 0.15
 Nodes (1): AuthResponse
 
-### Community 32 - "Community 32"
+### Community 33 - "Community 33"
 Cohesion: 0.21
 Nodes (13): OCR Benchmark Result (init=2.8s), FastAPI (>=0.100.0), Google Generative AI SDK (>=0.7.0), HTTPX HTTP Client (>=0.25.0), NumPy (>=1.24.0), OpenCV Python (>=4.8.0.0), PaddleOCR (>=2.7.3), PaddlePaddle (>=2.6.0) (+5 more)
-
-### Community 33 - "Community 33"
-Cohesion: 0.24
-Nodes (4): AshaSathiApplication, CommandLineRunner, MedicalDataSeeder, setGender
 
 ### Community 34 - "Community 34"
 Cohesion: 0.2
@@ -296,15 +297,15 @@ Nodes (10): AshaSathi iOS App Icon 20x20 @1x, AshaSathi iOS App Icon 20x20 @2x, 
 
 ### Community 36 - "Community 36"
 Cohesion: 0.28
-Nodes (1): SecurityConfig
+Nodes (4): OCRService, Run PaddleOCR extraction on the preprocessed image., Initializes the PaddleOCR model once during application startup.         Ensures, Applies image preprocessing to improve OCR accuracy and speed.         1. Valida
 
 ### Community 37 - "Community 37"
 Cohesion: 0.28
-Nodes (4): OCRService, Run PaddleOCR extraction on the preprocessed image., Initializes the PaddleOCR model once during application startup.         Ensures, Applies image preprocessing to improve OCR accuracy and speed.         1. Valida
+Nodes (4): ParserService, Cleans markdown wrappers, whitespace, or trailing garbage from the AI response., Performs basic heuristic repairs on slightly malformed JSON strings.         - F, Parses raw text from the AI response, cleans/repairs it, and ensures it conforms
 
 ### Community 38 - "Community 38"
 Cohesion: 0.28
-Nodes (4): ParserService, Cleans markdown wrappers, whitespace, or trailing garbage from the AI response., Performs basic heuristic repairs on slightly malformed JSON strings.         - F, Parses raw text from the AI response, cleans/repairs it, and ensures it conforms
+Nodes (1): SecurityConfig
 
 ### Community 39 - "Community 39"
 Cohesion: 0.28
@@ -312,15 +313,15 @@ Nodes (9): AshaSathi Brand Identity, Flutter Framework Default Placeholder Icon,
 
 ### Community 40 - "Community 40"
 Cohesion: 0.25
-Nodes (1): FamilyResponse
+Nodes (1): SignupRequestDTO
 
 ### Community 41 - "Community 41"
 Cohesion: 0.25
-Nodes (1): SignupRequestDTO
+Nodes (1): TaskResponse
 
 ### Community 42 - "Community 42"
-Cohesion: 0.25
-Nodes (1): TaskResponse
+Cohesion: 0.29
+Nodes (1): FamilyRegistrationRequest
 
 ### Community 43 - "Community 43"
 Cohesion: 0.29
@@ -548,34 +549,40 @@ Nodes (1): Ensure the extracted dict always conforms to the expected schema.
 
 ### Community 113 - "Community 113"
 Cohesion: 1.0
-Nodes (1): Apply the full preprocessing pipeline to the image at file_path.         Returns
+Nodes (1): Ensure the extracted dict always conforms to the expected schema.
 
 ### Community 114 - "Community 114"
+Cohesion: 1.0
+Nodes (1): Apply the full preprocessing pipeline to the image at file_path.         Returns
+
+### Community 115 - "Community 115"
 Cohesion: 1.0
 Nodes (1): iOS App Icon Density Variants (50-76px)
 
 ## Knowledge Gaps
-- **916 isolated node(s):** `MedicalDocumentDTO`, `UploadRequest`, `MedicineDTO`, `LabResultDTO`, `DocumentResponse` (+911 more)
+- **923 isolated node(s):** `MedicalDocumentDTO`, `UploadRequest`, `MedicineDTO`, `LabResultDTO`, `DocumentResponse` (+918 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `Community 17`** (39 nodes): `FamilyPatient.java`, `FamilyPatient`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getCreatedAt()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getFamily()`, `.getGender()`, `.getId()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.getUpdatedAt()`, `.onUpdate()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setCreatedAt()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setId()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`, `.setUpdatedAt()`, `FamilyPatient.java`
+- **Thin community `Community 14`** (39 nodes): `FamilyPatient.java`, `FamilyPatient`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getCreatedAt()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getFamily()`, `.getGender()`, `.getId()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.getUpdatedAt()`, `.onUpdate()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setCreatedAt()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setId()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`, `.setUpdatedAt()`, `FamilyPatient.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 20`** (34 nodes): `FamilyPatientResponseDTO.java`, `FamilyPatientResponseDTO`, `.builder()`, `.FamilyPatientResponseDTO()`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getGender()`, `.getId()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setId()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`
+- **Thin community `Community 18`** (35 nodes): `FamilyPatientResponseDTO.java`, `FamilyPatientResponseDTO`, `.builder()`, `.FamilyPatientResponseDTO()`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getGender()`, `.getId()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setId()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`, `FamilyPatientResponseDTO.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 22`** (32 nodes): `PatientDataDTO.java`, `PatientDataDTO`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getGender()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.PatientDataDTO()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`, `PatientDataDTO.java`
+- **Thin community `Community 19`** (32 nodes): `PatientDataDTO.java`, `PatientDataDTO`, `.getAddress()`, `.getAge()`, `.getCaste()`, `.getDateOfBirth()`, `.getDeclinedHealthInfo()`, `.getDiseases()`, `.getExpectedDeliveryDate()`, `.getGender()`, `.getIsPregnant()`, `.getMonthsOfPregnancy()`, `.getNotes()`, `.getPatientName()`, `.getPhoneNumber()`, `.getPhotoPath()`, `.PatientDataDTO()`, `.setAddress()`, `.setAge()`, `.setCaste()`, `.setDateOfBirth()`, `.setDeclinedHealthInfo()`, `.setDiseases()`, `.setExpectedDeliveryDate()`, `.setGender()`, `.setIsPregnant()`, `.setMonthsOfPregnancy()`, `.setNotes()`, `.setPatientName()`, `.setPhoneNumber()`, `.setPhotoPath()`, `PatientDataDTO.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 26`** (18 nodes): `Family.java`, `Family`, `.getCreatedAt()`, `.getFamilyAddress()`, `.getHeadOfFamily()`, `.getId()`, `.getNumberOfMembers()`, `.getPatients()`, `.getUpdatedAt()`, `.onUpdate()`, `.setCreatedAt()`, `.setFamilyAddress()`, `.setHeadOfFamily()`, `.setId()`, `.setNumberOfMembers()`, `.setPatients()`, `.setUpdatedAt()`, `Family.java`
+- **Thin community `Community 24`** (18 nodes): `Family.java`, `Family`, `.getCreatedAt()`, `.getFamilyAddress()`, `.getHeadOfFamily()`, `.getId()`, `.getNumberOfMembers()`, `.getPatients()`, `.getUpdatedAt()`, `.onUpdate()`, `.setCreatedAt()`, `.setFamilyAddress()`, `.setHeadOfFamily()`, `.setId()`, `.setNumberOfMembers()`, `.setPatients()`, `.setUpdatedAt()`, `Family.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 31`** (13 nodes): `AuthResponse`, `.AuthResponse()`, `.getEmail()`, `.getProvider()`, `.getToken()`, `.getUserId()`, `.getUsername()`, `.setEmail()`, `.setProvider()`, `.setToken()`, `.setUserId()`, `.setUsername()`, `AuthResponse.java`
+- **Thin community `Community 29`** (15 nodes): `FamilyDetailsResponseDTO.java`, `FamilyDetailsResponseDTO`, `.builder()`, `.FamilyDetailsResponseDTO()`, `.getFamilyAddress()`, `.getHeadOfFamily()`, `.getId()`, `.getNumberOfMembers()`, `.getPatients()`, `.setFamilyAddress()`, `.setHeadOfFamily()`, `.setId()`, `.setNumberOfMembers()`, `.setPatients()`, `FamilyDetailsResponseDTO.java`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 32`** (13 nodes): `AuthResponse`, `.AuthResponse()`, `.getEmail()`, `.getProvider()`, `.getToken()`, `.getUserId()`, `.getUsername()`, `.setEmail()`, `.setProvider()`, `.setToken()`, `.setUserId()`, `.setUsername()`, `AuthResponse.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 34`** (10 nodes): `FamilyInfoDTO.java`, `FamilyInfoDTO`, `.FamilyInfoDTO()`, `.getFamilyAddress()`, `.getHeadOfFamily()`, `.getNumberOfMembers()`, `.setFamilyAddress()`, `.setHeadOfFamily()`, `.setNumberOfMembers()`, `FamilyInfoDTO.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 36`** (9 nodes): `SecurityConfig.java`, `SecurityConfig`, `.authenticationManager()`, `.corsConfigurationSource()`, `.jwtAuthenticationFilter()`, `.passwordEncoder()`, `.SecurityConfig()`, `.securityFilterChain()`, `SecurityConfig.java`
+- **Thin community `Community 38`** (9 nodes): `SecurityConfig.java`, `SecurityConfig`, `.authenticationManager()`, `.corsConfigurationSource()`, `.jwtAuthenticationFilter()`, `.passwordEncoder()`, `.SecurityConfig()`, `.securityFilterChain()`, `SecurityConfig.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 40`** (8 nodes): `FamilyResponse`, `.FamilyResponse()`, `.getFamilyAddress()`, `.getHeadOfFamily()`, `.getId()`, `.getNumberOfMembers()`, `.getPatients()`, `FamilyResponse.java`
+- **Thin community `Community 40`** (8 nodes): `SignupRequestDTO`, `.getEmail()`, `.getPassword()`, `.getUsername()`, `.setEmail()`, `.setPassword()`, `.setUsername()`, `SignupRequestDTO.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 41`** (8 nodes): `SignupRequestDTO`, `.getEmail()`, `.getPassword()`, `.getUsername()`, `.setEmail()`, `.setPassword()`, `.setUsername()`, `SignupRequestDTO.java`
+- **Thin community `Community 41`** (8 nodes): `TaskResponse`, `.getCreatedDate()`, `.getDescription()`, `.getId()`, `.getStatus()`, `.getTitle()`, `.TaskResponse()`, `TaskResponse.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 42`** (8 nodes): `TaskResponse`, `.getCreatedDate()`, `.getDescription()`, `.getId()`, `.getStatus()`, `.getTitle()`, `.TaskResponse()`, `TaskResponse.java`
+- **Thin community `Community 42`** (7 nodes): `FamilyRegistrationRequest.java`, `FamilyRegistrationRequest`, `.FamilyRegistrationRequest()`, `.getPatients()`, `.setFamilyInfo()`, `.setPatients()`, `FamilyRegistrationRequest.java`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 43`** (7 nodes): `FlutterAppDelegate`, `AppDelegate.swift`, `AppDelegate.swift`, `AppDelegate`, `.application()`, `.applicationShouldTerminateAfterLastWindowClosed()`, `.applicationSupportsSecureRestorableState()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
@@ -665,25 +672,27 @@ Nodes (1): iOS App Icon Density Variants (50-76px)
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 - **Thin community `Community 112`** (1 nodes): `Ensure the extracted dict always conforms to the expected schema.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 113`** (1 nodes): `Apply the full preprocessing pipeline to the image at file_path.         Returns`
+- **Thin community `Community 113`** (1 nodes): `Ensure the extracted dict always conforms to the expected schema.`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Community 114`** (1 nodes): `iOS App Icon Density Variants (50-76px)`
+- **Thin community `Community 114`** (1 nodes): `Apply the full preprocessing pipeline to the image at file_path.         Returns`
+  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
+- **Thin community `Community 115`** (1 nodes): `iOS App Icon Density Variants (50-76px)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `package:flutter/material.dart` connect `Community 3` to `Community 0`, `Community 2`, `Community 4`, `Community 5`, `Community 9`, `Community 10`, `Community 12`, `Community 13`, `Community 18`?**
-  _High betweenness centrality (0.153) - this node is a cross-community bridge._
-- **Why does `of` connect `Community 1` to `Community 33`, `Community 3`, `Community 36`, `Community 7`, `Community 15`, `Community 23`?**
-  _High betweenness centrality (0.111) - this node is a cross-community bridge._
-- **Why does `package:flutter_riverpod/flutter_riverpod.dart` connect `Community 9` to `Community 0`, `Community 2`, `Community 3`, `Community 4`, `Community 5`, `Community 10`, `Community 12`, `Community 13`, `Community 16`, `Community 18`?**
-  _High betweenness centrality (0.095) - this node is a cross-community bridge._
+- **Why does `package:flutter/material.dart` connect `Community 0` to `Community 1`, `Community 3`, `Community 4`, `Community 5`, `Community 6`, `Community 10`, `Community 12`, `Community 21`?**
+  _High betweenness centrality (0.167) - this node is a cross-community bridge._
+- **Why does `of` connect `Community 4` to `Community 2`, `Community 11`, `Community 38`, `Community 23`?**
+  _High betweenness centrality (0.115) - this node is a cross-community bridge._
+- **Why does `package:flutter_riverpod/flutter_riverpod.dart` connect `Community 0` to `Community 1`, `Community 3`, `Community 5`, `Community 6`, `Community 10`, `Community 12`, `Community 15`, `Community 21`, `Community 25`, `Community 27`?**
+  _High betweenness centrality (0.087) - this node is a cross-community bridge._
 - **What connects `MedicalDocumentDTO`, `UploadRequest`, `MedicineDTO` to the rest of the system?**
-  _916 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _923 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Community 0` be split into smaller, more focused modules?**
   _Cohesion score 0.01 - nodes in this community are weakly interconnected._
 - **Should `Community 1` be split into smaller, more focused modules?**
-  _Cohesion score 0.03 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.01 - nodes in this community are weakly interconnected._
 - **Should `Community 2` be split into smaller, more focused modules?**
-  _Cohesion score 0.02 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.03 - nodes in this community are weakly interconnected._

@@ -35,65 +35,174 @@ public class MedicalDataSeeder implements CommandLineRunner {
     }
 
     private void seedDrugs() {
-        if (drugMasterRepository.count() > 0) {
-            log.info("Drug master already seeded, skipping.");
-            return;
-        }
-
         List<String[]> drugs = List.of(
             // {drugName, genericName, drugClass}
+            // ── Analgesics / NSAIDs ──────────────────────────────────────────────
             new String[]{"Paracetamol", "Acetaminophen", "Analgesic"},
             new String[]{"Paracetamol 500mg", "Acetaminophen", "Analgesic"},
+            new String[]{"Paracetamol 650mg", "Acetaminophen", "Analgesic"},
             new String[]{"Ibuprofen", "Ibuprofen", "NSAID"},
+            new String[]{"Ibuprofen 400mg", "Ibuprofen", "NSAID"},
+            new String[]{"Diclofenac", "Diclofenac", "NSAID"},
+            new String[]{"Diclofenac 50mg", "Diclofenac", "NSAID"},
+            new String[]{"Naproxen", "Naproxen", "NSAID"},
+            new String[]{"Mefenamic Acid", "Mefenamic Acid", "NSAID"},
+            new String[]{"Ketorolac", "Ketorolac", "NSAID"},
+            new String[]{"Tramadol", "Tramadol", "Opioid Analgesic"},
+            new String[]{"Aspirin", "Aspirin", "Antiplatelet"},
+            new String[]{"Aspirin 75mg", "Aspirin", "Antiplatelet"},
+            new String[]{"Aspirin 150mg", "Aspirin", "Antiplatelet"},
+            // ── Antibiotics ─────────────────────────────────────────────────────
             new String[]{"Amoxicillin", "Amoxicillin", "Antibiotic"},
+            new String[]{"Amoxicillin 250mg", "Amoxicillin", "Antibiotic"},
             new String[]{"Amoxicillin 500mg", "Amoxicillin", "Antibiotic"},
+            new String[]{"Amoxicillin Clavulanate", "Amoxicillin+Clavulanic Acid", "Antibiotic"},
+            new String[]{"Augmentin", "Amoxicillin+Clavulanic Acid", "Antibiotic"},
+            new String[]{"Azithromycin", "Azithromycin", "Antibiotic"},
+            new String[]{"Azithromycin 250mg", "Azithromycin", "Antibiotic"},
+            new String[]{"Azithromycin 500mg", "Azithromycin", "Antibiotic"},
+            new String[]{"Ciprofloxacin", "Ciprofloxacin", "Antibiotic"},
+            new String[]{"Ciprofloxacin 500mg", "Ciprofloxacin", "Antibiotic"},
+            new String[]{"Cefixime", "Cefixime", "Antibiotic"},
+            new String[]{"Cefixime 200mg", "Cefixime", "Antibiotic"},
+            new String[]{"Ceftriaxone", "Ceftriaxone", "Antibiotic"},
+            new String[]{"Doxycycline", "Doxycycline", "Antibiotic"},
+            new String[]{"Doxycycline 100mg", "Doxycycline", "Antibiotic"},
+            new String[]{"Cotrimoxazole", "Sulfamethoxazole+Trimethoprim", "Antibiotic"},
+            new String[]{"Metronidazole", "Metronidazole", "Antibiotic"},
+            new String[]{"Metronidazole 400mg", "Metronidazole", "Antibiotic"},
+            new String[]{"Tinidazole", "Tinidazole", "Antibiotic"},
+            new String[]{"Clindamycin", "Clindamycin", "Antibiotic"},
+            new String[]{"Erythromycin", "Erythromycin", "Antibiotic"},
+            new String[]{"Levofloxacin", "Levofloxacin", "Antibiotic"},
+            new String[]{"Levofloxacin 500mg", "Levofloxacin", "Antibiotic"},
+            new String[]{"Norfloxacin", "Norfloxacin", "Antibiotic"},
+            new String[]{"Nitrofurantoin", "Nitrofurantoin", "Antibiotic"},
+            // ── Antidiabetics ───────────────────────────────────────────────────
             new String[]{"Metformin", "Metformin", "Antidiabetic"},
             new String[]{"Metformin 500mg", "Metformin", "Antidiabetic"},
+            new String[]{"Metformin 850mg", "Metformin", "Antidiabetic"},
             new String[]{"Metformin 1000mg", "Metformin", "Antidiabetic"},
+            new String[]{"Glibenclamide", "Glibenclamide", "Antidiabetic"},
+            new String[]{"Glipizide", "Glipizide", "Antidiabetic"},
+            new String[]{"Gliclazide", "Gliclazide", "Antidiabetic"},
+            new String[]{"Gliclazide 80mg", "Gliclazide", "Antidiabetic"},
+            new String[]{"Glimepiride", "Glimepiride", "Antidiabetic"},
+            new String[]{"Sitagliptin", "Sitagliptin", "Antidiabetic"},
+            new String[]{"Voglibose", "Voglibose", "Antidiabetic"},
+            new String[]{"Insulin", "Insulin", "Antidiabetic"},
+            // ── Antihypertensives ───────────────────────────────────────────────
             new String[]{"Amlodipine", "Amlodipine", "Antihypertensive"},
             new String[]{"Amlodipine 5mg", "Amlodipine", "Antihypertensive"},
+            new String[]{"Amlodipine 10mg", "Amlodipine", "Antihypertensive"},
+            new String[]{"Losartan", "Losartan", "ARB Antihypertensive"},
+            new String[]{"Losartan 25mg", "Losartan", "ARB Antihypertensive"},
+            new String[]{"Losartan 50mg", "Losartan", "ARB Antihypertensive"},
+            new String[]{"Telmisartan", "Telmisartan", "ARB Antihypertensive"},
+            new String[]{"Telmisartan 40mg", "Telmisartan", "ARB Antihypertensive"},
+            new String[]{"Enalapril", "Enalapril", "ACE Inhibitor"},
+            new String[]{"Ramipril", "Ramipril", "ACE Inhibitor"},
+            new String[]{"Hydrochlorothiazide", "Hydrochlorothiazide", "Diuretic"},
+            new String[]{"Furosemide", "Furosemide", "Diuretic"},
+            new String[]{"Atenolol", "Atenolol", "Beta Blocker"},
+            new String[]{"Metoprolol", "Metoprolol", "Beta Blocker"},
+            new String[]{"Nifedipine", "Nifedipine", "Antihypertensive"},
+            // ── Statins / Cardiac ────────────────────────────────────────────────
             new String[]{"Atorvastatin", "Atorvastatin", "Statin"},
             new String[]{"Atorvastatin 10mg", "Atorvastatin", "Statin"},
             new String[]{"Atorvastatin 20mg", "Atorvastatin", "Statin"},
+            new String[]{"Atorvastatin 40mg", "Atorvastatin", "Statin"},
+            new String[]{"Rosuvastatin", "Rosuvastatin", "Statin"},
+            new String[]{"Rosuvastatin 10mg", "Rosuvastatin", "Statin"},
+            new String[]{"Simvastatin", "Simvastatin", "Statin"},
+            new String[]{"Clopidogrel", "Clopidogrel", "Antiplatelet"},
+            new String[]{"Clopidogrel 75mg", "Clopidogrel", "Antiplatelet"},
+            new String[]{"Digoxin", "Digoxin", "Cardiac Glycoside"},
+            // ── GI / PPI ────────────────────────────────────────────────────────
+            new String[]{"Omeprazole", "Omeprazole", "Proton Pump Inhibitor"},
+            new String[]{"Omeprazole 20mg", "Omeprazole", "Proton Pump Inhibitor"},
+            new String[]{"Pantoprazole", "Pantoprazole", "Proton Pump Inhibitor"},
+            new String[]{"Pantoprazole 40mg", "Pantoprazole", "Proton Pump Inhibitor"},
+            new String[]{"Rabeprazole", "Rabeprazole", "Proton Pump Inhibitor"},
+            new String[]{"Ranitidine", "Ranitidine", "H2 Blocker"},
+            new String[]{"Domperidone", "Domperidone", "Antiemetic"},
+            new String[]{"Ondansetron", "Ondansetron", "Antiemetic"},
+            new String[]{"Ondansetron 4mg", "Ondansetron", "Antiemetic"},
+            new String[]{"Metoclopramide", "Metoclopramide", "Antiemetic"},
+            new String[]{"Loperamide", "Loperamide", "Antidiarrheal"},
+            new String[]{"ORS Sachet", "Oral Rehydration Salts", "Electrolyte"},
+            // ── Respiratory ─────────────────────────────────────────────────────
+            new String[]{"Salbutamol", "Salbutamol", "Bronchodilator"},
+            new String[]{"Levosalbutamol", "Levosalbutamol", "Bronchodilator"},
+            new String[]{"Budesonide", "Budesonide", "Corticosteroid Inhaler"},
+            new String[]{"Montelukast", "Montelukast", "Leukotriene Inhibitor"},
+            new String[]{"Theophylline", "Theophylline", "Bronchodilator"},
+            new String[]{"Dextromethorphan", "Dextromethorphan", "Cough Suppressant"},
+            new String[]{"Ambroxol", "Ambroxol", "Mucolytic"},
+            // ── Antihistamines ──────────────────────────────────────────────────
+            new String[]{"Cetirizine", "Cetirizine", "Antihistamine"},
+            new String[]{"Cetirizine 10mg", "Cetirizine", "Antihistamine"},
+            new String[]{"Levocetirizine", "Levocetirizine", "Antihistamine"},
+            new String[]{"Fexofenadine", "Fexofenadine", "Antihistamine"},
+            new String[]{"Chlorpheniramine", "Chlorpheniramine", "Antihistamine"},
+            // ── Vitamins / Minerals / Supplements ───────────────────────────────
             new String[]{"Iron Tablet", "Ferrous Sulfate", "Iron Supplement"},
             new String[]{"Ferrous Sulfate", "Ferrous Sulfate", "Iron Supplement"},
             new String[]{"Folic Acid", "Folic Acid", "Vitamin"},
             new String[]{"Folic Acid 5mg", "Folic Acid", "Vitamin"},
             new String[]{"Calcium Tablet", "Calcium Carbonate", "Mineral Supplement"},
+            new String[]{"Calcium Carbonate", "Calcium Carbonate", "Mineral Supplement"},
             new String[]{"Vitamin D3", "Cholecalciferol", "Vitamin"},
-            new String[]{"Azithromycin", "Azithromycin", "Antibiotic"},
-            new String[]{"Azithromycin 500mg", "Azithromycin", "Antibiotic"},
-            new String[]{"Ciprofloxacin", "Ciprofloxacin", "Antibiotic"},
-            new String[]{"Omeprazole", "Omeprazole", "Proton Pump Inhibitor"},
-            new String[]{"Omeprazole 20mg", "Omeprazole", "Proton Pump Inhibitor"},
-            new String[]{"Pantoprazole", "Pantoprazole", "Proton Pump Inhibitor"},
-            new String[]{"Ranitidine", "Ranitidine", "H2 Blocker"},
-            new String[]{"Cetirizine", "Cetirizine", "Antihistamine"},
+            new String[]{"Vitamin B12", "Cyanocobalamin", "Vitamin"},
+            new String[]{"Zinc", "Zinc Sulfate", "Mineral Supplement"},
+            new String[]{"Multivitamin", "Multivitamin", "Supplement"},
+            // ── Thyroid ─────────────────────────────────────────────────────────
             new String[]{"Levothyroxine", "Levothyroxine", "Thyroid Hormone"},
-            new String[]{"Aspirin", "Aspirin", "Antiplatelet"},
-            new String[]{"Aspirin 75mg", "Aspirin", "Antiplatelet"},
-            new String[]{"Losartan", "Losartan", "ARB Antihypertensive"},
-            new String[]{"Losartan 50mg", "Losartan", "ARB Antihypertensive"},
-            new String[]{"Glibenclamide", "Glibenclamide", "Antidiabetic"},
-            new String[]{"ORS Sachet", "Oral Rehydration Salts", "Electrolyte"},
-            new String[]{"Albendazole", "Albendazole", "Anthelmintic"},
-            new String[]{"Cotrimoxazole", "Sulfamethoxazole+Trimethoprim", "Antibiotic"},
-            new String[]{"Doxycycline", "Doxycycline", "Antibiotic"},
+            new String[]{"Levothyroxine 25mcg", "Levothyroxine", "Thyroid Hormone"},
+            new String[]{"Levothyroxine 50mcg", "Levothyroxine", "Thyroid Hormone"},
+            new String[]{"Carbimazole", "Carbimazole", "Antithyroid"},
+            // ── Corticosteroids ─────────────────────────────────────────────────
             new String[]{"Prednisolone", "Prednisolone", "Corticosteroid"},
-            new String[]{"Salbutamol", "Salbutamol", "Bronchodilator"},
-            new String[]{"Diclofenac", "Diclofenac", "NSAID"}
+            new String[]{"Prednisolone 5mg", "Prednisolone", "Corticosteroid"},
+            new String[]{"Dexamethasone", "Dexamethasone", "Corticosteroid"},
+            new String[]{"Hydrocortisone", "Hydrocortisone", "Corticosteroid"},
+            new String[]{"Betamethasone", "Betamethasone", "Corticosteroid"},
+            // ── Antifungals / Antiparasitics ────────────────────────────────────
+            new String[]{"Albendazole", "Albendazole", "Anthelmintic"},
+            new String[]{"Albendazole 400mg", "Albendazole", "Anthelmintic"},
+            new String[]{"Mebendazole", "Mebendazole", "Anthelmintic"},
+            new String[]{"Fluconazole", "Fluconazole", "Antifungal"},
+            new String[]{"Itraconazole", "Itraconazole", "Antifungal"},
+            new String[]{"Clotrimazole", "Clotrimazole", "Antifungal"},
+            // ── Psychiatric / Neuro ─────────────────────────────────────────────
+            new String[]{"Alprazolam", "Alprazolam", "Benzodiazepine"},
+            new String[]{"Clonazepam", "Clonazepam", "Benzodiazepine"},
+            new String[]{"Diazepam", "Diazepam", "Benzodiazepine"},
+            new String[]{"Gabapentin", "Gabapentin", "Anticonvulsant"},
+            new String[]{"Phenytoin", "Phenytoin", "Anticonvulsant"},
+            new String[]{"Carbamazepine", "Carbamazepine", "Anticonvulsant"},
+            new String[]{"Amitriptyline", "Amitriptyline", "Antidepressant"},
+            new String[]{"Sertraline", "Sertraline", "SSRI Antidepressant"},
+            new String[]{"Escitalopram", "Escitalopram", "SSRI Antidepressant"},
+            new String[]{"Risperidone", "Risperidone", "Antipsychotic"},
+            new String[]{"Olanzapine", "Olanzapine", "Antipsychotic"}
         );
 
-        drugs.forEach(d -> {
-            DrugMaster drug = new DrugMaster();
-            drug.setDrugName(d[0]);
-            drug.setGenericName(d[1]);
-            drug.setDrugClass(d[2]);
-            drug.setActive(true);
-            drugMasterRepository.save(drug);
-        });
+        int added = 0;
+        for (String[] d : drugs) {
+            // Upsert: skip if name already exists (safe to re-run after adding new drugs)
+            if (drugMasterRepository.findByDrugNameIgnoreCase(d[0]).isEmpty()) {
+                DrugMaster drug = new DrugMaster();
+                drug.setDrugName(d[0]);
+                drug.setGenericName(d[1]);
+                drug.setDrugClass(d[2]);
+                drug.setActive(true);
+                drugMasterRepository.save(drug);
+                added++;
+            }
+        }
 
-        log.info("Drug master seeded with {} entries.", drugs.size());
+        log.info("Drug master seeding complete — {} new entries added.", added);
     }
 
     private void seedLabRanges() {

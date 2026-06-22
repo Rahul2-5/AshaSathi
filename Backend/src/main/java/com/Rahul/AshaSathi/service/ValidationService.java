@@ -35,7 +35,7 @@ public class ValidationService {
 
     /**
      * Validates a medicine name against the drug_master table.
-     * First tries exact match (case-insensitive), then falls back to fuzzy Levenshtein.
+     * Pipeline: exact match → normalized exact match → combined fuzzy+token score.
      * Threshold: score >= 85 → verified, score 70–84 → flagged for review, < 70 → unknown.
      */
     public DrugValidationResult validateDrug(String extractedName) {
@@ -43,38 +43,94 @@ public class ValidationService {
             return new DrugValidationResult(false, null, 0);
         }
 
-        // 1. Exact match
-        Optional<DrugMaster> exactMatch = drugMasterRepository.findByDrugNameIgnoreCase(extractedName.trim());
+        String raw = extractedName.trim();
+
+        // 1. Exact match on raw OCR text
+        Optional<DrugMaster> exactMatch = drugMasterRepository.findByDrugNameIgnoreCase(raw);
         if (exactMatch.isPresent()) {
-            log.debug("Drug '{}' → exact match found: '{}'", extractedName, exactMatch.get().getDrugName());
+            log.debug("Drug '{}' → exact match", raw);
             return new DrugValidationResult(true, exactMatch.get().getDrugName(), 100);
         }
 
-        // 2. Fuzzy Levenshtein match across all active drugs
-        List<DrugMaster> allDrugs = drugMasterRepository.findAllActiveDrugs();
-        String normalizedInput = extractedName.trim().toLowerCase();
+        // 2. Normalize: strip "Tab.", "Cap.", "Inj." prefixes and dosage suffixes
+        //    e.g. "Tab. Metformin 500mg" → "metformin"
+        String normalized = normalizeDrugName(raw);
+        if (!normalized.equalsIgnoreCase(raw)) {
+            exactMatch = drugMasterRepository.findByDrugNameIgnoreCase(normalized);
+            if (exactMatch.isPresent()) {
+                log.debug("Drug '{}' → normalized exact match: '{}'", raw, exactMatch.get().getDrugName());
+                return new DrugValidationResult(true, exactMatch.get().getDrugName(), 100);
+            }
+        }
 
+        // 3. Fuzzy match using combined Levenshtein + token-intersection scoring
+        List<DrugMaster> allDrugs = drugMasterRepository.findAllActiveDrugs();
         String bestMatch = null;
         int bestScore = 0;
 
         for (DrugMaster drug : allDrugs) {
-            int score = levenshteinSimilarityScore(normalizedInput, drug.getDrugName().toLowerCase());
+            int score = combinedScore(normalized, drug.getDrugName().toLowerCase());
             if (score > bestScore) {
                 bestScore = score;
                 bestMatch = drug.getDrugName();
             }
         }
 
-        log.debug("Drug '{}' → best fuzzy match: '{}' (score: {})", extractedName, bestMatch, bestScore);
+        log.debug("Drug '{}' (normalized: '{}') → best match: '{}' (score: {})", raw, normalized, bestMatch, bestScore);
 
         if (bestScore >= 85) {
             return new DrugValidationResult(true, bestMatch, bestScore);
         } else if (bestScore >= 70) {
-            // Flagged — partially matched but not confidently verified
             return new DrugValidationResult(false, bestMatch, bestScore);
         } else {
             return new DrugValidationResult(false, null, bestScore);
         }
+    }
+
+    /**
+     * Strips prescription form prefixes ("Tab.", "Cap.", "Inj.", etc.) and
+     * trailing dosage suffixes ("500mg", "2.5ml", etc.) so matching works on
+     * the bare molecule name.
+     */
+    private String normalizeDrugName(String name) {
+        String result = name.toLowerCase().trim();
+        // Strip leading form prefixes
+        result = result.replaceAll("^(tab\\.?|cap\\.?|caps\\.?|inj\\.?|syp\\.?|syr\\.?|susp\\.?|oint\\.?|cream|drops?|gel|patch)\\s+", "");
+        // Strip trailing dosage (e.g. "500mg", "5 mg", "2.5ml", "10 iu", "1000 units")
+        result = result.replaceAll("\\s+\\d+\\.?\\d*\\s*(mg|mcg|ml|g\\b|iu|units?).*$", "").trim();
+        return result;
+    }
+
+    /**
+     * Combines Levenshtein similarity with a token-intersection score.
+     * Token scoring catches cases where the molecule name is one token inside
+     * a longer string (e.g. "amoxicillin clavulanate" matching "amoxicillin").
+     */
+    private int combinedScore(String input, String dbDrug) {
+        int levenScore = levenshteinSimilarityScore(input, dbDrug);
+
+        // Substring containment: proportional to how much of the shorter string is matched
+        if (dbDrug.contains(input) || input.contains(dbDrug)) {
+            int shorter = Math.min(input.length(), dbDrug.length());
+            int longer  = Math.max(input.length(), dbDrug.length());
+            int containScore = (int) Math.round(100.0 * shorter / longer);
+            levenScore = Math.max(levenScore, containScore);
+        }
+
+        // Token-level: best Levenshtein score across individual word pairs
+        String[] inputTokens = input.split("[\\s,+/-]+");
+        String[] dbTokens    = dbDrug.split("[\\s,+/-]+");
+        int tokenScore = 0;
+        for (String it : inputTokens) {
+            if (it.length() < 4) continue; // skip short/noise tokens
+            for (String dt : dbTokens) {
+                if (dt.length() < 4) continue;
+                int ts = levenshteinSimilarityScore(it, dt);
+                if (ts > tokenScore) tokenScore = ts;
+            }
+        }
+        // Token match alone is slightly discounted (not as reliable as full-name match)
+        return Math.max(levenScore, (int)(tokenScore * 0.95));
     }
 
     // ─── Lab Validation ─────────────────────────────────────────────────────
