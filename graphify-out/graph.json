@@ -20315,9 +20315,9 @@
       "source_file": "src\\main\\java\\com\\Rahul\\AshaSathi\\Controller\\MedicalDocumentController.java",
       "source_location": "L227",
       "weight": 1.0,
+      "confidence_score": 1.0,
       "source": "controller_medicaldocumentcontroller_medicaldocumentcontroller_deletedocument",
-      "target": "controller_medicaldocumentcontroller_medicaldocumentcontroller_finddocorthrow",
-      "confidence_score": 1.0
+      "target": "controller_medicaldocumentcontroller_medicaldocumentcontroller_finddocorthrow"
     },
     {
       "relation": "calls",

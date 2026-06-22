@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -177,27 +178,32 @@ public class MedicalDocumentService {
 
     // ─── Get Document ─────────────────────────────────────────────────────────
 
+    @Transactional(readOnly = true)
     public MedicalDocumentDTO.DocumentResponse getDocument(Long id) {
         MedicalDocument doc = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Document not found: " + id));
         return toDocumentResponse(doc);
     }
 
+    @Transactional(readOnly = true)
     public List<MedicalDocumentDTO.DocumentResponse> getAllDocuments() {
         return documentRepository.findAllByOrderByCreatedAtDesc()
                 .stream().map(this::toDocumentResponse).collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<MedicalDocumentDTO.DocumentResponse> getDocumentsByPatient(Long patientId) {
         return documentRepository.findByPatientId(patientId)
                 .stream().map(this::toDocumentResponse).collect(Collectors.toList());
     }
 
+    @Transactional
     public MedicalDocumentDTO.DocumentResponse assignToPatient(Long docId, Long patientId) {
         MedicalDocument doc = documentRepository.findById(docId)
                 .orElseThrow(() -> new RuntimeException("Document not found: " + docId));
         doc.setPatientId(patientId);
-        return toDocumentResponse(documentRepository.save(doc));
+        documentRepository.save(doc);
+        return toDocumentResponse(doc);
     }
 
     // ─── OCR Service Call ────────────────────────────────────────────────────

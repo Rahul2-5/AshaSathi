@@ -187,6 +187,12 @@ class PatientSyncService {
             "description": patient.description,
             "phoneNumber": patient.phoneNumber,
             "clientTempId": patient.uuid,
+            "caste": patient.caste,
+            "isPregnant": patient.isPregnant,
+            "monthsOfPregnancy": patient.monthsOfPregnancy,
+            "expectedDeliveryDate": patient.expectedDeliveryDate,
+            "declinedHealthInfo": patient.declinedHealthInfo,
+            "diseases": patient.diseases,
           }),
         );
 
@@ -374,6 +380,12 @@ class PatientSyncService {
           'phoneNumber': patient.phoneNumber,
           'clientTempId': patient.uuid,
           'photoPath': patient.photoPath,
+          'caste': patient.caste,
+          'isPregnant': patient.isPregnant,
+          'monthsOfPregnancy': patient.monthsOfPregnancy,
+          'expectedDeliveryDate': patient.expectedDeliveryDate,
+          'declinedHealthInfo': patient.declinedHealthInfo,
+          'diseases': patient.diseases,
         }),
       );
 

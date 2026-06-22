@@ -111,7 +111,15 @@ class PatientService {
       }
       debugPrint("Loaded ${onlineModels.length} patients from backend");
 
+      // Build UUID lookup from pending local patients so we can preserve
+      // extended fields (caste, pregnancy, diseases) that the server may not
+      // have stored yet (e.g. old server or sync payload gap).
+      final pendingByUuid = <String, Patient>{
+        for (final p in pendingModels) p.uuid: p,
+      };
+
       for (final patient in onlineModels) {
+        final local = pendingByUuid[patient.uuid];
         await _offlineDao.upsertSynced(
           PatientOfflineEntity(
             serverId: patient.id,
@@ -124,12 +132,15 @@ class PatientService {
             description: patient.description,
             phoneNumber: patient.phoneNumber,
             photoPath: patient.photoPath,
-            caste: patient.caste,
-            isPregnant: patient.isPregnant,
-            monthsOfPregnancy: patient.monthsOfPregnancy,
-            expectedDeliveryDate: patient.expectedDeliveryDate,
-            declinedHealthInfo: patient.declinedHealthInfo,
-            diseases: patient.diseases,
+            // Prefer server value when non-empty; fall back to local pending.
+            caste: patient.caste.isNotEmpty ? patient.caste : (local?.caste ?? ''),
+            isPregnant: patient.isPregnant || (local?.isPregnant ?? false),
+            monthsOfPregnancy: patient.monthsOfPregnancy ?? local?.monthsOfPregnancy,
+            expectedDeliveryDate: patient.expectedDeliveryDate.isNotEmpty
+                ? patient.expectedDeliveryDate
+                : (local?.expectedDeliveryDate ?? ''),
+            declinedHealthInfo: patient.declinedHealthInfo || (local?.declinedHealthInfo ?? false),
+            diseases: patient.diseases.isNotEmpty ? patient.diseases : (local?.diseases ?? {}),
           ),
         );
       }

@@ -1040,9 +1040,22 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
   }
 
   List<String> _activeDiseaseLabels(Map<String, bool> diseases) {
+    // Map form storage keys to human-readable display names that match the color map.
+    const labelMap = {
+      'bp': 'Hypertension',
+      'diabetes': 'Diabetes',
+      'heartDisease': 'Heart Disease',
+      'asthma': 'Asthma',
+      'thyroid': 'Thyroid',
+      'arthritis': 'Arthritis',
+      'kidney': 'Kidney',
+      'liver': 'Liver',
+      'cancer': 'Cancer',
+      'elephantiasis': 'Elephantiasis',
+    };
     return diseases.entries
         .where((entry) => entry.value)
-        .map((entry) => entry.key)
+        .map((entry) => labelMap[entry.key] ?? entry.key)
         .toList();
   }
 
@@ -1060,7 +1073,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         'border': 0xFFFF6B6B,
         'text': 0xFFAD0000,
       },
-      'HeartDisease': {
+      'Heart Disease': {
         'bg': 0xFFFFDCDC,
         'border': 0xFFF44336,
         'text': 0xFFAD0000,
@@ -1088,7 +1101,7 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
         'border': 0xFFFF7875,
         'text': 0xFFFFB1B1,
       },
-      'HeartDisease': {
+      'Heart Disease': {
         'bg': 0xFF4D1A1A,
         'border': 0xFFFF7875,
         'text': 0xFFFFB1B1,
@@ -1562,6 +1575,12 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
             'phoneNumber': updated['phoneNumber'],
             'clientTempId': _patient.uuid,
             'photoPath': _patient.photoPath,
+            'caste': _patient.caste,
+            'isPregnant': _patient.isPregnant,
+            'monthsOfPregnancy': _patient.monthsOfPregnancy,
+            'expectedDeliveryDate': _patient.expectedDeliveryDate,
+            'declinedHealthInfo': _patient.declinedHealthInfo,
+            'diseases': _patient.diseases,
           }),
         );
 
@@ -1603,6 +1622,8 @@ class _PatientDetailPageState extends ConsumerState<PatientDetailPage> {
           isPregnant: _patient.isPregnant,
           monthsOfPregnancy: _patient.monthsOfPregnancy,
           expectedDeliveryDate: _patient.expectedDeliveryDate,
+          declinedHealthInfo: _patient.declinedHealthInfo,
+          diseases: _patient.diseases,
         );
       });
       patientNotifier.upsertPatient(_patient);
