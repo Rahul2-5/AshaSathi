@@ -150,14 +150,12 @@ public class MedicalDocumentService {
             // Step 3: Validate medicines
             log.info("Step 3: Validating medicines for document {}", documentId);
             List<Medicine> medicines = buildValidatedMedicines(doc, parsed.getMedicines());
-            doc.getMedicines().clear();
-            doc.getMedicines().addAll(medicines);
+            doc.setMedicines(medicines);
 
             // Step 4: Validate lab results
             log.info("Step 4: Validating lab results for document {}", documentId);
             List<LabResult> labResults = buildValidatedLabResults(doc, parsed.getLabTests());
-            doc.getLabResults().clear();
-            doc.getLabResults().addAll(labResults);
+            doc.setLabResults(labResults);
 
             // Step 5: Persist AI summary and ASHA actions.
             // Use a direct @Modifying UPDATE (belt) AND set on the detached entity (suspenders)
