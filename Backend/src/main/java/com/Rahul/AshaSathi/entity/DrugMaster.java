@@ -21,6 +21,6 @@ public class DrugMaster {
     @Column(name = "drug_class")
     private String drugClass;
 
-    @Column(name = "active", nullable = false)
+    @Column(name = "active", nullable = false, columnDefinition = "BOOLEAN NOT NULL DEFAULT TRUE")
     private boolean active = true;
 }
